@@ -1,9 +1,7 @@
 import {
-  addDoc,
   collection,
   doc,
   getDoc,  
-  getDocs,
   limit,
   onSnapshot,
   orderBy,
@@ -14,7 +12,6 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
-import { getIdTokenResult } from "firebase/auth";
 
 export function exploreCol() {
   return collection(db, "cohorts", COHORT_ID, "explore");
@@ -58,7 +55,7 @@ function normalizeType(s) {
   // Allow a few friendly aliases:
   if (v === "coffee") return "cafe";
   if (v === "drinks") return "bar";
-  return v; // if unknown, still store; you can filter later
+  return v;
 }
 
 function normalizePrice(s) {
@@ -87,32 +84,46 @@ export async function importExploreItems(rows) {
   if (!user) throw new Error("Not signed in.");
   const u = user;
 
+  if (!COHORT_ID || !String(COHORT_ID).trim()) {
+    throw new Error("Import blocked: missing VITE_COHORT_ID.");
+  }
+
+  const cohortId = String(COHORT_ID).trim();
+
   // 🔎 ADMIN PREFLIGHT CHECK
-  const adminRef = doc(db, "cohorts", COHORT_ID, "admins", u.uid);
+  const adminRef = doc(db, "cohorts", cohortId, "admins", u.uid);
   const adminSnap = await getDoc(adminRef);
- console.warn("=== ADMIN PREFLIGHT ===");
- console.warn("Admin doc path:", adminRef.path);
- console.warn("Exists:", adminSnap.exists());
- const data = adminSnap.data();
- console.warn("Admin data:", data);
- console.warn("enabled value/type:", data?.enabled, typeof data?.enabled);
- console.warn("=== END ADMIN PREFLIGHT ===");
+  const data = adminSnap.data();
+  const adminEnabled = !!adminSnap.exists() && data?.enabled === true;
+
+  console.info("[explore import] admin preflight", {
+    path: adminRef.path,
+    exists: adminSnap.exists(),
+    enabled: data?.enabled,
+    enabledType: typeof data?.enabled,
+  });
+
+  if (!adminEnabled) {
+    throw new Error(`Import blocked: user ${u.uid} is not an enabled admin for cohort ${cohortId}.`);
+  }
 
   // 🔍 AUTH / PATH DEBUG
-  console.warn("=== FIRESTORE IMPORT DEBUG ===");
-  console.warn("COHORT_ID:", COHORT_ID);
-  console.warn("Project ID:", db.app.options.projectId);
-  console.warn("Signed in:", !!user);
-  console.warn("UID:", user?.uid);
-  console.warn("Email:", user?.email);
+  console.info("[explore import] auth context", {
+    cohortId,
+    projectId: db.app.options.projectId,
+    signedIn: !!user,
+    uid: user?.uid,
+    email: user?.email,
+  });
 
   const token = await user.getIdTokenResult(true);
-  console.warn("token.email:", token?.claims?.email);
-  console.warn("sign_in_provider:", token?.claims?.firebase?.sign_in_provider);
+  console.info("[explore import] token context", {
+    tokenEmail: token?.claims?.email,
+    signInProvider: token?.claims?.firebase?.sign_in_provider,
+  });
 
-  const exploreColRef = collection(db, "cohorts", COHORT_ID, "explore");
-  console.warn("Writing to path:", exploreColRef.path);
-  console.warn("=== END FIRESTORE IMPORT DEBUG ===");
+  const exploreColRef = collection(db, "cohorts", cohortId, "explore");
+  console.info("[explore import] writing path", { path: exploreColRef.path });
 
   // Validate minimal fields; skip empty rows
   const cleaned = rows
@@ -139,8 +150,9 @@ export async function importExploreItems(rows) {
 
   if (cleaned.length === 0) throw new Error("No valid rows found (need city, type, name).");
 
-  // Firestore batch limit: 500 ops per batch
-  const BATCH_SIZE = 400;
+  // Keep chunks small to avoid Firestore security-rules doc-access limits
+  // during batched writes when rules evaluate admin checks.
+  const BATCH_SIZE = 10;
   let imported = 0;
 
   for (let i = 0; i < cleaned.length; i += BATCH_SIZE) {
@@ -158,7 +170,26 @@ export async function importExploreItems(rows) {
       });
     }
 
-    await batch.commit();
+    try {
+      await batch.commit();
+    } catch (error) {
+      console.error("[explore import] batch commit failed", {
+        code: error?.code,
+        message: error?.message,
+        cohortId,
+        path: exploreColRef.path,
+        uid: user?.uid,
+        email: user?.email,
+        chunkStart: i,
+        chunkSize: chunk.length,
+      });
+      if (error?.code === "permission-denied") {
+        throw new Error(
+          `Permission denied writing ${exploreColRef.path}. Confirm firestore.rules are deployed to project ${db.app.options.projectId} and allow create for isAdmin(${cohortId}).`
+        );
+      }
+      throw error;
+    }
     imported += chunk.length;
   }
 
