@@ -1,59 +1,329 @@
-diff --git a/README.md b/README.md
-index 18bc70ebe277fbfe6e55e6f9a0ae7e2c3e4bdd83..00f0818512d4fd9d125d11436700770b0efdfa2a 100644
---- a/README.md
-+++ b/README.md
-@@ -1,16 +1,45 @@
--# React + Vite
-+# Global 84 (Vite + React + Firebase)
+diff --git a/src/lib/explore.js b/src/lib/explore.js
+index 99551fb64c5c066503ee1c00a2f0fc9b84f16389..062d4ccc2448d00524b1135bad7ce3166248b807 100644
+--- a/src/lib/explore.js
++++ b/src/lib/explore.js
+@@ -1,197 +1,228 @@
+ import {
+   collection,
+   doc,
+-  getDoc,  
++  getDoc,
++  getDocs,
+   limit,
+   onSnapshot,
+   orderBy,
+   query,
+   serverTimestamp,
+   updateDoc,
+   where,
+   writeBatch,
+ } from "firebase/firestore";
+ import { auth, db, COHORT_ID } from "./firebase";
  
--This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-+## Vercel build settings
-+Use these project settings in Vercel:
+ export function exploreCol() {
+   return collection(db, "cohorts", COHORT_ID, "explore");
+ }
  
--Currently, two official plugins are available:
-+- **Framework preset**: Vite
-+- **Build command**: `npm run build`
-+- **Output directory**: `dist`
+ export function exploreDoc(id) {
+   return doc(db, "cohorts", COHORT_ID, "explore", id);
+ }
  
--- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
--- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-+`package.json` already defines the build command. `npm run build` outputs a production build to `dist`.
+ export function subscribeExplore({ city, type }, cb) {
+-  // Start simple: filter by city and/or type, always status=active
+-  // If you add more filters later (tags, price), we can do client-side filtering to avoid indexes.
+   let q = query(exploreCol(), where("status", "==", "active"), orderBy("name", "asc"), limit(250));
  
--## React Compiler
-+## React Router deep-link support on Vercel
-+This repo includes `vercel.json` with a catch-all rewrite to `/` so routes like `/explore`, `/events`, and `/me` work on refresh and direct open:
+   if (city) q = query(exploreCol(), where("status", "==", "active"), where("city", "==", city), orderBy("name", "asc"), limit(250));
+   if (city && type) q = query(exploreCol(), where("status", "==", "active"), where("city", "==", city), where("type", "==", type), orderBy("name", "asc"), limit(250));
+   if (!city && type) q = query(exploreCol(), where("status", "==", "active"), where("type", "==", type), orderBy("name", "asc"), limit(250));
  
--The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-+```json
-+{
-+  "rewrites": [
-+    { "source": "/(.*)", "destination": "/" }
-+  ]
+   return onSnapshot(q, (snap) => {
+     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+   });
+ }
+ 
+ export async function archiveExploreItem(id) {
+   await updateDoc(exploreDoc(id), { status: "archived" });
+ }
+ 
+ function normalizeCity(s) {
+   const v = (s || "").trim();
+   if (!v) return "";
+   const low = v.toLowerCase();
+   if (low === "singapore") return "Singapore";
+   if (low === "hcmc" || low === "ho chi minh" || low === "ho chi minh city") return "Ho Chi Minh City";
+   return v;
+ }
+ 
+ function normalizeType(s) {
+   const v = (s || "").trim().toLowerCase();
+   if (!v) return "";
+   if (["restaurant", "activity", "bar", "cafe"].includes(v)) return v;
+-  // Allow a few friendly aliases:
+   if (v === "coffee") return "cafe";
+   if (v === "drinks") return "bar";
+   return v;
+ }
+ 
+ function normalizePrice(s) {
+   const v = (s || "").trim();
+   if (!v) return "";
+   if (v === "$" || v === "$$" || v === "$$$") return v;
+   return "";
+ }
+ 
+ function parseTags(s) {
+   const raw = (s || "").trim();
+   if (!raw) return [];
+   return raw
+     .split(",")
+     .map((t) => t.trim().toLowerCase())
+     .filter(Boolean)
+     .slice(0, 20);
+ }
+ 
+-/**
+- * Import a list of explore items into Firestore using batch writes.
+- * rows: array of raw row objects from CSV with headers matching the sheet.
+- */
+-export async function importExploreItems(rows) {
++function normalizeName(name) {
++  return (name || "")
++    .trim()
++    .toLowerCase()
++    .replace(/\s+/g, " ");
 +}
-+```
++
++function makeExploreStableKey({ city, type, name }) {
++  return `${city}::${type}::${normalizeName(name)}`;
++}
++
++function cleanExploreRow(r) {
++  const city = normalizeCity(r.city);
++  const type = normalizeType(r.type);
++  const name = (r.name || "").trim();
++
++  return {
++    valid: !!(city && type && name),
++    city,
++    type,
++    name,
++    neighborhood: (r.neighborhood || "").trim(),
++    hours: (r.hours || "").trim(),
++    price: normalizePrice(r.price),
++    tags: parseTags(r.tags),
++    googleMapsUrl: (r.googlemapsurl || r.googleMapsUrl || "").trim(),
++    reservationUrl: (r.reservationurl || r.reservationUrl || "").trim(),
++    notes: (r.notes || "").trim(),
++    recommendedBy: (r.recommendedby || r.recommendedBy || "").trim(),
++  };
++}
++
++export function getExploreImportPreview(rows, previewLimit = 10) {
++  const preparedRows = rows.map((row, index) => ({
++    rowNumber: index + 1,
++    ...cleanExploreRow(row),
++  }));
++  const validRows = preparedRows.filter((row) => row.valid);
++
++  return {
++    previewRows: preparedRows.slice(0, previewLimit),
++    validRows,
++    importableCount: validRows.length,
++    skippedCount: preparedRows.length - validRows.length,
++  };
++}
++
++export async function importExploreItems(rows, options = {}) {
+   const user = auth.currentUser;
+   if (!user) throw new Error("Not signed in.");
+-  const u = user;
  
--## Expanding the ESLint configuration
-+## Firebase Authentication settings (required)
-+In Firebase Console → Authentication → Settings:
+   if (!COHORT_ID || !String(COHORT_ID).trim()) {
+     throw new Error("Import blocked: missing VITE_COHORT_ID.");
+   }
  
--If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-+1. Add your Vercel domain(s) to **Authorized domains** (both preview and production domains you use).
-+2. Keep Email Link sign-in enabled.
+   const cohortId = String(COHORT_ID).trim();
+-
+-  // 🔎 ADMIN PREFLIGHT CHECK
+-  const adminRef = doc(db, "cohorts", cohortId, "admins", u.uid);
++  const adminRef = doc(db, "cohorts", cohortId, "admins", user.uid);
+   const adminSnap = await getDoc(adminRef);
+-  const data = adminSnap.data();
+-  const adminEnabled = !!adminSnap.exists() && data?.enabled === true;
+-
+-  console.info("[explore import] admin preflight", {
+-    path: adminRef.path,
+-    exists: adminSnap.exists(),
+-    enabled: data?.enabled,
+-    enabledType: typeof data?.enabled,
+-  });
++  const adminEnabled = !!adminSnap.exists() && adminSnap.data()?.enabled === true;
+ 
+   if (!adminEnabled) {
+-    throw new Error(`Import blocked: user ${u.uid} is not an enabled admin for cohort ${cohortId}.`);
++    throw new Error(`Import blocked: user ${user.uid} is not an enabled admin for cohort ${cohortId}.`);
+   }
+ 
+-  // 🔍 AUTH / PATH DEBUG
+-  console.info("[explore import] auth context", {
+-    cohortId,
+-    projectId: db.app.options.projectId,
+-    signedIn: !!user,
+-    uid: user?.uid,
+-    email: user?.email,
+-  });
+-
+-  const token = await user.getIdTokenResult(true);
+-  console.info("[explore import] token context", {
+-    tokenEmail: token?.claims?.email,
+-    signInProvider: token?.claims?.firebase?.sign_in_provider,
++  const exploreColRef = collection(db, "cohorts", cohortId, "explore");
++  const preview = getExploreImportPreview(rows);
++  if (preview.validRows.length === 0) throw new Error("No valid rows found (need city, type, name).");
 +
-+## Email-link redirect behavior
-+Email-link sign-in now uses:
++  const existingSnap = await getDocs(exploreColRef);
++  const existingByKey = new Map();
++  existingSnap.forEach((existingDoc) => {
++    const data = existingDoc.data();
++    if (!data?.city || !data?.type || !data?.name) return;
++    existingByKey.set(makeExploreStableKey(data), existingDoc.id);
+   });
+ 
+-  const exploreColRef = collection(db, "cohorts", cohortId, "explore");
+-  console.info("[explore import] writing path", { path: exploreColRef.path });
+-
+-  // Validate minimal fields; skip empty rows
+-  const cleaned = rows
+-    .map((r) => {
+-      const city = normalizeCity(r.city);
+-      const type = normalizeType(r.type);
+-      const name = (r.name || "").trim();
+-      if (!city || !type || !name) return null;
+-
+-      return {
+-        city,
+-        type,
+-        name,
+-        neighborhood: (r.neighborhood || "").trim(),
+-        price: normalizePrice(r.price),
+-        tags: parseTags(r.tags),
+-        googleMapsUrl: (r.googlemapsurl || r.googleMapsUrl || "").trim(),
+-        reservationUrl: (r.reservationurl || r.reservationUrl || "").trim(),
+-        notes: (r.notes || "").trim(),
+-        recommendedBy: (r.recommendedby || r.recommendedBy || "").trim(),
+-      };
+-    })
+-    .filter(Boolean);
++  const dedupedByKey = new Map();
++  for (const row of preview.validRows) {
++    dedupedByKey.set(makeExploreStableKey(row), row);
++  }
+ 
+-  if (cleaned.length === 0) throw new Error("No valid rows found (need city, type, name).");
++  const upsertRows = Array.from(dedupedByKey.entries()).map(([stableKey, row]) => ({
++    stableKey,
++    row,
++    existingId: existingByKey.get(stableKey) || null,
++  }));
+ 
+-  // Keep chunks small to avoid Firestore security-rules doc-access limits
+-  // during batched writes when rules evaluate admin checks.
+   const BATCH_SIZE = 10;
+   let imported = 0;
++  let updated = 0;
+ 
+-  for (let i = 0; i < cleaned.length; i += BATCH_SIZE) {
+-    const chunk = cleaned.slice(i, i + BATCH_SIZE);
++  for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
++    const chunk = upsertRows.slice(i, i + BATCH_SIZE);
+     const batch = writeBatch(db);
+ 
+-    for (const item of chunk) {
+-      const ref = doc(exploreColRef); // auto id
+-      batch.set(ref, {
+-        ...item,
+-        status: "active",
+-        createdAt: serverTimestamp(),
+-        createdByUid: user.uid,
+-        createdByName: user.displayName || "Admin",
+-      });
+-    }
+-
+-    try {
+-      await batch.commit();
+-    } catch (error) {
+-      console.error("[explore import] batch commit failed", {
+-        code: error?.code,
+-        message: error?.message,
+-        cohortId,
+-        path: exploreColRef.path,
+-        uid: user?.uid,
+-        email: user?.email,
+-        chunkStart: i,
+-        chunkSize: chunk.length,
+-      });
+-      if (error?.code === "permission-denied") {
+-        throw new Error(
+-          `Permission denied writing ${exploreColRef.path}. Confirm firestore.rules are deployed to project ${db.app.options.projectId} and allow create for isAdmin(${cohortId}).`
++    for (const upsert of chunk) {
++      const ref = upsert.existingId ? doc(exploreColRef, upsert.existingId) : doc(exploreColRef);
 +
-+- `VITE_AUTH_REDIRECT_URL` when provided
-+- otherwise `window.location.origin`
++      batch.set(
++        ref,
++        {
++          city: upsert.row.city,
++          type: upsert.row.type,
++          name: upsert.row.name,
++          neighborhood: upsert.row.neighborhood,
++          hours: upsert.row.hours,
++          price: upsert.row.price,
++          tags: upsert.row.tags,
++          googleMapsUrl: upsert.row.googleMapsUrl,
++          reservationUrl: upsert.row.reservationUrl,
++          notes: upsert.row.notes,
++          recommendedBy: upsert.row.recommendedBy,
++          stableKey: upsert.stableKey,
++          status: "active",
++          updatedAt: serverTimestamp(),
++          updatedByUid: user.uid,
++        },
++        { merge: true }
++      );
 +
-+This ensures links return to your deployed domain instead of localhost in production.
++      if (upsert.existingId) {
++        updated += 1;
++      } else {
++        imported += 1;
++        batch.set(
++          ref,
++          {
++            createdAt: serverTimestamp(),
++            createdByUid: user.uid,
++            createdByName: user.displayName || "Admin",
++          },
++          { merge: true }
+         );
+       }
+-      throw error;
+     }
+-    imported += chunk.length;
 +
-+## iPhone Safari test checklist
-+1. Open your Vercel URL in Safari.
-+2. Start email-link sign-in with your allowed email.
-+3. Tap the email link on iPhone.
-+4. Confirm it opens and completes sign-in on the same deployed domain.
-+5. Navigate to `/explore`, `/events`, and `/me`.
-+6. Refresh each page to verify no 404 on deep links.
-+7. Add to Home Screen and launch from the icon.
-+8. Repeat navigation/sign-in checks from Home Screen context.
++    await batch.commit();
+   }
+ 
+-  return { imported, skipped: rows.length - cleaned.length };
++  const logRef = doc(collection(db, "cohorts", cohortId, "importLogs"));
++  await writeBatch(db)
++    .set(logRef, {
++      timestamp: serverTimestamp(),
++      adminUid: user.uid,
++      fileName: options.fileName || "CSV import",
++      importedCount: imported,
++      updatedCount: updated,
++      skippedCount: preview.skippedCount,
++    })
++    .commit();
++
++  return { imported, updated, skipped: preview.skippedCount };
+ }
