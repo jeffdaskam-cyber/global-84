@@ -1,95 +1,61 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isSignedIn() {
+    function signedIn() {
       return request.auth != null;
     }
 
-    function email() {
-      return request.auth.token.email;
-    }
-
-    function isDuEmail() {
-      return isSignedIn()
-        && email() is string
-        && email().matches('.*@du\\.edu$');
-    }
-
     function isSelf(uid) {
-      return isDuEmail() && request.auth.uid == uid;
-    }
-
-    // Admin allowlist: cohorts/{cohortId}/admins/{uid} { enabled: true }
-    function adminDoc(cohortId) {
-      return get(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid));
+      return signedIn() && request.auth.uid == uid;
     }
 
     function isAdmin(cohortId) {
-      return isSignedIn()
-      && adminDoc(cohortId).exists()
-      && adminDoc(cohortId).data.enabled == true;
+      return signedIn()
+        && get(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid)).data.enabled == true;
     }
-    // Default deny (implicit). Only paths matched below are accessible.
 
     match /cohorts/{cohortId} {
-
-      // ADMINS allowlist
+      // Admin allowlist docs
       match /admins/{uid} {
-      // Allow a user to read ONLY their own admin doc
-      allow read: if isSignedIn() && request.auth.uid == uid;
-
-      // Keep writes locked to admins
-      allow create, update, delete: if isAdmin(cohortId);
-     }
-
-      // MEMBERS
-      match /members/{uid} {
-        allow read: if isDuEmail();
-
-        allow create: if isSelf(uid)
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.role == "member";
-
-        allow update: if isSelf(uid)
-          && request.resource.data.role == resource.data.role
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.email == resource.data.email
-          && request.resource.data.createdAt == resource.data.createdAt;
-
-        allow delete: if false;
+        allow read: if isSelf(uid) || isAdmin(cohortId);
+        allow write: if false;
       }
 
-      // ANNOUNCEMENTS
-      match /announcements/{announcementId} {
-        allow read: if isDuEmail();
+      // Member profile docs
+      match /members/{uid} {
+        allow read: if isSelf(uid) || isAdmin(cohortId);
+        allow create: if isSelf(uid)
+          && request.resource.data.uid == request.auth.uid;
+        allow update: if isSelf(uid)
+          && request.resource.data.uid == resource.data.uid;
+      }
+
+      // Announcements (admins manage; all signed-in users can read)
+      match /announcements/{id} {
+        allow read: if signedIn();
         allow create, update, delete: if isAdmin(cohortId);
       }
 
-      // EXPLORE
-      match /explore/{itemId} {
-       allow read: if isDuEmail();
-       allow create: if isSignedIn() && adminDoc(cohortId).exists();
-       allow update, delete: if false;
+      // Explore items (admins manage; all signed-in users can read)
+      match /explore/{id} {
+        allow read: if signedIn();
+        // Keep create rule minimal to match app expectation exactly
+        allow create: if isAdmin(cohortId);
+        allow update, delete: if isAdmin(cohortId);
       }
-      // EVENTS
+
+      // Events (signed-in users can read/create; creator or admins can mutate)
       match /events/{eventId} {
-        allow read: if isDuEmail();
-
-        allow create: if isDuEmail()
-          && request.resource.data.createdByUid == request.auth.uid
-          && request.resource.data.status == "active";
-
-        allow update, delete: if isDuEmail()
-          && resource.data.createdByUid == request.auth.uid;
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.createdByUid == request.auth.uid;
+        allow update, delete: if isAdmin(cohortId)
+          || (signedIn() && resource.data.createdByUid == request.auth.uid);
 
         match /rsvps/{uid} {
-          allow read: if isDuEmail();
-
-          allow create, update: if isSelf(uid)
-            && (request.resource.data.status in ["going", "interested", "not_going"]);
-
-          allow delete: if isSelf(uid);
+          allow read: if signedIn();
+          allow create, update: if isSelf(uid);
+          allow delete: if isSelf(uid) || isAdmin(cohortId);
         }
       }
     }
