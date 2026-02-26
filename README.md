@@ -1,16 +1,45 @@
-# React + Vite
+# Global 84 (Vite + React + Firebase)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Vercel build settings
+Use these project settings in Vercel:
 
-Currently, two official plugins are available:
+- **Framework preset**: Vite
+- **Build command**: `npm run build`
+- **Output directory**: `dist`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+`package.json` already defines the build command. `npm run build` outputs a production build to `dist`.
 
-## React Compiler
+## React Router deep-link support on Vercel
+This repo includes `vercel.json` with a catch-all rewrite to `/` so routes like `/explore`, `/events`, and `/me` work on refresh and direct open:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
+```
 
-## Expanding the ESLint configuration
+## Firebase Authentication settings (required)
+In Firebase Console → Authentication → Settings:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Add your Vercel domain(s) to **Authorized domains** (both preview and production domains you use).
+2. Keep Email Link sign-in enabled.
+
+## Email-link redirect behavior
+Email-link sign-in now uses:
+
+- `VITE_AUTH_REDIRECT_URL` when provided
+- otherwise `window.location.origin`
+
+This ensures links return to your deployed domain instead of localhost in production.
+
+## iPhone Safari test checklist
+1. Open your Vercel URL in Safari.
+2. Start email-link sign-in with your allowed email.
+3. Tap the email link on iPhone.
+4. Confirm it opens and completes sign-in on the same deployed domain.
+5. Navigate to `/explore`, `/events`, and `/me`.
+6. Refresh each page to verify no 404 on deep links.
+7. Add to Home Screen and launch from the icon.
+8. Repeat navigation/sign-in checks from Home Screen context.
