@@ -1,13 +1,17 @@
 import { upsertMemberProfile } from "../lib/members";
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../lib/firebase";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { auth, ALLOWED_DOMAIN } from "../lib/firebase";
 import { sendDuSignInLink, completeEmailLinkSignIn } from "../lib/auth";
 
 export default function AuthGate({ children }) {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+
+  // Email link + fallback email/password inputs
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -50,7 +54,7 @@ export default function AuthGate({ children }) {
     return () => unsub();
   }, []);
 
-  // Optional: while checking auth state (and/or completing email link), render nothing (or a spinner)
+  // While checking auth state (and/or completing email link), render nothing (or a spinner)
   if (checking) return null;
 
   if (!user) {
@@ -76,10 +80,9 @@ export default function AuthGate({ children }) {
           </label>
 
           {error ? <div className="mt-3 text-sm text-du-crimson">{error}</div> : null}
-          {status ? (
-            <div className="mt-3 text-sm text-ink-sub dark:text-ink-subOnDark">{status}</div>
-          ) : null}
+          {status ? <div className="mt-3 text-sm text-ink-sub dark:text-ink-subOnDark">{status}</div> : null}
 
+          {/* Email link sign-in */}
           <button
             className="mt-5 w-full rounded-lg bg-du-crimson text-white py-3 text-sm font-semibold hover:bg-du-crimsonDark transition"
             onClick={async () => {
@@ -98,6 +101,55 @@ export default function AuthGate({ children }) {
 
           <div className="mt-3 text-xs text-ink-muted dark:text-ink-subOnDark">
             DU email required (@du.edu)
+          </div>
+
+          {/* Temporary fallback: Email/Password (for testing while email-link quota is exceeded) */}
+          <div className="mt-6 border-t border-surface-border dark:border-surface-darkBorder pt-4">
+            <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">
+              Temporary sign-in (Email/Password)
+            </div>
+            <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark">
+              Use only for testing while email-link quota is exceeded.
+            </div>
+
+            <label className="block mt-3">
+              <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
+                Password
+              </div>
+              <input
+                className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                type="password"
+              />
+            </label>
+
+            <button
+              className="mt-4 w-full rounded-lg bg-du-gold text-black py-3 text-sm font-semibold hover:opacity-90 transition"
+              onClick={async () => {
+                setError("");
+                setStatus("");
+                try {
+                  const e = (email || "").trim().toLowerCase();
+                  const domain = e.split("@")[1] || "";
+                  if (domain !== (ALLOWED_DOMAIN || "du.edu").toLowerCase()) {
+                    throw new Error(`Please use your @${ALLOWED_DOMAIN} email address.`);
+                  }
+                  if (!password) {
+                    throw new Error("Please enter a password.");
+                  }
+
+                  await signInWithEmailAndPassword(auth, e, password);
+                  setStatus("Signed in.");
+                } catch (e) {
+                  setError(e?.message || "Email/password sign-in failed.");
+                }
+              }}
+            >
+              Sign in with password
+            </button>
           </div>
         </div>
       </div>
