@@ -2,7 +2,7 @@ import { upsertMemberProfile } from "../lib/members";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
-import { sendDuSignInLink } from "../lib/auth";
+import { sendDuSignInLink, completeEmailLinkSignIn } from "../lib/auth";
 
 export default function AuthGate({ children }) {
   const [user, setUser] = useState(null);
@@ -11,26 +11,47 @@ export default function AuthGate({ children }) {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
- useEffect(() => {
-  const unsub = onAuthStateChanged(auth, async (u) => {
-    try {
-      if (u) {
-        // Create/update member profile in Firestore
-        await upsertMemberProfile(u);
+  // Step 2: Complete email-link sign-in if this page load contains a Firebase email sign-in link.
+  // This MUST run before we decide to show the "Send sign-in link" UI, otherwise users can get stuck in a loop.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await completeEmailLinkSignIn();
+        if (res?.didSignIn) {
+          // Remove Firebase action params (oobCode, etc.) from the URL after successful completion
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (e) {
+        console.error("Email link sign-in completion failed:", e);
+        setError(e?.message || "Could not complete sign-in from email link.");
       }
-      setUser(u || null);
-    } catch (e) {
-      // If Firestore fails, we still allow auth session but show an error
-      console.error("Member upsert failed:", e);
-      setError(e?.message || "Signed in, but profile setup failed.");
-      setUser(u || null);
-    } finally {
-      setChecking(false);
-    }
-  });
+    })();
+  }, []);
 
-  return () => unsub();
-}, []);
+  // Listen for auth state changes (single source of truth for signed-in user)
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      try {
+        if (u) {
+          // Create/update member profile in Firestore
+          await upsertMemberProfile(u);
+        }
+        setUser(u || null);
+      } catch (e) {
+        // If Firestore fails, we still allow auth session but show an error
+        console.error("Member upsert failed:", e);
+        setError(e?.message || "Signed in, but profile setup failed.");
+        setUser(u || null);
+      } finally {
+        setChecking(false);
+      }
+    });
+
+    return () => unsub();
+  }, []);
+
+  // Optional: while checking auth state (and/or completing email link), render nothing (or a spinner)
+  if (checking) return null;
 
   if (!user) {
     return (
@@ -55,7 +76,9 @@ export default function AuthGate({ children }) {
           </label>
 
           {error ? <div className="mt-3 text-sm text-du-crimson">{error}</div> : null}
-          {status ? <div className="mt-3 text-sm text-ink-sub dark:text-ink-subOnDark">{status}</div> : null}
+          {status ? (
+            <div className="mt-3 text-sm text-ink-sub dark:text-ink-subOnDark">{status}</div>
+          ) : null}
 
           <button
             className="mt-5 w-full rounded-lg bg-du-crimson text-white py-3 text-sm font-semibold hover:bg-du-crimsonDark transition"
