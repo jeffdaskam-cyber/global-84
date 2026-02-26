@@ -6,8 +6,8 @@ import {
 } from "firebase/auth";
 import { auth, ALLOWED_DOMAIN } from "./firebase";
 
-const REDIRECT_URL = import.meta.env.VITE_AUTH_REDIRECT_URL;
-
+const REDIRECT_URL =
+  import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
 function assertDuEmail(email) {
   const e = (email || "").trim().toLowerCase();
   const domain = e.split("@")[1] || "";
