@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { importExploreItems } from "../lib/explore";
+import { auth, COHORT_ID } from "../lib/firebase";
 
 function normalizeKey(k) {
   return (k || "").trim().toLowerCase();
@@ -136,11 +137,26 @@ export default function ExploreImport({ isAdmin }) {
 
     setBusy(true);
     try {
+      const u = auth.currentUser;
+      console.info("[explore import] ui submit", {
+        cohortId: COHORT_ID,
+        uid: u?.uid,
+        email: u?.email,
+        rowCount: rows.length,
+      });
       const r = await importExploreItems(rows);
       setResult(`Imported ${r.imported} rows. Skipped ${r.skipped} invalid/empty rows.`);
     } catch (err) {
-      console.error("Explore import failed:", err);
-      setError(err?.message || "Import failed.");
+      const u = auth.currentUser;
+      console.error("[explore import] ui import failed", {
+        code: err?.code,
+        message: err?.message,
+        cohortId: COHORT_ID,
+        uid: u?.uid,
+        email: u?.email,
+      });
+      const details = err?.code ? ` (${err.code})` : "";
+      setError(`${err?.message || "Import failed."}${details}`);
     } finally {
       setBusy(false);
     }
