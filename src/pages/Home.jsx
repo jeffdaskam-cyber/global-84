@@ -80,12 +80,12 @@ export default function Home() {
         {/* ── Text content ── */}
         <div className="relative px-6 pt-10 pb-8">
 
-          {/* University of Denver — small gold caps */}
+          {/* Daniels College of Business EMBA — small gold caps */}
           <p
             className="transition-all duration-700 ease-out"
             style={{
               fontFamily: "Georgia, serif",
-              fontSize: "10px",
+              fontSize: "14px",
               letterSpacing: "0.22em",
               textTransform: "uppercase",
               color: "rgba(196,150,42,0.85)",
@@ -109,7 +109,7 @@ export default function Home() {
             <span
               style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "52px",
+                fontSize: "46px",
                 fontWeight: 700,
                 lineHeight: 1,
                 color: "#ffffff",
@@ -121,7 +121,7 @@ export default function Home() {
             <span
               style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "56px",
+                fontSize: "50px",
                 fontWeight: 700,
                 lineHeight: 1,
                 letterSpacing: "-0.5px",
@@ -185,9 +185,9 @@ export default function Home() {
             <p
               style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "12px",
+                fontSize: "14px",
                 fontStyle: "italic",
-                color: "rgba(255,255,255,0.4)",
+                color: "rgba(255,255,255,0.65)",
               }}
             >
               Creating Global Leaders
