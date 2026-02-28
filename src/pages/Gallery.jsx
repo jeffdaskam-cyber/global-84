@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { subscribePhotos, uploadPhoto, deletePhoto, toggleLike } from "../lib/gallery";
+import { subscribeMember } from "../lib/members";
 
 // ─── City tabs ────────────────────────────────────────────────────────────────
 const CITIES = [
@@ -17,16 +18,25 @@ export default function Gallery({ user, isAdmin }) {
   const [activeCity, setActiveCity]     = useState("all");
   const [photos, setPhotos]             = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [lightbox, setLightbox]         = useState(null);
+  const [lightbox, setLightbox]         = useState(null); // photo object | null
   const [uploading, setUploading]       = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadCity, setUploadCity]     = useState("singapore");
   const [error, setError]               = useState(null);
   const fileInputRef                    = useRef(null);
 
-  // ── Subscribe to photos ───────────────────────────────────────────────────
+  // ── Subscribe to member profile for display name ──────────────────────────
+  const [memberDisplayName, setMemberDisplayName] = useState("");
   useEffect(() => {
     if (!user) return;
+    const unsub = subscribeMember(user.uid, (m) => {
+      setMemberDisplayName(m?.displayName || user.email);
+    });
+    return unsub;
+  }, [user]);
+
+  // ── Subscribe to photos ───────────────────────────────────────────────────
+  useEffect(() => {
     setLoading(true);
     const city = activeCity === "all" ? null : activeCity;
     const unsub = subscribePhotos((data) => {
@@ -34,10 +44,7 @@ export default function Gallery({ user, isAdmin }) {
       setLoading(false);
     }, city);
     return unsub;
-  }, [activeCity, user]);
-
-  // Wait for Firebase Auth to resolve before rendering anything
-  if (!user) return null;
+  }, [activeCity]);
 
   // ── Upload handler ────────────────────────────────────────────────────────
   const handleFileChange = useCallback(
@@ -54,7 +61,7 @@ export default function Gallery({ user, isAdmin }) {
           {
             city: uploadCity,
             uploaderUid:  user.uid,
-            uploaderName: user.displayName || user.email,
+            uploaderName: memberDisplayName || user.email,
           },
           (pct) => setUploadProgress(pct)
         );

@@ -85,9 +85,6 @@ export default function Me() {
         <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Account</div>
         <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">
           <div>{member?.email || user?.email || "—"}</div>
-          <div className="mt-1 text-xs text-ink-muted dark:text-ink-subOnDark">
-            UID: {user?.uid || "—"}
-          </div>
         </div>
       </div>
 
