@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate, NavLink } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
 
 import AuthGate from "./components/AuthGate.jsx";
 import SplashScreen from "./components/SplashScreen.jsx";
@@ -13,6 +14,7 @@ import Me from "./pages/Me.jsx";
 import Gallery from "./pages/Gallery";
 
 import { subscribeIsAdmin } from "./lib/admins.js";
+import { auth } from "./lib/firebase.js";
 
 function TabLink({ to, label }) {
   return (
@@ -34,10 +36,19 @@ function TabLink({ to, label }) {
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [user, setUser] = useState(null); // ← tracks the signed-in Firebase user
 
   // Single source of truth for admin gating across the app
   useEffect(() => {
     const unsub = subscribeIsAdmin(setIsAdmin);
+    return () => unsub();
+  }, []);
+
+  // Track the signed-in user so we can pass it to Gallery (and other pages as needed)
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
     return () => unsub();
   }, []);
 
@@ -75,7 +86,7 @@ export default function App() {
           </Routes>
         </div>
 
-       {/* Bottom navigation */}
+        {/* Bottom navigation */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
           <div className="max-w-xl mx-auto flex">
             <TabLink to="/" label="Home" />
