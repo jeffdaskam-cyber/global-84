@@ -240,6 +240,7 @@ export async function importExploreItems(rows, options = {}) {
 
     for (const upsert of chunk) {
       const ref = upsert.existingId ? doc(exploreColRef, upsert.existingId) : doc(exploreColRef);
+      const isNew = !upsert.existingId;
 
       batch.set(
         ref,
@@ -256,27 +257,24 @@ export async function importExploreItems(rows, options = {}) {
           reservationUrl: upsert.row.reservationUrl,
           notes: upsert.row.notes,
           recommendedBy: upsert.row.recommendedBy,
-          stableKey: upsert.stableKey,  // written here so future imports always match
+          stableKey: upsert.stableKey,
           status: "active",
           updatedAt: serverTimestamp(),
           updatedByUid: user.uid,
+          // Only set creation fields on new docs — merge:true preserves them on updates
+          ...(isNew && {
+            createdAt: serverTimestamp(),
+            createdByUid: user.uid,
+            createdByName: user.displayName || "Admin",
+          }),
         },
         { merge: true }
       );
 
-      if (upsert.existingId) {
-        updated += 1;
-      } else {
+      if (isNew) {
         imported += 1;
-        batch.set(
-          ref,
-          {
-            createdAt: serverTimestamp(),
-            createdByUid: user.uid,
-            createdByName: user.displayName || "Admin",
-          },
-          { merge: true }
-        );
+      } else {
+        updated += 1;
       }
     }
 
