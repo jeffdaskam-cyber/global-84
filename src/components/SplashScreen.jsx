@@ -70,18 +70,18 @@ export default function SplashScreen({ onComplete }) {
         animation: "fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both",
       }}>
 
-        {/* Logo — floating directly on background, no card or border */}
+        {/* Logo */}
         <div style={{
-          width: "160px",
-          height: "160px",
+          width: "200px",
+          height: "200px",
           flexShrink: 0,
-          filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.7)) drop-shadow(0 0 40px rgba(186,12,47,0.3))",
+          filter: "drop-shadow(0 8px 32px rgba(168,153,104,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))",
           animation: "logoReveal 1s cubic-bezier(0.16,1,0.3,1) 0.3s both",
         }}>
           <img
-            src="/icons/icon-512-transparent.png"
+            src="/icons/splash_logo.png"
             alt="Global 84"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
           />
         </div>
 
@@ -140,7 +140,7 @@ export default function SplashScreen({ onComplete }) {
           lineHeight: 1.6,
           animation: "fadeIn 1s ease 1s both",
         }}>
-          Where Pioneers connect across the globe
+          Building Global Leaders: Singapore and Vietnam
         </div>
 
       </div>
