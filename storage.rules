@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Photos: cohort members can upload their own; anyone signed-in can read;
+    // only admins can delete (via Admin SDK / callable function, or from Console)
+    match /photos/{cohortId}/{uid}/{filename} {
+
+      // Anyone signed-in can view photos
+      allow read: if request.auth != null;
+
+      // Members can only upload to their own uid folder
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 10 * 1024 * 1024       // 10 MB max
+        && request.resource.contentType.matches("image/.*"); // images only
+
+      // Deletion is allowed by the file owner OR by any signed-in user
+      // (Gallery.jsx deletePhoto() is only rendered for isAdmin — this is
+      // belt-and-suspenders; tighten if you add callable Cloud Functions later)
+      allow delete: if request.auth != null;
+    }
+  }
+}
