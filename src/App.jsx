@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Routes, Route, Navigate, NavLink } from "react-router-dom";
 
 import AuthGate from "./components/AuthGate.jsx";
+import SplashScreen from "./components/SplashScreen.jsx";
 
 import Home from "./pages/Home.jsx";
 import Explore from "./pages/Explore.jsx";
@@ -31,6 +32,7 @@ function TabLink({ to, label }) {
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Single source of truth for admin gating across the app
   useEffect(() => {
@@ -40,6 +42,7 @@ export default function App() {
 
   return (
     <AuthGate>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       <div className="min-h-screen bg-surface-light dark:bg-surface-dark">
         {/* Main content */}
         <div className="pb-16">
