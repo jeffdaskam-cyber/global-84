@@ -11,7 +11,7 @@ const CITIES = [
     emoji: "🇸🇬",
     description: "The Lion City",
     bgGradient: "from-red-900 via-red-700 to-orange-500",
-    bgImage: "C:\Users\jeffd\Documents\global-84\public\icons\Singapore.jpg",
+    bgImage: "C:\Users\jeffd\Documents\global-84\public\Singapore.jpg",
   },
   {
     key: "Ho Chi Minh City",
@@ -20,7 +20,7 @@ const CITIES = [
     emoji: "🇻🇳",
     description: "The Pearl of the Far East",
     bgGradient: "from-yellow-800 via-red-700 to-red-900",
-    bgImage: "C:\Users\jeffd\Documents\global-84\public\icons\HCMC.jpg",
+    bgImage: "C:\Users\jeffd\Documents\global-84\public\HCMC.jpg",
   },
 ];
 
