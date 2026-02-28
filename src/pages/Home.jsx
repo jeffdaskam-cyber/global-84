@@ -94,7 +94,7 @@ export default function Home() {
               transitionDelay: "0ms",
             }}
           >
-            University of Denver
+            Daniels College of Business EMBA
           </p>
 
           {/* GLOBAL 84 — oversized lockup */}
