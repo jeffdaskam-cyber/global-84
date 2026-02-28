@@ -1,204 +1,369 @@
-import { useEffect, useState } from "react";
+// src/components/SplashScreen.jsx
+// Flow: Singapore video → HCMC video → splash animation → done
+import { useEffect, useRef, useState } from "react";
+
+// ── Video config ──────────────────────────────────────────────────────────────
+const VIDEOS = [
+  {
+    src: "/singapore-intro.mp4",
+    label: "Singapore",
+    flag: "🇸🇬",
+    duration: 4000, // fallback max duration if video is shorter
+  },
+  {
+    src: "/hcmc-intro.mp4",
+    label: "Ho Chi Minh City",
+    flag: "🇻🇳",
+    duration: 4000,
+  },
+];
+
+// ── Phase constants ───────────────────────────────────────────────────────────
+const PHASE_VIDEO_0  = "video_0";
+const PHASE_VIDEO_1  = "video_1";
+const PHASE_SPLASH   = "splash";
+const PHASE_DONE     = "done";
+
+const FADE_MS        = 600;  // cross-fade duration between phases
+const SPLASH_HOLD_MS = 5000; // how long the splash animation plays before calling onComplete
 
 export default function SplashScreen({ onComplete }) {
-  const [phase, setPhase] = useState("enter");
+  const [phase, setPhase]       = useState(PHASE_VIDEO_0);
+  const [fadeOut, setFadeOut]   = useState(false);
+  const [splashMounted, setSplashMounted] = useState(false);
+  const videoRef                = useRef(null);
+  const timerRef                = useRef(null);
+  const skippedRef              = useRef(false);
 
+  // ── Advance to next phase with a fade transition ──────────────────────────
+  function advance(nextPhase) {
+    if (skippedRef.current && nextPhase !== PHASE_DONE) return;
+    setFadeOut(true);
+    timerRef.current = setTimeout(() => {
+      setFadeOut(false);
+      setPhase(nextPhase);
+      if (nextPhase === PHASE_SPLASH) {
+        setTimeout(() => setSplashMounted(true), 60);
+        setTimeout(() => onComplete(), SPLASH_HOLD_MS);
+      }
+    }, FADE_MS);
+  }
+
+  // ── Skip handler — jumps straight to splash ───────────────────────────────
+  function handleSkip() {
+    skippedRef.current = true;
+    clearTimeout(timerRef.current);
+    if (videoRef.current) videoRef.current.pause();
+    setFadeOut(true);
+    setTimeout(() => {
+      setFadeOut(false);
+      setPhase(PHASE_SPLASH);
+      setTimeout(() => setSplashMounted(true), 60);
+      setTimeout(() => onComplete(), SPLASH_HOLD_MS);
+    }, FADE_MS);
+  }
+
+  // ── Video phase logic ─────────────────────────────────────────────────────
   useEffect(() => {
-    const holdTimer = setTimeout(() => setPhase("exit"), 4300);
-    const doneTimer = setTimeout(() => onComplete?.(), 5000);
+    if (phase !== PHASE_VIDEO_0 && phase !== PHASE_VIDEO_1) return;
+
+    const videoIndex = phase === PHASE_VIDEO_0 ? 0 : 1;
+    const nextPhase  = phase === PHASE_VIDEO_0 ? PHASE_VIDEO_1 : PHASE_SPLASH;
+    const maxDuration = VIDEOS[videoIndex].duration;
+
+    const el = videoRef.current;
+    if (!el) return;
+
+    // Fallback timer in case video fails to play or ends early
+    timerRef.current = setTimeout(() => advance(nextPhase), maxDuration + FADE_MS);
+
+    function onEnded() {
+      clearTimeout(timerRef.current);
+      advance(nextPhase);
+    }
+
+    function onError() {
+      // Silently skip this video if it fails to load
+      clearTimeout(timerRef.current);
+      advance(nextPhase);
+    }
+
+    el.addEventListener("ended", onEnded);
+    el.addEventListener("error", onError);
+
+    const playPromise = el.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Autoplay blocked (e.g. iOS before first tap) — skip to next
+        clearTimeout(timerRef.current);
+        advance(nextPhase);
+      });
+    }
+
     return () => {
-      clearTimeout(holdTimer);
-      clearTimeout(doneTimer);
+      el.removeEventListener("ended", onEnded);
+      el.removeEventListener("error", onError);
+      clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [phase]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  if (phase === PHASE_DONE) return null;
 
   return (
     <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden"
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        background: "linear-gradient(160deg, #0a0204 0%, #1a0308 40%, #2a0510 70%, #BA0C2F 200%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
-        opacity: phase === "exit" ? 0 : 1,
-        transition: phase === "exit" ? "opacity 0.7s cubic-bezier(0.4,0,0.2,1)" : "none",
+        background: "#0a0204",
+        opacity: fadeOut ? 0 : 1,
+        transition: `opacity ${FADE_MS}ms ease-in-out`,
       }}
     >
-      {/* Grain texture */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
-        opacity: 0.4,
-        pointerEvents: "none",
-      }} />
+      {/* ── Video phases ── */}
+      {(phase === PHASE_VIDEO_0 || phase === PHASE_VIDEO_1) && (() => {
+        const idx = phase === PHASE_VIDEO_0 ? 0 : 1;
+        const video = VIDEOS[idx];
+        return (
+          <>
+            {/* Video */}
+            <video
+              key={video.src}
+              ref={videoRef}
+              src={video.src}
+              muted
+              playsInline
+              preload="auto"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
 
-      {/* Top decorative line */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "1px",
-        height: "80px",
-        background: "linear-gradient(to bottom, transparent, rgba(168,153,104,0.6))",
-        animation: "slideDown 1s ease-out 0.1s both",
-      }} />
+            {/* Dark vignette overlay */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)",
+              }}
+            />
 
-      {/* Main content */}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        textAlign: "center",
-        padding: "0 32px",
-      }}>
+            {/* Bottom gradient for text legibility */}
+            <div
+              className="absolute bottom-0 left-0 right-0"
+              style={{
+                height: "200px",
+                background:
+                  "linear-gradient(to top, rgba(10,2,4,0.85) 0%, transparent 100%)",
+              }}
+            />
 
-        {/* University of Denver */}
-        <div style={{
-          fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: "15px",
-          fontWeight: "400",
-          letterSpacing: "0.45em",
-          textTransform: "uppercase",
-          color: "rgba(168,153,104,0.75)",
-          animation: "fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s both",
-        }}>
-          University of Denver
+            {/* City label — bottom left */}
+            <div className="absolute bottom-16 left-0 right-0 px-8">
+              <div
+                style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "11px",
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: "rgba(196,150,42,0.9)",
+                  marginBottom: "6px",
+                }}
+              >
+                {video.flag} {video.label}
+              </div>
+              <div
+                style={{
+                  height: "1px",
+                  width: "40px",
+                  background:
+                    "linear-gradient(to right, rgba(196,150,42,0.7), transparent)",
+                }}
+              />
+            </div>
+
+            {/* Global 84 watermark — top left */}
+            <div
+              className="absolute top-10 left-8"
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: "13px",
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.6)",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Global{" "}
+              <span
+                style={{
+                  background:
+                    "linear-gradient(135deg, #e8b84b, #f5d47a, #c4862a)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                84
+              </span>
+            </div>
+
+            {/* Skip button — top right */}
+            <button
+              onClick={handleSkip}
+              className="absolute top-10 right-6 transition-opacity hover:opacity-100"
+              style={{
+                background: "rgba(0,0,0,0.35)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "20px",
+                padding: "5px 14px",
+                color: "rgba(255,255,255,0.7)",
+                fontSize: "12px",
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              Skip ›
+            </button>
+          </>
+        );
+      })()}
+
+      {/* ── Splash animation phase ── */}
+      {phase === PHASE_SPLASH && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{
+            background:
+              "linear-gradient(175deg, #0a0204 0%, #1a0508 45%, #BA0C2F 100%)",
+          }}
+        >
+          {/* Daniels College of Business */}
+          <div
+            style={{
+              fontFamily: "Georgia, serif",
+              fontSize: "11px",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "rgba(196,150,42,0.85)",
+              opacity: splashMounted ? 1 : 0,
+              transform: splashMounted ? "translateY(0)" : "translateY(8px)",
+              transition: "opacity 0.8s ease-out, transform 0.8s ease-out",
+              transitionDelay: "0ms",
+              marginBottom: "16px",
+            }}
+          >
+            Daniels College of Business - EMBA
+          </div>
+
+          {/* Global */}
+          <div
+            style={{
+              fontFamily: "Georgia, serif",
+              fontSize: "64px",
+              fontWeight: 700,
+              color: "#ffffff",
+              lineHeight: 1,
+              letterSpacing: "-1px",
+              opacity: splashMounted ? 1 : 0,
+              transform: splashMounted ? "translateX(0)" : "translateX(-30px)",
+              transition: "opacity 0.9s ease-out, transform 0.9s ease-out",
+              transitionDelay: "200ms",
+            }}
+          >
+            Global
+          </div>
+
+          {/* 84 */}
+          <div
+            style={{
+              fontFamily: "Georgia, serif",
+              fontSize: "96px",
+              fontWeight: 700,
+              lineHeight: 1,
+              letterSpacing: "-2px",
+              background:
+                "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              opacity: splashMounted ? 1 : 0,
+              transform: splashMounted ? "translateY(0)" : "translateY(30px)",
+              transition: "opacity 1s ease-out, transform 1s ease-out",
+              transitionDelay: "350ms",
+            }}
+          >
+            84
+          </div>
+
+          {/* Diamond divider */}
+          <div
+            style={{
+              color: "rgba(196,150,42,0.7)",
+              fontSize: "10px",
+              margin: "20px 0",
+              opacity: splashMounted ? 1 : 0,
+              transition: "opacity 0.8s ease-out",
+              transitionDelay: "550ms",
+            }}
+          >
+            ◆
+          </div>
+
+          {/* Tagline line 1 */}
+          <div
+            style={{
+              fontFamily: "Georgia, serif",
+              fontSize: "14px",
+              fontStyle: "italic",
+              color: "rgba(255,248,230,0.85)",
+              opacity: splashMounted ? 1 : 0,
+              transition: "opacity 0.8s ease-out",
+              transitionDelay: "700ms",
+            }}
+          >
+            Creating Global Leaders
+          </div>
+
+          {/* Tagline line 2 */}
+          <div
+            style={{
+              fontFamily: "Georgia, serif",
+              fontSize: "13px",
+              fontStyle: "italic",
+              color: "rgba(196,150,42,0.8)",
+              marginTop: "4px",
+              opacity: splashMounted ? 1 : 0,
+              transition: "opacity 0.8s ease-out",
+              transitionDelay: "1050ms",
+            }}
+          >
+            Singapore & Vietnam
+          </div>
+
+          {/* Loading bar */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "3px",
+              background: "rgba(196,150,42,0.15)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                background:
+                  "linear-gradient(to right, #C4962A, #f5d47a, #C4962A)",
+                opacity: splashMounted ? 1 : 0,
+                transform: splashMounted ? "translateX(0%)" : "translateX(-100%)",
+                transition: `opacity 0.3s ease-out, transform ${SPLASH_HOLD_MS - 400}ms linear`,
+                transitionDelay: "400ms",
+              }}
+            />
+          </div>
         </div>
-
-        {/* GLOBAL — large hero word */}
-        <div style={{
-          fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: "clamp(72px, 18vw, 96px)",
-          fontWeight: "700",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "#FFFFFF",
-          lineHeight: 1,
-          marginTop: "16px",
-          animation: "heroReveal 1s cubic-bezier(0.16,1,0.3,1) 0.35s both",
-        }}>
-          Global
-        </div>
-
-        {/* 84 — gold gradient, massive */}
-        <div style={{
-          fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: "clamp(100px, 26vw, 140px)",
-          fontWeight: "700",
-          letterSpacing: "-0.02em",
-          lineHeight: 0.85,
-          background: "linear-gradient(135deg, #C8A84B 0%, #A89968 40%, #D4C08A 70%, #A89968 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          animation: "heroReveal 1s cubic-bezier(0.16,1,0.3,1) 0.5s both",
-        }}>
-          84
-        </div>
-
-        {/* Gold divider */}
-        <div style={{
-          marginTop: "28px",
-          display: "flex",
-          alignItems: "center",
-          gap: "14px",
-          animation: "fadeIn 0.8s ease 0.9s both",
-        }}>
-          <div style={{ width: "50px", height: "1px", background: "linear-gradient(to right, transparent, rgba(168,153,104,0.7))" }} />
-          <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#A89968" }} />
-          <div style={{ width: "50px", height: "1px", background: "linear-gradient(to left, transparent, rgba(168,153,104,0.7))" }} />
-        </div>
-
-        {/* Tagline line 1 */}
-        <div style={{
-          marginTop: "20px",
-          fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: "18px",
-          fontWeight: "400",
-          fontStyle: "italic",
-          letterSpacing: "0.08em",
-          color: "rgba(213,210,197,0.85)",
-          animation: "fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.1s both",
-        }}>
-          Creating Global Leaders
-        </div>
-
-        {/* Tagline line 2 */}
-        <div style={{
-          marginTop: "6px",
-          fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: "18px",
-          fontWeight: "400",
-          fontStyle: "italic",
-          letterSpacing: "0.08em",
-          color: "rgba(168,153,104,0.85)",
-          animation: "fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.45s both",
-        }}>
-          Singapore &amp; Vietnam
-        </div>
-
-      </div>
-
-      {/* Bottom loading bar */}
-      <div style={{
-        position: "absolute",
-        bottom: "52px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "80px",
-        height: "2px",
-        borderRadius: "2px",
-        background: "rgba(168,153,104,0.2)",
-        overflow: "hidden",
-        animation: "fadeIn 0.5s ease 1.6s both",
-      }}>
-        <div style={{
-          height: "100%",
-          background: "linear-gradient(90deg, #A89968, #D4C08A)",
-          borderRadius: "2px",
-          animation: "loadBar 3s cubic-bezier(0.4,0,0.2,1) 1.6s both",
-        }} />
-      </div>
-
-      {/* Bottom decorative line */}
-      <div style={{
-        position: "absolute",
-        bottom: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "1px",
-        height: "40px",
-        background: "linear-gradient(to top, transparent, rgba(168,153,104,0.4))",
-      }} />
-
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes heroReveal {
-          from { opacity: 0; transform: translateY(24px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes slideDown {
-          from { transform: translateX(-50%) scaleY(0); transform-origin: top; }
-          to   { transform: translateX(-50%) scaleY(1); }
-        }
-        @keyframes loadBar {
-          from { width: 0%; }
-          to   { width: 100%; }
-        }
-      `}</style>
+      )}
     </div>
   );
 }
