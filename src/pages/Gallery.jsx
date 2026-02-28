@@ -14,6 +14,9 @@ const CITIES = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Gallery({ user, isAdmin }) {
+  // Wait for Firebase Auth to resolve before rendering
+  if (!user) return null;
+
   const [activeCity, setActiveCity]     = useState("all");
   const [photos, setPhotos]             = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -22,7 +25,7 @@ export default function Gallery({ user, isAdmin }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadCity, setUploadCity]     = useState("singapore");
   const [error, setError]               = useState(null);
-  const fileInputRef                    = useRef(null);
+  const fileInputRef                 = useRef(null);
 
   // ── Subscribe to photos ───────────────────────────────────────────────────
   useEffect(() => {
