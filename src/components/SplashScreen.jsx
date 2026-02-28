@@ -131,7 +131,7 @@ export default function SplashScreen({ onComplete }) {
         <div style={{
           marginTop: "20px",
           fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: "14px",
+          fontSize: "18px",
           fontStyle: "italic",
           color: "rgba(213,210,197,0.7)",
           letterSpacing: "0.04em",
