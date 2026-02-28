@@ -162,7 +162,7 @@ export default function SplashScreen({ onComplete }) {
           height: "100%",
           background: "linear-gradient(90deg, #A89968, #D4C08A)",
           borderRadius: "2px",
-          animation: "loadBar 3.5s cubic-bezier(0.4,0,0.2,1) 1.2s both",
+          animation: "loadBar 6.5s cubic-bezier(0.4,0,0.2,1) 1.2s both",
         }} />
       </div>
 
