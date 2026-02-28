@@ -23,12 +23,18 @@ export function exploreDoc(id) {
   return doc(db, "cohorts", COHORT_ID, "explore", id);
 }
 
-export function subscribeExplore({ city, type }, cb) {
-  let q = query(exploreCol(), where("status", "==", "active"), orderBy("name", "asc"), limit(250));
+export function subscribeExplore({ city, category }, cb) {
+  // Filter by city and category in Firestore; type filtering is done client-side
+  // in the PlaceList component for instant pill-switching without extra queries.
+  const constraints = [
+    where("status", "==", "active"),
+    orderBy("name", "asc"),
+    limit(250),
+  ];
+  if (city)     constraints.unshift(where("city", "==", city));
+  if (category) constraints.unshift(where("category", "==", category));
 
-  if (city) q = query(exploreCol(), where("status", "==", "active"), where("city", "==", city), orderBy("name", "asc"), limit(250));
-  if (city && type) q = query(exploreCol(), where("status", "==", "active"), where("city", "==", city), where("type", "==", type), orderBy("name", "asc"), limit(250));
-  if (!city && type) q = query(exploreCol(), where("status", "==", "active"), where("type", "==", type), orderBy("name", "asc"), limit(250));
+  const q = query(exploreCol(), ...constraints);
 
   return onSnapshot(q, (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
@@ -56,10 +62,24 @@ function normalizeCity(s) {
 function normalizeType(s) {
   const v = (s || "").trim().toLowerCase();
   if (!v) return "";
-  if (["restaurant", "activity", "bar", "cafe"].includes(v)) return v;
-  if (v === "coffee") return "cafe";
-  if (v === "drinks") return "bar";
-  return v;
+  // Dining
+  if (v === "restaurant") return "Restaurant";
+  if (v === "coffee" || v === "cafe") return "Coffee";
+  if (v === "bar" || v === "drinks" || v === "pub") return "Bar";
+  if (v === "rooftop bar" || v === "rooftop") return "Rooftop Bar";
+  if (v === "hawker center" || v === "hawker centre" || v === "hawker" || v === "food court") return "Hawker Center";
+  // Activity
+  if (v === "museum" || v === "gallery") return "Museum";
+  if (v === "temple" || v === "church" || v === "mosque" || v === "pagoda") return "Temple";
+  if (v === "market" || v === "bazaar" || v === "night market") return "Market";
+  if (v === "shopping" || v === "mall") return "Shopping";
+  if (v === "spa" || v === "wellness" || v === "massage") return "Spa";
+  if (v === "nightlife" || v === "club" || v === "lounge") return "Nightlife";
+  if (v === "nature" || v === "park" || v === "garden") return "Nature";
+  if (v === "tour" || v === "experience") return "Tour";
+  if (v === "adventure" || v === "sport" || v === "activity") return "Adventure";
+  // Return title-cased original if no match
+  return s.trim().replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
 function normalizePrice(s) {
@@ -90,15 +110,32 @@ function makeExploreStableKey({ city, type, name }) {
   return `${city}::${type}::${normalizeName(name)}`;
 }
 
+function normalizeCategory(s) {
+  const v = (s || "").trim().toLowerCase();
+  if (v === "dining") return "dining";
+  if (v === "activity" || v === "activities") return "activity";
+  // Infer from type if category is missing
+  return "";
+}
+
+function inferCategory(type) {
+  const DINING_TYPES = ["restaurant", "coffee", "bar", "rooftop bar", "hawker center"];
+  return DINING_TYPES.includes((type || "").toLowerCase()) ? "dining" : "activity";
+}
+
 function cleanExploreRow(r) {
   const city = normalizeCity(r.city);
   const type = normalizeType(r.type);
   const name = (r.name || "").trim();
+  const rawCategory = normalizeCategory(r.category);
+  // If category column is missing or blank, infer it from type
+  const category = rawCategory || inferCategory(type);
 
   return {
     valid: !!(city && type && name),
     city,
     type,
+    category,
     name,
     neighborhood: (r.neighborhood || "").trim(),
     hours: (r.hours || "").trim(),
@@ -209,6 +246,7 @@ export async function importExploreItems(rows, options = {}) {
         {
           city: upsert.row.city,
           type: upsert.row.type,
+          category: upsert.row.category,
           name: upsert.row.name,
           neighborhood: upsert.row.neighborhood,
           hours: upsert.row.hours,
