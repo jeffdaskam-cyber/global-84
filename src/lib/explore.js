@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -36,6 +37,11 @@ export function subscribeExplore({ city, type }, cb) {
 
 export async function archiveExploreItem(id) {
   await updateDoc(exploreDoc(id), { status: "archived" });
+}
+
+// Permanently deletes a single explore item. Admin-only — enforced by Firestore rules.
+export async function deleteExploreItem(id) {
+  await deleteDoc(exploreDoc(id));
 }
 
 function normalizeCity(s) {
@@ -141,25 +147,52 @@ export async function importExploreItems(rows, options = {}) {
   const preview = getExploreImportPreview(rows);
   if (preview.validRows.length === 0) throw new Error("No valid rows found (need city, type, name).");
 
+  // Fetch ALL existing docs (not just active) so we can match and clean up
+  // legacy duplicates that predate the stableKey field.
   const existingSnap = await getDocs(exploreColRef);
+
+  // Build a map of stableKey → array of doc IDs.
+  // We keep arrays because duplicates may exist under the same key.
   const existingByKey = new Map();
   existingSnap.forEach((existingDoc) => {
     const data = existingDoc.data();
     if (!data?.city || !data?.type || !data?.name) return;
-    existingByKey.set(makeExploreStableKey(data), existingDoc.id);
+    const key = makeExploreStableKey(data);
+    if (!existingByKey.has(key)) existingByKey.set(key, []);
+    existingByKey.get(key).push(existingDoc.id);
   });
 
+  // Dedupe incoming CSV rows by stableKey (last row wins if CSV has its own dupes)
   const dedupedByKey = new Map();
   for (const row of preview.validRows) {
     dedupedByKey.set(makeExploreStableKey(row), row);
   }
 
-  const upsertRows = Array.from(dedupedByKey.entries()).map(([stableKey, row]) => ({
-    stableKey,
-    row,
-    existingId: existingByKey.get(stableKey) || null,
-  }));
+  // For each incoming key: keep the first existing doc ID to update, delete the rest
+  const upsertRows = [];
+  const idsToDelete = [];
 
+  for (const [stableKey, row] of dedupedByKey.entries()) {
+    const existingIds = existingByKey.get(stableKey) || [];
+    const [keepId, ...extraIds] = existingIds;
+    upsertRows.push({ stableKey, row, existingId: keepId || null });
+    idsToDelete.push(...extraIds);
+  }
+
+  // Delete the surplus duplicate docs first
+  let removedDuplicates = 0;
+  const DELETE_BATCH_SIZE = 500;
+  for (let i = 0; i < idsToDelete.length; i += DELETE_BATCH_SIZE) {
+    const chunk = idsToDelete.slice(i, i + DELETE_BATCH_SIZE);
+    const batch = writeBatch(db);
+    for (const id of chunk) {
+      batch.delete(doc(exploreColRef, id));
+    }
+    await batch.commit();
+    removedDuplicates += chunk.length;
+  }
+
+  // Upsert the canonical doc for each place
   const BATCH_SIZE = 10;
   let imported = 0;
   let updated = 0;
@@ -185,7 +218,7 @@ export async function importExploreItems(rows, options = {}) {
           reservationUrl: upsert.row.reservationUrl,
           notes: upsert.row.notes,
           recommendedBy: upsert.row.recommendedBy,
-          stableKey: upsert.stableKey,
+          stableKey: upsert.stableKey,  // written here so future imports always match
           status: "active",
           updatedAt: serverTimestamp(),
           updatedByUid: user.uid,
@@ -212,6 +245,7 @@ export async function importExploreItems(rows, options = {}) {
     await batch.commit();
   }
 
+  // Write import audit log
   const logRef = doc(collection(db, "cohorts", cohortId, "importLogs"));
   await writeBatch(db)
     .set(logRef, {
@@ -221,8 +255,56 @@ export async function importExploreItems(rows, options = {}) {
       importedCount: imported,
       updatedCount: updated,
       skippedCount: preview.skippedCount,
+      removedDuplicates,
     })
     .commit();
 
-  return { imported, updated, skipped: preview.skippedCount };
+  return { imported, updated, skipped: preview.skippedCount, removedDuplicates };
+}
+
+// Standalone cleanup: finds and removes duplicate docs in Firestore without
+// requiring a CSV upload. Keeps the doc with the earliest createdAt per key.
+export async function cleanupExploreDuplicates() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Not signed in.");
+
+  const cohortId = String(COHORT_ID).trim();
+  const adminRef = doc(db, "cohorts", cohortId, "admins", user.uid);
+  const adminSnap = await getDoc(adminRef);
+  const adminEnabled = !!adminSnap.exists() && adminSnap.data()?.enabled === true;
+  if (!adminEnabled) throw new Error("Admin access required.");
+
+  const exploreColRef = collection(db, "cohorts", cohortId, "explore");
+  const snap = await getDocs(exploreColRef);
+
+  // Group all docs by their stableKey (computed from city+type+name)
+  const byKey = new Map();
+  snap.forEach((d) => {
+    const data = d.data();
+    if (!data?.city || !data?.type || !data?.name) return;
+    const key = makeExploreStableKey(data);
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key).push({ id: d.id, createdAt: data.createdAt?.toMillis?.() ?? 0 });
+  });
+
+  // For each key with more than one doc, keep the oldest and delete the rest
+  const idsToDelete = [];
+  for (const docs of byKey.values()) {
+    if (docs.length <= 1) continue;
+    const sorted = [...docs].sort((a, b) => a.createdAt - b.createdAt);
+    const [, ...extras] = sorted;
+    idsToDelete.push(...extras.map((d) => d.id));
+  }
+
+  let removedDuplicates = 0;
+  const BATCH_SIZE = 500;
+  for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
+    const chunk = idsToDelete.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+    for (const id of chunk) batch.delete(doc(exploreColRef, id));
+    await batch.commit();
+    removedDuplicates += chunk.length;
+  }
+
+  return { removedDuplicates };
 }

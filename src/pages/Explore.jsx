@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { auth } from "../lib/firebase";
 import { subscribeMember } from "../lib/members";
-import { subscribeExplore } from "../lib/explore";
+import { deleteExploreItem, subscribeExplore } from "../lib/explore";
 
 const CITIES = ["Singapore", "Ho Chi Minh City"];
 const TYPES = ["all", "restaurant", "activity", "bar", "cafe"];
@@ -11,7 +11,7 @@ function labelType(t) {
   return t[0].toUpperCase() + t.slice(1);
 }
 
-export default function Explore() {
+export default function Explore({ isAdmin }) {
   const user = auth.currentUser;
 
   const [member, setMember] = useState(null);
@@ -20,6 +20,7 @@ export default function Explore() {
 
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   // member default city
   useEffect(() => {
@@ -60,6 +61,18 @@ export default function Explore() {
       return hay.includes(q);
     });
   }, [items, search]);
+
+  async function handleDelete(id, name) {
+    if (!window.confirm(`Remove "${name}" from Explore? This cannot be undone.`)) return;
+    setDeletingId(id);
+    try {
+      await deleteExploreItem(id);
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="p-5 space-y-4">
@@ -122,7 +135,7 @@ export default function Explore() {
             No results
           </div>
           <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">
-            If you’re an admin, import a CSV to populate Explore.
+            If you're an admin, import a CSV to populate Explore.
           </div>
         </div>
       ) : (
@@ -176,6 +189,18 @@ export default function Explore() {
                     >
                       Reserve
                     </a>
+                  ) : null}
+
+                  {/* Admin-only delete button */}
+                  {isAdmin ? (
+                    <button
+                      onClick={() => handleDelete(it.id, it.name)}
+                      disabled={deletingId === it.id}
+                      className="text-xs font-semibold text-ink-muted dark:text-ink-subOnDark hover:text-du-crimson dark:hover:text-du-crimson transition disabled:opacity-40"
+                      title="Remove this place"
+                    >
+                      {deletingId === it.id ? "Removing…" : "Remove"}
+                    </button>
                   ) : null}
                 </div>
               </div>

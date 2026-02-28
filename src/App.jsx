@@ -46,7 +46,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
 
-            <Route path="/explore" element={<Explore />} />
+            <Route path="/explore" element={<Explore isAdmin={isAdmin} />} />
 
             {/* Admin-only import route */}
             <Route
