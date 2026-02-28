@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { subscribePhotos, uploadPhoto, deletePhoto, toggleLike } from "../lib/gallery";
-import { subscribeMember } from "../lib/members";
+import { subscribeMember, memberDoc } from "../lib/members";
+import { getDoc } from "firebase/firestore";
 
 // ─── City tabs ────────────────────────────────────────────────────────────────
 const CITIES = [
@@ -56,12 +57,17 @@ export default function Gallery({ user, isAdmin }) {
       setUploadProgress(0);
 
       try {
+        // Read display name fresh from Firestore at upload time
+        // to avoid stale closure issues with memberDisplayName state
+        const memberSnap = await getDoc(memberDoc(user.uid));
+        const uploaderName = memberSnap.data()?.displayName || user.email;
+
         await uploadPhoto(
           file,
           {
             city: uploadCity,
             uploaderUid:  user.uid,
-            uploaderName: memberDisplayName || user.email,
+            uploaderName,
           },
           (pct) => setUploadProgress(pct)
         );
