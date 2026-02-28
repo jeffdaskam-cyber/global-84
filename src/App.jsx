@@ -6,6 +6,7 @@ import AuthGate from "./components/AuthGate.jsx";
 import Home from "./pages/Home.jsx";
 import Explore from "./pages/Explore.jsx";
 import ExploreImport from "./pages/ExploreImport.jsx";
+import Chat from "./pages/Chat.jsx";
 import Events from "./pages/Events.jsx";
 import Me from "./pages/Me.jsx";
 
@@ -60,6 +61,7 @@ export default function App() {
               }
             />
 
+            <Route path="/chat" element={<Chat isAdmin={isAdmin} />} />
             <Route path="/events" element={<Events />} />
             <Route path="/me" element={<Me />} />
 
@@ -73,6 +75,7 @@ export default function App() {
           <div className="max-w-xl mx-auto flex">
             <TabLink to="/" label="Home" />
             <TabLink to="/explore" label="Explore" />
+            <TabLink to="/chat" label="Chat" />
             <TabLink to="/events" label="Events" />
             <TabLink to="/me" label="Me" />
           </div>
