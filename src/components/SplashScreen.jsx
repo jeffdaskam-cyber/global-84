@@ -79,9 +79,9 @@ export default function SplashScreen({ onComplete }) {
           animation: "logoReveal 1s cubic-bezier(0.16,1,0.3,1) 0.3s both",
         }}>
           <img
-            src="/icons/icon-512.png"
+            src="/icons/icon-512-transparent.png"
             alt="Global 84"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: "28px" }}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           />
         </div>
 
