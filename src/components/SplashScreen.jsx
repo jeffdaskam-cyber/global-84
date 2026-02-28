@@ -4,10 +4,10 @@ export default function SplashScreen({ onComplete }) {
   const [phase, setPhase] = useState("enter"); // enter → hold → exit
 
   useEffect(() => {
-    // Hold for 2.6s then begin exit
-    const holdTimer = setTimeout(() => setPhase("exit"), 2600);
+    // Hold for 4.3s then begin exit
+    const holdTimer = setTimeout(() => setPhase("exit"), 4300);
     // After exit animation (0.7s), call onComplete
-    const doneTimer = setTimeout(() => onComplete?.(), 3300);
+    const doneTimer = setTimeout(() => onComplete?.(), 5000);
     return () => {
       clearTimeout(holdTimer);
       clearTimeout(doneTimer);
@@ -70,20 +70,18 @@ export default function SplashScreen({ onComplete }) {
         animation: "fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both",
       }}>
 
-        {/* Logo */}
+        {/* Logo — floating directly on background, no card or border */}
         <div style={{
-          width: "140px",
-          height: "140px",
-          borderRadius: "28px",
-          overflow: "hidden",
-          boxShadow: "0 0 0 1px rgba(168,153,104,0.3), 0 24px 60px rgba(0,0,0,0.6), 0 0 80px rgba(186,12,47,0.2)",
-          animation: "logoReveal 1s cubic-bezier(0.16,1,0.3,1) 0.3s both",
+          width: "160px",
+          height: "160px",
           flexShrink: 0,
+          filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.7)) drop-shadow(0 0 40px rgba(186,12,47,0.3))",
+          animation: "logoReveal 1s cubic-bezier(0.16,1,0.3,1) 0.3s both",
         }}>
           <img
             src="/icons/icon-512.png"
             alt="Global 84"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: "28px" }}
           />
         </div>
 
@@ -164,7 +162,7 @@ export default function SplashScreen({ onComplete }) {
           height: "100%",
           background: "linear-gradient(90deg, #A89968, #D4C08A)",
           borderRadius: "2px",
-          animation: "loadBar 1.8s cubic-bezier(0.4,0,0.2,1) 1.2s both",
+          animation: "loadBar 3.5s cubic-bezier(0.4,0,0.2,1) 1.2s both",
         }} />
       </div>
 
