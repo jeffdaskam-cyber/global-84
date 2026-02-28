@@ -8,7 +8,6 @@ const CITIES = [
   {
     key: "Singapore",
     label: "Singapore",
-    emoji: "🇸🇬",
     description: "The Lion City",
     bgGradient: "from-red-900 via-red-700 to-orange-500",
     bgImage: "/Singapore.jpg",
@@ -17,14 +16,13 @@ const CITIES = [
     key: "Ho Chi Minh City",
     label: "Ho Chi Minh City",
     shortLabel: "HCMC",
-    emoji: "🇻🇳",
     description: "The Pearl of the Far East",
     bgGradient: "from-yellow-800 via-red-700 to-red-900",
     bgImage: "/HCMC.jpg",
   },
 ];
 
-const DINING_TYPES   = ["Restaurant", "Coffee", "Bar", "Rooftop Bar", "Hawker Center"];
+const DINING_TYPES   = ["Restaurant", "Coffee", "Bar", "Rooftop Bar", "Hawker Stall"];
 const ACTIVITY_TYPES = ["Museum", "Temple", "Market", "Shopping", "Spa", "Nightlife", "Nature", "Tour", "Adventure"];
 
 // ── Root component ────────────────────────────────────────────────────────────
