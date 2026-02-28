@@ -16,19 +16,20 @@ import Gallery from "./pages/Gallery";
 import { subscribeIsAdmin } from "./lib/admins.js";
 import { auth } from "./lib/firebase.js";
 
-function TabLink({ to, label }) {
+function TabLink({ to, label, icon }) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex-1 text-center py-3 text-sm font-semibold transition ${
+        `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition ${
           isActive
             ? "text-du-crimson"
             : "text-ink-sub dark:text-ink-subOnDark hover:text-ink-main dark:hover:text-ink-onDark"
         }`
       }
     >
-      {label}
+      <span className="text-xl leading-none">{icon}</span>
+      <span className="text-xs font-semibold">{label}</span>
     </NavLink>
   );
 }
@@ -89,12 +90,12 @@ export default function App() {
         {/* Bottom navigation */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
           <div className="max-w-xl mx-auto flex">
-            <TabLink to="/" label="Home" />
-            <TabLink to="/explore" label="Explore" />
-            <TabLink to="/chat" label="Chat" />
-            <TabLink to="/events" label="Events" />
-            <TabLink to="/gallery" label="Gallery" />
-            <TabLink to="/me" label="Me" />
+            <TabLink to="/" label="Home" icon="🏠" />
+            <TabLink to="/explore" label="Explore" icon="🗺️" />
+            <TabLink to="/chat" label="Chat" icon="💬" />
+            <TabLink to="/events" label="Events" icon="📅" />
+            <TabLink to="/gallery" label="Gallery" icon="📷" />
+            <TabLink to="/me" label="Me" icon="👤" />
           </div>
           {/* Admin shortcut (optional): only show if admin */}
           {isAdmin ? (
