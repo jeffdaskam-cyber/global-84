@@ -14,21 +14,19 @@ const CITIES = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Gallery({ user, isAdmin }) {
-  // Wait for Firebase Auth to resolve before rendering
-  if (!user) return null;
-
   const [activeCity, setActiveCity]     = useState("all");
   const [photos, setPhotos]             = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [lightbox, setLightbox]         = useState(null); // photo object | null
+  const [lightbox, setLightbox]         = useState(null);
   const [uploading, setUploading]       = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadCity, setUploadCity]     = useState("singapore");
   const [error, setError]               = useState(null);
-  const fileInputRef                 = useRef(null);
+  const fileInputRef                    = useRef(null);
 
   // ── Subscribe to photos ───────────────────────────────────────────────────
   useEffect(() => {
+    if (!user) return;
     setLoading(true);
     const city = activeCity === "all" ? null : activeCity;
     const unsub = subscribePhotos((data) => {
@@ -36,7 +34,10 @@ export default function Gallery({ user, isAdmin }) {
       setLoading(false);
     }, city);
     return unsub;
-  }, [activeCity]);
+  }, [activeCity, user]);
+
+  // Wait for Firebase Auth to resolve before rendering anything
+  if (!user) return null;
 
   // ── Upload handler ────────────────────────────────────────────────────────
   const handleFileChange = useCallback(
