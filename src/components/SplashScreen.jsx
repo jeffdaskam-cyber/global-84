@@ -72,10 +72,10 @@ export default function SplashScreen({ onComplete }) {
 
         {/* Logo */}
         <div style={{
-          width: "200px",
-          height: "200px",
+          width: "240px",
+          height: "240px",
           flexShrink: 0,
-          filter: "drop-shadow(0 8px 32px rgba(168,153,104,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))",
+          filter: "drop-shadow(0 0 30px rgba(168,153,104,0.6)) drop-shadow(0 16px 40px rgba(0,0,0,0.8))",
           animation: "logoReveal 1s cubic-bezier(0.16,1,0.3,1) 0.3s both",
         }}>
           <img
@@ -131,7 +131,7 @@ export default function SplashScreen({ onComplete }) {
         <div style={{
           marginTop: "20px",
           fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: "18px",
+          fontSize: "14px",
           fontStyle: "italic",
           color: "rgba(213,210,197,0.7)",
           letterSpacing: "0.04em",
@@ -162,7 +162,7 @@ export default function SplashScreen({ onComplete }) {
           height: "100%",
           background: "linear-gradient(90deg, #A89968, #D4C08A)",
           borderRadius: "2px",
-          animation: "loadBar 6.5s cubic-bezier(0.4,0,0.2,1) 1.2s both",
+          animation: "loadBar 3.5s cubic-bezier(0.4,0,0.2,1) 1.2s both",
         }} />
       </div>
 
