@@ -131,7 +131,7 @@ export default function SplashScreen({ onComplete }) {
             }}>
               <div style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "22px",
+                fontSize: "20px",
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
                 color: "rgba(196,150,42,0.9)",
@@ -209,13 +209,7 @@ export default function SplashScreen({ onComplete }) {
               transition: "opacity 1s ease-out 0.35s, transform 1s ease-out 0.35s",
             }}>84</div>
 
-            <div style={{
-              color: "rgba(196,150,42,0.7)", fontSize: "10px", margin: "20px 0",
-              opacity: splashMounted ? 1 : 0,
-              transition: "opacity 0.8s ease-out 0.55s",
-            }}>◆</div>
-
-            <div style={{
+             <div style={{
               fontFamily: "Georgia, serif", fontSize: "18px", fontStyle: "italic",
               color: "rgba(255,248,230,0.85)",
               opacity: splashMounted ? 1 : 0,
@@ -223,7 +217,13 @@ export default function SplashScreen({ onComplete }) {
             }}>Creating Global Leaders</div>
 
             <div style={{
-              fontFamily: "Georgia, serif", fontSize: "20px", fontStyle: "italic",
+              color: "rgba(196,150,42,0.7)", fontSize: "12px", margin: "20px 0",
+              opacity: splashMounted ? 1 : 0,
+              transition: "opacity 0.8s ease-out 0.55s",
+            }}>◆</div>
+
+            <div style={{
+              fontFamily: "Georgia, serif", fontSize: "22px", fontStyle: "italic",
               color: "rgba(196,150,42,0.8)", marginTop: "8px",
               opacity: splashMounted ? 1 : 0,
               transition: "opacity 0.8s ease-out 1.05s",
