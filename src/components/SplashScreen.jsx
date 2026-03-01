@@ -131,7 +131,7 @@ export default function SplashScreen({ onComplete }) {
             }}>
               <div style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "11px",
+                fontSize: "16px",
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
                 color: "rgba(196,150,42,0.9)",
@@ -147,7 +147,7 @@ export default function SplashScreen({ onComplete }) {
 
             <div className="absolute top-10 left-8" style={{
               fontFamily: "Georgia, serif",
-              fontSize: "13px", fontWeight: 700,
+              fontSize: "16px", fontWeight: 700,
               color: "rgba(255,255,255,0.55)",
               letterSpacing: "0.05em",
               opacity: 0,
@@ -187,15 +187,15 @@ export default function SplashScreen({ onComplete }) {
               letterSpacing: "0.22em", textTransform: "uppercase",
               color: "rgba(196,150,42,0.85)", marginBottom: "16px",
               opacity: splashMounted ? 1 : 0,
-              transform: splashMounted ? "translateY(0)" : "translateY(8px)",
+              transform: splashMounted ? "translateY(0)" : "translateY(12px)",
               transition: "opacity 0.8s ease-out, transform 0.8s ease-out",
-            }}>University of Denver</div>
+            }}>Daniels College of Business - EMBA</div>
 
             <div style={{
               fontFamily: "Georgia, serif", fontSize: "64px", fontWeight: 700,
               color: "#ffffff", lineHeight: 1, letterSpacing: "-1px",
               opacity: splashMounted ? 1 : 0,
-              transform: splashMounted ? "translateX(0)" : "translateX(-30px)",
+              transform: splashMounted ? "translateX(0)" : "translateX(-26px)",
               transition: "opacity 0.9s ease-out 0.2s, transform 0.9s ease-out 0.2s",
             }}>Global</div>
 
@@ -205,7 +205,7 @@ export default function SplashScreen({ onComplete }) {
               background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
               opacity: splashMounted ? 1 : 0,
-              transform: splashMounted ? "translateY(0)" : "translateY(30px)",
+              transform: splashMounted ? "translateY(0)" : "translateY(26px)",
               transition: "opacity 1s ease-out 0.35s, transform 1s ease-out 0.35s",
             }}>84</div>
 
@@ -216,14 +216,14 @@ export default function SplashScreen({ onComplete }) {
             }}>◆</div>
 
             <div style={{
-              fontFamily: "Georgia, serif", fontSize: "14px", fontStyle: "italic",
+              fontFamily: "Georgia, serif", fontSize: "18px", fontStyle: "italic",
               color: "rgba(255,248,230,0.85)",
               opacity: splashMounted ? 1 : 0,
               transition: "opacity 0.8s ease-out 0.7s",
             }}>Creating Global Leaders</div>
 
             <div style={{
-              fontFamily: "Georgia, serif", fontSize: "13px", fontStyle: "italic",
+              fontFamily: "Georgia, serif", fontSize: "16px", fontStyle: "italic",
               color: "rgba(196,150,42,0.8)", marginTop: "4px",
               opacity: splashMounted ? 1 : 0,
               transition: "opacity 0.8s ease-out 1.05s",
