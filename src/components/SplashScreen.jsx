@@ -131,7 +131,7 @@ export default function SplashScreen({ onComplete }) {
             }}>
               <div style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "16px",
+                fontSize: "24px",
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
                 color: "rgba(196,150,42,0.9)",
@@ -140,15 +140,15 @@ export default function SplashScreen({ onComplete }) {
                 {photo.flag}&nbsp;&nbsp;{photo.label}
               </div>
               <div style={{
-                height: "1px", width: "44px",
+                height: "1px", width: "110px",
                 background: "linear-gradient(to right, rgba(196,150,42,0.8), transparent)",
               }} />
             </div>
 
             <div className="absolute top-10 left-8" style={{
               fontFamily: "Georgia, serif",
-              fontSize: "24px", fontWeight: 700,
-              color: "rgba(255,255,255,0.55)",
+              fontSize: "32px", fontWeight: 700,
+              color: "#ffffff)",
               letterSpacing: "0.05em",
               opacity: 0,
               animation: "fadeIn 0.6s ease-out 0.2s forwards",

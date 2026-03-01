@@ -187,8 +187,8 @@ export default function Home() {
 
           {/* Line 3: Creating Global Leaders */}
           <p className="mt-2 transition-all duration-700 ease-out" style={{
-            fontFamily: "Georgia, serif", fontSize: "16px",
-            fontStyle: "italic, bold", color: "#ffffff",
+            fontFamily: "Georgia, serif", fontSize: "18px",
+            fontStyle: "italic", color: "#ffffff",
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(8px)",
             transitionDelay: "160ms",
@@ -212,9 +212,9 @@ export default function Home() {
             transform: mounted ? "translateY(0)" : "translateY(10px)",
             transitionDelay: "320ms",
           }}>
-            <span style={{ fontSize: "16px", color: "rgba(#ffffff)" }}>Singapore</span>
-            <span style={{ color: "rgba(#ffffff)", fontSize: "9px" }}>◆</span>
-            <span style={{ fontSize: "16px", color: "rgba(#ffffff)" }}>Vietnam</span>
+            <span style={{ fontSize: "16px", color: "#ffffff" }}>Singapore</span>
+            <span style={{ color: "#ffffff", fontSize: "9px" }}>◆</span>
+            <span style={{ fontSize: "16px", color: "#ffffff" }}>Vietnam</span>
           </div>
         </div>
       </div>
