@@ -2,6 +2,7 @@
 // Navigation flow: City cards → Dining/Activity → Type filter → List
 import { useState, useEffect, useMemo } from "react";
 import { subscribeExplore, deleteExploreItem } from "../lib/explore";
+import { subscribeFavorites, toggleFavorite } from "../lib/favorites";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CITIES = [
@@ -28,6 +29,12 @@ const ACTIVITY_TYPES = ["Museum", "Temple", "Market", "Shopping", "Spa", "Nightl
 // ── Root component ────────────────────────────────────────────────────────────
 export default function Explore({ isAdmin }) {
   const [nav, setNav] = useState(null);
+  const [favorites, setFavorites] = useState(new Set());
+
+  useEffect(() => {
+    const unsub = subscribeFavorites(setFavorites);
+    return () => unsub();
+  }, []);
 
   if (!nav) return <CityPicker isAdmin={isAdmin} onSelect={(city) => setNav({ city })} />;
   if (!nav.category) return (
@@ -42,6 +49,7 @@ export default function Explore({ isAdmin }) {
       city={nav.city}
       category={nav.category}
       isAdmin={isAdmin}
+      favorites={favorites}
       onBack={() => setNav({ city: nav.city })}
     />
   );
@@ -156,12 +164,13 @@ function CategoryPicker({ city, onSelect, onBack }) {
 }
 
 // ── Step 3: Place list with type filter ───────────────────────────────────────
-function PlaceList({ city, category, isAdmin, onBack }) {
-  const [items, setItems]           = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [activeType, setActiveType] = useState("All");
-  const [search, setSearch]         = useState("");
-  const [deleting, setDeleting]     = useState(null);
+function PlaceList({ city, category, isAdmin, favorites, onBack }) {
+  const [items, setItems]             = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [activeType, setActiveType]   = useState("All");
+  const [search, setSearch]           = useState("");
+  const [deleting, setDeleting]       = useState(null);
+  const [showFavOnly, setShowFavOnly] = useState(false);
 
   const cityData = CITIES.find((c) => c.key === city);
   const typeList = category === "dining" ? DINING_TYPES : ACTIVITY_TYPES;
@@ -188,11 +197,29 @@ function PlaceList({ city, category, isAdmin, onBack }) {
     return result;
   }, [items, activeType, search]);
 
+  // Split into favorited and non-favorited
+  const favoritedItems = filtered.filter((i) => favorites.has(i.id));
+  const otherItems     = filtered.filter((i) => !favorites.has(i.id));
+  const visibleOthers  = showFavOnly ? [] : otherItems;
+
   async function handleDelete(id) {
     if (!window.confirm("Remove this place? This cannot be undone.")) return;
     setDeleting(id);
     try { await deleteExploreItem(id); }
     finally { setDeleting(null); }
+  }
+
+  function renderCard(item) {
+    return (
+      <PlaceCard
+        key={item.id}
+        item={item}
+        isAdmin={isAdmin}
+        isFavorited={favorites.has(item.id)}
+        deleting={deleting === item.id}
+        onDelete={() => handleDelete(item.id)}
+      />
+    );
   }
 
   return (
@@ -211,13 +238,30 @@ function PlaceList({ city, category, isAdmin, onBack }) {
             </span>
           </h1>
         </div>
-        <input
-          type="text"
-          placeholder="Search places..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-crimson mb-3"
-        />
+
+        {/* Search + Favorites toggle */}
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="Search places..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-crimson"
+          />
+          <button
+            onClick={() => setShowFavOnly((v) => !v)}
+            title={showFavOnly ? "Show all" : "Show favorites only"}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
+              showFavOnly
+                ? "bg-amber-400 border-amber-400 text-white"
+                : "border-surface-border dark:border-surface-darkBorder text-ink-sub dark:text-ink-subOnDark hover:border-amber-400 hover:text-amber-500"
+            }`}
+          >
+            <span>{showFavOnly ? "★" : "☆"}</span>
+            <span className="hidden sm:inline">Favorites</span>
+          </button>
+        </div>
+
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {["All", ...typeList].map((t) => (
             <button
@@ -248,15 +292,35 @@ function PlaceList({ city, category, isAdmin, onBack }) {
             {items.length === 0 ? "No places added yet." : "No results match your search."}
           </div>
         ) : (
-          filtered.map((item) => (
-            <PlaceCard
-              key={item.id}
-              item={item}
-              isAdmin={isAdmin}
-              deleting={deleting === item.id}
-              onDelete={() => handleDelete(item.id)}
-            />
-          ))
+          <>
+            {/* ── Favorites section ── */}
+            {favoritedItems.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-amber-500 uppercase tracking-wide">★ My Favorites</span>
+                  <div className="flex-1 h-px bg-amber-200 dark:bg-amber-900/40" />
+                </div>
+                {favoritedItems.map(renderCard)}
+              </div>
+            )}
+
+            {/* ── Divider between sections ── */}
+            {favoritedItems.length > 0 && visibleOthers.length > 0 && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark uppercase tracking-wide">All Places</span>
+                <div className="flex-1 h-px bg-surface-border dark:bg-surface-darkBorder" />
+              </div>
+            )}
+
+            {/* ── Empty state when filter is on and nothing saved ── */}
+            {showFavOnly && favoritedItems.length === 0 ? (
+              <div className="text-center py-16 text-ink-sub dark:text-ink-subOnDark text-sm">
+                No favorites saved yet. Tap ☆ on any place to save it.
+              </div>
+            ) : (
+              visibleOthers.map(renderCard)
+            )}
+          </>
         )}
       </div>
     </div>
@@ -264,8 +328,18 @@ function PlaceList({ city, category, isAdmin, onBack }) {
 }
 
 // ── Place card ────────────────────────────────────────────────────────────────
-function PlaceCard({ item, isAdmin, deleting, onDelete }) {
-  const [expanded, setExpanded] = useState(false);
+function PlaceCard({ item, isAdmin, isFavorited, deleting, onDelete }) {
+  const [expanded, setExpanded]   = useState(false);
+  const [toggling, setToggling]   = useState(false);
+
+  async function handleFavorite(e) {
+    e.stopPropagation();
+    if (toggling) return;
+    setToggling(true);
+    try { await toggleFavorite(item.id, isFavorited); }
+    finally { setToggling(false); }
+  }
+
   return (
     <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-sm overflow-hidden">
       <div className="p-4 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
@@ -283,7 +357,20 @@ function PlaceCard({ item, isAdmin, deleting, onDelete }) {
               {item.hours && <><span>·</span><span>{item.hours}</span></>}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Star favorite button */}
+            <button
+              onClick={handleFavorite}
+              disabled={toggling}
+              title={isFavorited ? "Remove from favorites" : "Save to favorites"}
+              className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
+                isFavorited
+                  ? "text-amber-400 hover:text-amber-500"
+                  : "text-ink-sub dark:text-ink-subOnDark hover:text-amber-400"
+              }`}
+            >
+              <span className="text-lg leading-none">{isFavorited ? "★" : "☆"}</span>
+            </button>
             {isAdmin && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
