@@ -146,14 +146,14 @@ export default function Home() {
 
         <div className="relative px-6 pt-10 pb-8">
           <p className="transition-all duration-700 ease-out" style={{
-            fontFamily: "Georgia, serif", fontSize: "10px",
+            fontFamily: "Georgia, serif", fontSize: "12px",
             letterSpacing: "0.22em", textTransform: "uppercase",
             color: "rgba(196,150,42,0.85)",
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(6px)",
             transitionDelay: "0ms",
           }}>
-            University of Denver
+            Daniels College of Business - EMBA
           </p>
 
           <div className="flex items-baseline gap-3 mt-2 transition-all duration-700 ease-out" style={{
@@ -200,7 +200,7 @@ export default function Home() {
             transitionDelay: "320ms",
           }}>
             <p style={{
-              fontFamily: "Georgia, serif", fontSize: "12px",
+              fontFamily: "Georgia, serif", fontSize: "16px",
               fontStyle: "italic", color: "rgba(255,255,255,0.4)",
             }}>Creating Global Leaders</p>
             {isAdmin && (
