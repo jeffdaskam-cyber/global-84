@@ -123,7 +123,7 @@ export default function Home() {
   return (
     <div>
       {/* ── Hero Banner ── */}
-      <div className="relative overflow-hidden" style={{ minHeight: "232px" }}>
+      <div className="relative overflow-hidden" style={{ minHeight: "220px" }}>
         <div className="absolute inset-0" style={{
           background: "linear-gradient(150deg, #0d0103 0%, #1c0408 35%, #BA0C2F 72%, #8a0a22 100%)",
         }} />
@@ -147,7 +147,7 @@ export default function Home() {
         <div className="relative px-6 pt-8 pb-6">
           {/* Line 1: Daniels College of Business - EMBA */}
           <p className="transition-all duration-700 ease-out" style={{
-            fontFamily: "Georgia, serif", fontSize: "12px",
+            fontFamily: "Georgia, serif", fontSize: "10px",
             letterSpacing: "0.22em", textTransform: "uppercase",
             color: "rgba(196,150,42,0.85)",
             opacity: mounted ? 1 : 0,
@@ -191,7 +191,7 @@ export default function Home() {
             transformOrigin: "left center", transitionDelay: "240ms",
           }}>
             <div style={{
-              height: "2px", width: "52px", borderRadius: "2px",
+              height: "2px", width: "82px", borderRadius: "2px",
               background: "linear-gradient(to right, #C4962A, rgba(196,150,42,0.25))",
             }} />
           </div>
@@ -202,9 +202,9 @@ export default function Home() {
             transform: mounted ? "translateY(0)" : "translateY(10px)",
             transitionDelay: "320ms",
           }}>
-            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>Singapore</span>
+            <span style={{ fontSize: "16px", color: "rgba(255,255,255,0.65)" }}>Singapore</span>
             <span style={{ color: "rgba(196,150,42,0.5)", fontSize: "8px" }}>◆</span>
-            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>Vietnam</span>
+            <span style={{ fontSize: "16px", color: "rgba(255,255,255,0.65)" }}>Vietnam</span>
           </div>
         </div>
       </div>
