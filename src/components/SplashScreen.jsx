@@ -147,7 +147,7 @@ export default function SplashScreen({ onComplete }) {
 
             <div className="absolute top-10 left-8" style={{
               fontFamily: "Georgia, serif",
-              fontSize: "16px", fontWeight: 700,
+              fontSize: "24px", fontWeight: 700,
               color: "rgba(255,255,255,0.55)",
               letterSpacing: "0.05em",
               opacity: 0,
@@ -183,7 +183,7 @@ export default function SplashScreen({ onComplete }) {
             background: "linear-gradient(175deg, #0a0204 0%, #1a0508 45%, #BA0C2F 100%)",
           }}>
             <div style={{
-              fontFamily: "Georgia, serif", fontSize: "11px",
+              fontFamily: "Georgia, serif", fontSize: "16px",
               letterSpacing: "0.22em", textTransform: "uppercase",
               color: "rgba(196,150,42,0.85)", marginBottom: "16px",
               opacity: splashMounted ? 1 : 0,
@@ -223,8 +223,8 @@ export default function SplashScreen({ onComplete }) {
             }}>Creating Global Leaders</div>
 
             <div style={{
-              fontFamily: "Georgia, serif", fontSize: "16px", fontStyle: "italic",
-              color: "rgba(196,150,42,0.8)", marginTop: "4px",
+              fontFamily: "Georgia, serif", fontSize: "20px", fontStyle: "italic",
+              color: "rgba(196,150,42,0.8)", marginTop: "8px",
               opacity: splashMounted ? 1 : 0,
               transition: "opacity 0.8s ease-out 1.05s",
             }}>Singapore & Vietnam</div>
