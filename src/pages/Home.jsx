@@ -123,7 +123,7 @@ export default function Home() {
   return (
     <div>
       {/* ── Hero Banner ── */}
-      <div className="relative overflow-hidden" style={{ minHeight: "272px" }}>
+      <div className="relative overflow-hidden" style={{ minHeight: "232px" }}>
         <div className="absolute inset-0" style={{
           background: "linear-gradient(150deg, #0d0103 0%, #1c0408 35%, #BA0C2F 72%, #8a0a22 100%)",
         }} />
@@ -144,7 +144,8 @@ export default function Home() {
           background: "linear-gradient(to bottom, transparent, rgba(13,1,3,0.15))",
         }} />
 
-        <div className="relative px-6 pt-10 pb-8">
+        <div className="relative px-6 pt-8 pb-6">
+          {/* Line 1: Daniels College of Business - EMBA */}
           <p className="transition-all duration-700 ease-out" style={{
             fontFamily: "Georgia, serif", fontSize: "12px",
             letterSpacing: "0.22em", textTransform: "uppercase",
@@ -156,6 +157,7 @@ export default function Home() {
             Daniels College of Business - EMBA
           </p>
 
+          {/* Line 2: Global 84 */}
           <div className="flex items-baseline gap-3 mt-2 transition-all duration-700 ease-out" style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(14px)",
@@ -173,17 +175,17 @@ export default function Home() {
             }}>84</span>
           </div>
 
-          <div className="flex items-center gap-2 mt-3 transition-all duration-700 ease-out" style={{
+          {/* Line 3: Creating Global Leaders */}
+          <p className="mt-2 transition-all duration-700 ease-out" style={{
+            fontFamily: "Georgia, serif", fontSize: "16px",
+            fontStyle: "italic", color: "rgba(255,255,255,0.4)",
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(10px)",
+            transform: mounted ? "translateY(0)" : "translateY(8px)",
             transitionDelay: "160ms",
-          }}>
-            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>🇸🇬 Singapore</span>
-            <span style={{ color: "rgba(196,150,42,0.5)", fontSize: "8px" }}>◆</span>
-            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>🇻🇳 Vietnam</span>
-          </div>
+          }}>Creating Global Leaders</p>
 
-          <div className="mt-4 transition-all duration-700 ease-out" style={{
+          {/* Line 4: Gold accent line */}
+          <div className="mt-3 transition-all duration-700 ease-out" style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "scaleX(1)" : "scaleX(0)",
             transformOrigin: "left center", transitionDelay: "240ms",
@@ -194,28 +196,15 @@ export default function Home() {
             }} />
           </div>
 
-          <div className="flex items-end justify-between mt-3 transition-all duration-700 ease-out" style={{
+          {/* Line 5: Singapore ◆ Vietnam */}
+          <div className="flex items-center gap-2 mt-3 transition-all duration-700 ease-out" style={{
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(8px)",
+            transform: mounted ? "translateY(0)" : "translateY(10px)",
             transitionDelay: "320ms",
           }}>
-            <p style={{
-              fontFamily: "Georgia, serif", fontSize: "16px",
-              fontStyle: "italic", color: "rgba(255,255,255,0.4)",
-            }}>Creating Global Leaders</p>
-            {isAdmin && (
-              <button
-                className="rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
-                style={{
-                  padding: "8px 16px",
-                  background: "linear-gradient(135deg, #C4962A 0%, #a07820 100%)",
-                  color: "#0d0103", fontWeight: 700,
-                }}
-                onClick={() => setOpenNew(true)}
-              >
-                + Announce
-              </button>
-            )}
+            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>Singapore</span>
+            <span style={{ color: "rgba(196,150,42,0.5)", fontSize: "8px" }}>◆</span>
+            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>Vietnam</span>
           </div>
         </div>
       </div>
@@ -226,10 +215,25 @@ export default function Home() {
       </div>
 
       {/* ── Announcements ── */}
-      <div className="p-6 space-y-4 bg-surface-light dark:bg-surface-dark" style={{ minHeight: "calc(100vh - 272px - 120px)" }}>
-        <div>
-          <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Announcements</div>
-          <div className="text-xs text-ink-sub dark:text-ink-subOnDark">Pinned items appear first.</div>
+      <div className="p-6 space-y-4 bg-surface-light dark:bg-surface-dark" style={{ minHeight: "calc(100vh - 232px - 120px)" }}>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Announcements</div>
+            <div className="text-xs text-ink-sub dark:text-ink-subOnDark">Pinned items appear first.</div>
+          </div>
+          {isAdmin && (
+            <button
+              className="rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+              style={{
+                padding: "6px 14px",
+                background: "linear-gradient(135deg, #C4962A 0%, #a07820 100%)",
+                color: "#0d0103", fontWeight: 700,
+              }}
+              onClick={() => setOpenNew(true)}
+            >
+              + Announce
+            </button>
+          )}
         </div>
 
         {items.length === 0 ? (
