@@ -56,7 +56,7 @@ function WeatherWidget() {
   }, []);
 
   return (
-    <div className="px-6 pb-4">
+    <div className="px-6 pt-4 pb-2">
       <div className="flex gap-3">
         {WEATHER_CITIES.map((city, i) => {
           const w    = weather[i];
@@ -64,28 +64,28 @@ function WeatherWidget() {
           return (
             <div
               key={city.label}
-              className="flex-1 bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card px-4 py-3"
+              className="flex-1 bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card px-3 py-2"
             >
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-sm">{city.flag}</span>
-                <span className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark">
-                  {city.label}
-                </span>
-              </div>
               {loading || !w ? (
-                <div className="h-8 w-16 rounded bg-surface-border dark:bg-surface-darkBorder animate-pulse" />
+                <div className="h-5 w-16 rounded bg-surface-border dark:bg-surface-darkBorder animate-pulse" />
               ) : (
-                <>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl">{desc.emoji}</span>
-                    <span className="text-2xl font-bold text-ink-main dark:text-ink-onDark">
-                      {w.tempF}°F
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">{city.flag}</span>
+                    <span className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark">
+                      {city.label}
                     </span>
                   </div>
-                  <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark">
-                    {desc.condition}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">{desc.emoji}</span>
+                    <span className="text-sm font-bold text-ink-main dark:text-ink-onDark">
+                      {w.tempF}°F
+                    </span>
+                    <span className="text-xs text-ink-sub dark:text-ink-subOnDark">
+                      {desc.condition}
+                    </span>
                   </div>
-                </>
+                </div>
               )}
             </div>
           );
@@ -217,6 +217,11 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── Weather widget ── */}
+      <div className="bg-surface-light dark:bg-surface-dark">
+        <WeatherWidget />
+      </div>
+
       {/* ── Announcements ── */}
       <div className="p-6 space-y-4 bg-surface-light dark:bg-surface-dark" style={{ minHeight: "calc(100vh - 272px - 120px)" }}>
         <div>
@@ -238,11 +243,6 @@ export default function Home() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* ── Weather widget — sits just above the nav bar ── */}
-      <div className="bg-surface-light dark:bg-surface-dark">
-        <WeatherWidget />
       </div>
 
       <AnnouncementEditorModal open={openNew} onClose={() => setOpenNew(false)} />
