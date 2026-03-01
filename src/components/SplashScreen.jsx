@@ -183,7 +183,7 @@ export default function SplashScreen({ onComplete }) {
             background: "linear-gradient(175deg, #0a0204 0%, #1a0508 45%, #BA0C2F 100%)",
           }}>
             <div style={{
-              fontFamily: "Georgia, serif", fontSize: "16px",
+              fontFamily: "Georgia, serif", fontSize: "12px",
               letterSpacing: "0.22em", textTransform: "uppercase",
               color: "rgba(196,150,42,0.85)", marginBottom: "16px",
               opacity: splashMounted ? 1 : 0,

@@ -29,7 +29,7 @@ const ACTIVITY_TYPES = ["Museum", "Temple", "Market", "Shopping", "Spa", "Nightl
 export default function Explore({ isAdmin }) {
   const [nav, setNav] = useState(null);
 
-  if (!nav) return <CityPicker onSelect={(city) => setNav({ city })} />;
+  if (!nav) return <CityPicker isAdmin={isAdmin} onSelect={(city) => setNav({ city })} />;
   if (!nav.category) return (
     <CategoryPicker
       city={nav.city}
@@ -48,7 +48,7 @@ export default function Explore({ isAdmin }) {
 }
 
 // ── Step 1: City cards ────────────────────────────────────────────────────────
-function CityPicker({ onSelect }) {
+function CityPicker({ isAdmin, onSelect }) {
   return (
     <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
       <div className="px-4 pt-6 pb-4">
@@ -82,6 +82,16 @@ function CityPicker({ onSelect }) {
             </div>
           </button>
         ))}
+
+        {/* Admin import link — only visible to admins, only on this screen */}
+        {isAdmin && (
+          <a
+            href="/explore-import"
+            className="block w-full text-center rounded-lg border border-surface-border dark:border-surface-darkBorder text-ink-sub dark:text-ink-subOnDark px-3 py-2 text-xs font-semibold hover:bg-surface-border/40 dark:hover:bg-surface-darkBorder/60 transition"
+          >
+            Admin: Import Explore CSV
+          </a>
+        )}
       </div>
     </div>
   );

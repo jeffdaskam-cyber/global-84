@@ -97,23 +97,7 @@ export default function App() {
             <TabLink to="/gallery" label="Gallery" icon="📷" />
             <TabLink to="/me" label="Me" icon="👤" />
           </div>
-          {/* Admin shortcut (optional): only show if admin */}
-          {isAdmin ? (
-            <div className="max-w-xl mx-auto px-3 pb-3">
-              <NavLink
-                to="/explore-import"
-                className={({ isActive }) =>
-                  `block w-full text-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                    isActive
-                      ? "border-du-crimson text-du-crimson"
-                      : "border-surface-border dark:border-surface-darkBorder text-ink-sub dark:text-ink-subOnDark hover:bg-surface-border/40 dark:hover:bg-surface-darkBorder/60"
-                  }`
-                }
-              >
-                Admin: Import Explore CSV
-              </NavLink>
-            </div>
-          ) : null}
+
         </div>
       </div>
     </AuthGate>
