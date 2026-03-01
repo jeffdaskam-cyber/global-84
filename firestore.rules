@@ -4,11 +4,9 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
-
     function isSelf(uid) {
       return signedIn() && request.auth.uid == uid;
     }
-
     function isAdmin(cohortId) {
       return signedIn()
         && get(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid)).data.enabled == true;
@@ -45,7 +43,6 @@ service cloud.firestore {
       // Explore items (admins manage; all signed-in users can read)
       match /explore/{id} {
         allow read: if signedIn();
-        // Keep create rule minimal to match app expectation exactly
         allow create: if isAdmin(cohortId);
         allow update, delete: if isAdmin(cohortId);
       }
@@ -63,6 +60,32 @@ service cloud.firestore {
           allow create, update: if isSelf(uid);
           allow delete: if isSelf(uid) || isAdmin(cohortId);
         }
+      }
+
+      // Group chat
+      match /messages/{messageId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.createdByUid == request.auth.uid
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 1000;
+        allow delete: if isAdmin(cohortId);
+        allow update: if false;
+      }
+
+      // Photos (any signed-in user can read; uploader can create; admin can delete)
+      match /photos/{photoId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.uploaderUid == request.auth.uid;
+        allow update: if signedIn()
+          && resource.data.uploaderUid == request.auth.uid;
+        allow delete: if isAdmin(cohortId);
+      }
+
+      // Import logs (admin only)
+      match /importLogs/{logId} {
+        allow read, write: if isAdmin(cohortId);
       }
     }
   }
