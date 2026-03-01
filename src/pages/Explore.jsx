@@ -16,7 +16,6 @@ const CITIES = [
   {
     key: "Ho Chi Minh City",
     label: "Ho Chi Minh City",
-    shortLabel: "HCMC",
     description: "The Pearl of the Far East",
     bgGradient: "from-yellow-800 via-red-700 to-red-900",
     bgImage: "/HCMC.jpg",
