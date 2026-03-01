@@ -6,8 +6,8 @@ import { subscribeIsAdmin } from "../lib/admins";
 
 // ── Weather ───────────────────────────────────────────────────────────────────
 const WEATHER_CITIES = [
-  { label: "Singapore", flag: "🇸🇬", lat: 1.3521,  lon: 103.8198, tz: "Asia/Singapore" },
-  { label: "HCMC",      flag: "🇻🇳", lat: 10.8231, lon: 106.6297, tz: "Asia/Ho_Chi_Minh" },
+  { label: "Singapore", lat: 1.3521,  lon: 103.8198, tz: "Asia/Singapore" },
+  { label: "HCMC",      lat: 10.8231, lon: 106.6297, tz: "Asia/Ho_Chi_Minh" },
 ];
 
 function describeCode(code) {
@@ -43,7 +43,7 @@ function localTime(tz) {
 function WeatherWidget() {
   const [weather, setWeather] = useState([null, null]);
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(new Date());
+  const [, setNow] = useState(new Date());
 
   useEffect(() => {
     let cancelled = false;
@@ -59,10 +59,7 @@ function WeatherWidget() {
     }
     load();
     const weatherInterval = setInterval(load, 30 * 60 * 1000);
-
-    // Tick every minute to keep local times current
     const clockInterval = setInterval(() => setNow(new Date()), 60 * 1000);
-
     return () => { cancelled = true; clearInterval(weatherInterval); clearInterval(clockInterval); };
   }, []);
 
@@ -85,7 +82,6 @@ function WeatherWidget() {
               ) : (
                 <>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs">{city.flag}</span>
                     <span className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark">
                       {city.label}
                     </span>
