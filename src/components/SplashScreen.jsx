@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 const PHOTOS = [
   { src: "/splash-singapore.jpg", label: "Singapore",        flag: "🇸🇬" },
-  { src: "/splash-HCMC.jpg",      label: "Ho Chi Minh City", flag: "🇻🇳" },
+  { src: "/splash-hcmc.jpg",      label: "Ho Chi Minh City", flag: "🇻🇳" },
 ];
 
 const PHOTO_HOLD_MS  = 3000;
