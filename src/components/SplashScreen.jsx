@@ -131,7 +131,7 @@ export default function SplashScreen({ onComplete }) {
             }}>
               <div style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "24px",
+                fontSize: "22px",
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
                 color: "rgba(196,150,42,0.9)",
@@ -148,7 +148,7 @@ export default function SplashScreen({ onComplete }) {
             <div className="absolute top-10 left-8" style={{
               fontFamily: "Georgia, serif",
               fontSize: "32px", fontWeight: 700,
-              color: "#ffffff)",
+              color: "#ffffff",
               letterSpacing: "0.05em",
               opacity: 0,
               animation: "fadeIn 0.6s ease-out 0.2s forwards",
