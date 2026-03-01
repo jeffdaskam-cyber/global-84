@@ -1,5 +1,6 @@
 // src/components/SplashScreen.jsx
-// Flow: Singapore photo → HCMC photo → splash animation → done
+// Uses a single setInterval tick to drive all phase transitions.
+// No useEffect dependencies on functions — eliminates all stale closure bugs.
 import { useEffect, useRef, useState } from "react";
 
 const PHOTOS = [
@@ -8,181 +9,176 @@ const PHOTOS = [
 ];
 
 const PHOTO_HOLD_MS  = 3000;
-const FADE_MS        = 700;
+const FADE_MS        = 600;
 const SPLASH_HOLD_MS = 5000;
 
+// Timeline (ms from start):
+const T_FADE1  = PHOTO_HOLD_MS;                          // start fade out of photo0
+const T_SHOW1  = T_FADE1 + FADE_MS;                     // show photo1
+const T_FADE2  = T_SHOW1 + PHOTO_HOLD_MS;               // start fade out of photo1
+const T_SPLASH = T_FADE2 + FADE_MS;                     // show splash screen
+const T_MOUNT  = T_SPLASH + 80;                         // trigger splash animations
+const T_DONE   = T_SPLASH + SPLASH_HOLD_MS;             // call onComplete
+
 export default function SplashScreen({ onComplete }) {
-  // All phase logic is driven by this single state value
-  const [phase, setPhase]               = useState("photo0");   // photo0 | photo1 | splash
-  const [visible, setVisible]           = useState(true);       // controls inner opacity
+  const [photoIdx, setPhotoIdx]           = useState(0);       // 0 or 1
+  const [showSplash, setShowSplash]       = useState(false);
   const [splashMounted, setSplashMounted] = useState(false);
-  const [zoomKey, setZoomKey]           = useState(0);
+  const [opacity, setOpacity]             = useState(1);
+  const [zoomKey, setZoomKey]             = useState(0);
 
-  const timerRef   = useRef(null);
-  const busyRef    = useRef(false); // prevents double-transitions
+  const startRef    = useRef(Date.now());
+  const doneRef     = useRef(false);
+  const intervalRef = useRef(null);
 
-  // ── Core transition: fade out → change phase → fade in ───────────────────
-  // nextPhase is passed directly — no closures over state needed
-  function transitionTo(nextPhase) {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    clearTimeout(timerRef.current);
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      if (doneRef.current) return;
+      const elapsed = Date.now() - startRef.current;
 
-    // Step 1: fade out
-    setVisible(false);
-
-    timerRef.current = setTimeout(() => {
-      // Step 2: swap phase while invisible
-      if (nextPhase === "done") {
+      // Photo 0 fade out
+      if (elapsed >= T_FADE1 && elapsed < T_SHOW1) {
+        setOpacity(0);
+      }
+      // Switch to photo 1
+      else if (elapsed >= T_SHOW1 && elapsed < T_SHOW1 + 50) {
+        setPhotoIdx(1);
+        setZoomKey(k => k + 1);
+        setOpacity(1);
+      }
+      // Photo 1 fade out
+      else if (elapsed >= T_FADE2 && elapsed < T_SPLASH) {
+        setOpacity(0);
+      }
+      // Show splash
+      else if (elapsed >= T_SPLASH && elapsed < T_SPLASH + 50) {
+        setShowSplash(true);
+        setOpacity(1);
+      }
+      // Mount splash animations
+      else if (elapsed >= T_MOUNT && elapsed < T_MOUNT + 50) {
+        setSplashMounted(true);
+      }
+      // Done
+      else if (elapsed >= T_DONE && !doneRef.current) {
+        doneRef.current = true;
+        clearInterval(intervalRef.current);
         onComplete();
-        return;
       }
+    }, 50); // tick every 50ms — fine enough for smooth transitions
 
-      setPhase(nextPhase);
-      setZoomKey(k => k + 1);
+    return () => clearInterval(intervalRef.current);
+  }, []); // empty deps — runs once, never stale
 
-      if (nextPhase === "splash") {
-        setSplashMounted(false);
-      }
-
-      // Step 3: fade back in
-      timerRef.current = setTimeout(() => {
-        setVisible(true);
-        busyRef.current = false;
-
-        if (nextPhase === "splash") {
-          timerRef.current = setTimeout(() => setSplashMounted(true), 80);
-          // Dismiss after splash completes
-          timerRef.current = setTimeout(() => onComplete(), SPLASH_HOLD_MS + 200);
+  function handleSkip() {
+    if (doneRef.current) return;
+    clearInterval(intervalRef.current);
+    setOpacity(0);
+    setTimeout(() => {
+      setShowSplash(true);
+      setOpacity(1);
+      setTimeout(() => setSplashMounted(true), 80);
+      setTimeout(() => {
+        if (!doneRef.current) {
+          doneRef.current = true;
+          onComplete();
         }
-      }, 80);
+      }, SPLASH_HOLD_MS);
     }, FADE_MS);
   }
 
-  // ── Auto-advance each photo after hold time ───────────────────────────────
-  useEffect(() => {
-    if (phase === "photo0") {
-      timerRef.current = setTimeout(() => transitionTo("photo1"), PHOTO_HOLD_MS);
-    } else if (phase === "photo1") {
-      timerRef.current = setTimeout(() => transitionTo("splash"), PHOTO_HOLD_MS);
-    }
-    return () => clearTimeout(timerRef.current);
-  }, [phase]); // re-runs only when phase actually changes
+  const photo = PHOTOS[photoIdx];
 
-  // ── Skip ─────────────────────────────────────────────────────────────────
-  function handleSkip() {
-    transitionTo("splash");
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className="fixed inset-0 z-50 overflow-hidden"
       style={{ background: "#0a0204" }}
     >
-      {/* Inner layer — only this fades, outer stays opaque */}
+      {/* Inner layer — opacity controlled by ticker */}
       <div
         className="absolute inset-0"
         style={{
-          opacity: visible ? 1 : 0,
+          opacity,
           transition: `opacity ${FADE_MS}ms ease-in-out`,
         }}
       >
         {/* ── Photo phases ── */}
-        {(phase === "photo0" || phase === "photo1") && (() => {
-          const photo = phase === "photo0" ? PHOTOS[0] : PHOTOS[1];
-          return (
-            <>
-              {/* Ken Burns zoom-out */}
-              <div
-                key={zoomKey}
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url(${photo.src})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  animation: `kenBurnsOut ${PHOTO_HOLD_MS + FADE_MS}ms ease-out forwards`,
-                }}
-              />
+        {!showSplash && (
+          <>
+            <div
+              key={zoomKey}
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${photo.src})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                animation: `kenBurnsOut ${PHOTO_HOLD_MS + FADE_MS}ms ease-out forwards`,
+              }}
+            />
 
-              {/* Vignette */}
-              <div className="absolute inset-0" style={{
-                background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.6) 100%)",
-              }} />
+            <div className="absolute inset-0" style={{
+              background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.6) 100%)",
+            }} />
 
-              {/* Bottom gradient */}
-              <div className="absolute bottom-0 left-0 right-0" style={{
-                height: "220px",
-                background: "linear-gradient(to top, rgba(10,2,4,0.9) 0%, transparent 100%)",
-              }} />
+            <div className="absolute bottom-0 left-0 right-0" style={{
+              height: "220px",
+              background: "linear-gradient(to top, rgba(10,2,4,0.9) 0%, transparent 100%)",
+            }} />
 
-              {/* City label */}
-              <div className="absolute bottom-16 px-8" style={{
-                opacity: 0,
-                animation: "fadeInUp 0.8s ease-out 0.1s forwards",
-              }}>
-                <div style={{
-                  fontFamily: "Georgia, serif",
-                  fontSize: "11px",
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  color: "rgba(196,150,42,0.9)",
-                  marginBottom: "8px",
-                }}>
-                  {photo.flag}&nbsp;&nbsp;{photo.label}
-                </div>
-                <div style={{
-                  height: "1px",
-                  width: "44px",
-                  background: "linear-gradient(to right, rgba(196,150,42,0.8), transparent)",
-                }} />
-              </div>
-
-              {/* Watermark */}
-              <div className="absolute top-10 left-8" style={{
+            <div className="absolute bottom-16 px-8" style={{
+              opacity: 0,
+              animation: "fadeInUp 0.8s ease-out 0.15s forwards",
+            }}>
+              <div style={{
                 fontFamily: "Georgia, serif",
-                fontSize: "13px",
-                fontWeight: 700,
-                color: "rgba(255,255,255,0.55)",
-                letterSpacing: "0.05em",
-                opacity: 0,
-                animation: "fadeIn 0.6s ease-out 0.2s forwards",
+                fontSize: "11px",
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                color: "rgba(196,150,42,0.9)",
+                marginBottom: "8px",
               }}>
-                Global{" "}
-                <span style={{
-                  background: "linear-gradient(135deg, #e8b84b, #f5d47a, #c4862a)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}>84</span>
+                {photo.flag}&nbsp;&nbsp;{photo.label}
               </div>
+              <div style={{
+                height: "1px", width: "44px",
+                background: "linear-gradient(to right, rgba(196,150,42,0.8), transparent)",
+              }} />
+            </div>
 
-              {/* Skip */}
-              <button onClick={handleSkip} style={{
-                position: "absolute",
-                top: "40px",
-                right: "24px",
-                background: "rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: "20px",
-                padding: "5px 14px",
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "12px",
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                backdropFilter: "blur(6px)",
-                cursor: "pointer",
-                opacity: 0,
-                animation: "fadeIn 0.6s ease-out 0.4s forwards",
-              }}>
-                Skip ›
-              </button>
-            </>
-          );
-        })()}
+            <div className="absolute top-10 left-8" style={{
+              fontFamily: "Georgia, serif",
+              fontSize: "13px", fontWeight: 700,
+              color: "rgba(255,255,255,0.55)",
+              letterSpacing: "0.05em",
+              opacity: 0,
+              animation: "fadeIn 0.6s ease-out 0.2s forwards",
+            }}>
+              Global{" "}
+              <span style={{
+                background: "linear-gradient(135deg, #e8b84b, #f5d47a, #c4862a)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>84</span>
+            </div>
+
+            <button onClick={handleSkip} style={{
+              position: "absolute", top: "40px", right: "24px",
+              background: "rgba(0,0,0,0.4)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: "20px", padding: "5px 14px",
+              color: "rgba(255,255,255,0.7)",
+              fontSize: "12px", fontWeight: 600, letterSpacing: "0.04em",
+              backdropFilter: "blur(6px)", cursor: "pointer",
+              opacity: 0, animation: "fadeIn 0.6s ease-out 0.4s forwards",
+            }}>
+              Skip ›
+            </button>
+          </>
+        )}
 
         {/* ── Splash phase ── */}
-        {phase === "splash" && (
+        {showSplash && (
           <div className="absolute inset-0 flex flex-col items-center justify-center" style={{
             background: "linear-gradient(175deg, #0a0204 0%, #1a0508 45%, #BA0C2F 100%)",
           }}>
@@ -233,7 +229,6 @@ export default function SplashScreen({ onComplete }) {
               transition: "opacity 0.8s ease-out 1.05s",
             }}>Singapore & Vietnam</div>
 
-            {/* Loading bar */}
             <div style={{
               position: "absolute", bottom: 0, left: 0, right: 0,
               height: "3px", background: "rgba(196,150,42,0.15)", overflow: "hidden",
