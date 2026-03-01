@@ -64,28 +64,31 @@ function WeatherWidget() {
           return (
             <div
               key={city.label}
-              className="flex-1 bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card px-3 py-2"
+              className="flex-1 bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card px-3 py-2.5"
             >
               {loading || !w ? (
-                <div className="h-5 w-16 rounded bg-surface-border dark:bg-surface-darkBorder animate-pulse" />
+                <div className="space-y-1.5">
+                  <div className="h-3 w-16 rounded bg-surface-border dark:bg-surface-darkBorder animate-pulse" />
+                  <div className="h-5 w-12 rounded bg-surface-border dark:bg-surface-darkBorder animate-pulse" />
+                </div>
               ) : (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm">{city.flag}</span>
+                <>
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-xs">{city.flag}</span>
                     <span className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark">
                       {city.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">{desc.emoji}</span>
-                    <span className="text-sm font-bold text-ink-main dark:text-ink-onDark">
+                  <div className="flex items-center gap-1">
+                    <span className="text-lg leading-none">{desc.emoji}</span>
+                    <span className="text-base font-bold text-ink-main dark:text-ink-onDark">
                       {w.tempF}°F
                     </span>
-                    <span className="text-xs text-ink-sub dark:text-ink-subOnDark">
-                      {desc.condition}
-                    </span>
                   </div>
-                </div>
+                  <div className="text-xs text-ink-sub dark:text-ink-subOnDark mt-0.5">
+                    {desc.condition}
+                  </div>
+                </>
               )}
             </div>
           );
