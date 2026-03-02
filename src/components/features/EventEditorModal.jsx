@@ -159,12 +159,12 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
               Date & time
             </div>
             <input
-              type="datetime-local"
-              className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              disabled={saving}
-            />
+  type="datetime-local"
+  className="w-full max-w-full min-w-0 rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
+  value={startTime}
+  onChange={(e) => setStartTime(e.target.value)}
+  disabled={saving}
+/>
           </label>
 
           <label className="block">
