@@ -105,7 +105,7 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3">
-      <div className="w-full max-w-md rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">
+      <div className="w-full max-w-md rounded-xl overflow-hidden bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-base font-semibold text-ink-main dark:text-ink-onDark">
@@ -154,17 +154,19 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
             />
           </label>
 
-          <label className="block">
+          <label className="block overflow-hidden">
             <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
               Date & time
             </div>
-            <input
-              type="datetime-local"
-              className="w-full max-w-full min-w-0 rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              disabled={saving}
-            />
+            <div className="overflow-hidden rounded-lg">
+              <input
+                type="datetime-local"
+                className="w-full block rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                disabled={saving}
+              />
+            </div>
           </label>
 
           <label className="block">
