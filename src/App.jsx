@@ -12,6 +12,7 @@ import Chat from "./pages/Chat.jsx";
 import Events from "./pages/Events.jsx";
 import Me from "./pages/Me.jsx";
 import Gallery from "./pages/Gallery";
+import EventEditorModal from "./components/features/EventEditorModal.jsx";
 
 import { subscribeIsAdmin } from "./lib/admins.js";
 import { auth, db, COHORT_ID } from "./lib/firebase.js";
@@ -66,6 +67,32 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [hasNewEvents, setHasNewEvents] = useState(false);
 
+  // Global event editor — handles both editing existing events and prefilling from Explore
+  const [eventEditorOpen, setEventEditorOpen] = useState(false);
+  const [eventEditorEvent, setEventEditorEvent] = useState(null);    // existing event (edit mode)
+  const [eventEditorPrefill, setEventEditorPrefill] = useState(null); // place data (from Explore)
+
+  // Call with an existing event object to edit it, a prefill object to pre-fill a new event,
+  // or nothing / null to open a blank new event form.
+  function openEventEditor(prefillOrEvent = null) {
+    if (prefillOrEvent?.id) {
+      // Has a Firestore id → it's an existing event being edited
+      setEventEditorEvent(prefillOrEvent);
+      setEventEditorPrefill(null);
+    } else {
+      // No id → treat as prefill data for a new event (or null for blank)
+      setEventEditorEvent(null);
+      setEventEditorPrefill(prefillOrEvent);
+    }
+    setEventEditorOpen(true);
+  }
+
+  function closeEventEditor() {
+    setEventEditorOpen(false);
+    setEventEditorEvent(null);
+    setEventEditorPrefill(null);
+  }
+
   useEffect(() => {
     const unsub = subscribeIsAdmin(setIsAdmin);
     return () => unsub();
@@ -105,7 +132,10 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="/gallery" element={<Gallery user={user} isAdmin={isAdmin} />} />
-            <Route path="/explore" element={<Explore isAdmin={isAdmin} />} />
+            <Route
+              path="/explore"
+              element={<Explore isAdmin={isAdmin} onCreateEvent={openEventEditor} />}
+            />
             <Route
               path="/explore-import"
               element={
@@ -119,7 +149,12 @@ export default function App() {
             <Route path="/chat" element={<Chat isAdmin={isAdmin} />} />
             <Route
               path="/events"
-              element={<Events onViewed={() => setHasNewEvents(false)} />}
+              element={
+                <Events
+                  onViewed={() => setHasNewEvents(false)}
+                  onCreateEvent={openEventEditor}
+                />
+              }
             />
             <Route path="/me" element={<Me />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -138,6 +173,14 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Global EventEditorModal — rendered outside routes so any page can trigger it */}
+      <EventEditorModal
+        open={eventEditorOpen}
+        onClose={closeEventEditor}
+        event={eventEditorEvent}
+        prefill={eventEditorPrefill}
+      />
     </AuthGate>
   );
 }

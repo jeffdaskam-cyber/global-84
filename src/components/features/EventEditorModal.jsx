@@ -15,7 +15,7 @@ function toDateTimeLocal(tsOrDate) {
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 
-export default function EventEditorModal({ open, onClose, defaultCity, event }) {
+export default function EventEditorModal({ open, onClose, defaultCity, event, prefill }) {
   const isEdit = !!event?.id;
 
   const [title, setTitle] = useState("");
@@ -38,18 +38,18 @@ export default function EventEditorModal({ open, onClose, defaultCity, event }) 
       setLocationName(event.locationName || "");
       setDescription(event.description || "");
     } else {
-      setTitle("");
-      setCity(defaultCity || "Singapore");
+      setTitle(prefill?.title || "");
+      setCity(prefill?.city || defaultCity || "Singapore");
 
       const d = new Date();
       d.setHours(18, 0, 0, 0);
       setStartTime(toDateTimeLocal(d));
 
-      setLocationName("");
+      setLocationName(prefill?.locationName || "");
       setDescription("");
     }
     setError("");
-  }, [open, isEdit, event, defaultCity]);
+  }, [open, isEdit, event, defaultCity, prefill]);
 
   const canSave = useMemo(() => {
     return title.trim() && city && startTime && locationName.trim();

@@ -26,7 +26,7 @@ const DINING_TYPES   = ["Restaurant", "Coffee", "Bar", "Rooftop Bar", "Hawker St
 const ACTIVITY_TYPES = ["Museum", "Temple", "Market", "Shopping", "Spa", "Nightlife", "Nature", "Tour", "Adventure"];
 
 // ── Root component ────────────────────────────────────────────────────────────
-export default function Explore({ isAdmin }) {
+export default function Explore({ isAdmin, onCreateEvent }) {
   const [nav, setNav] = useState(null);
   const [favorites, setFavorites] = useState(new Set());
 
@@ -50,6 +50,7 @@ export default function Explore({ isAdmin }) {
       isAdmin={isAdmin}
       favorites={favorites}
       onBack={() => setNav({ city: nav.city })}
+      onCreateEvent={onCreateEvent}
     />
   );
 }
@@ -163,7 +164,7 @@ function CategoryPicker({ city, onSelect, onBack }) {
 }
 
 // ── Step 3: Place list with type filter ───────────────────────────────────────
-function PlaceList({ city, category, isAdmin, favorites, onBack }) {
+function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }) {
   const [items, setItems]             = useState([]);
   const [loading, setLoading]         = useState(true);
   const [activeType, setActiveType]   = useState("All");
@@ -217,6 +218,7 @@ function PlaceList({ city, category, isAdmin, favorites, onBack }) {
         isFavorited={favorites.has(item.id)}
         deleting={deleting === item.id}
         onDelete={() => handleDelete(item.id)}
+        onCreateEvent={onCreateEvent}
       />
     );
   }
@@ -327,7 +329,7 @@ function PlaceList({ city, category, isAdmin, favorites, onBack }) {
 }
 
 // ── Place card ────────────────────────────────────────────────────────────────
-function PlaceCard({ item, isAdmin, isFavorited, deleting, onDelete }) {
+function PlaceCard({ item, isAdmin, isFavorited, deleting, onDelete, onCreateEvent }) {
   const [expanded, setExpanded]   = useState(false);
   const [toggling, setToggling]   = useState(false);
 
@@ -414,6 +416,15 @@ function PlaceCard({ item, isAdmin, isFavorited, deleting, onDelete }) {
                 🔗 Reserve
               </a>
             )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateEvent?.({ title: item.name, locationName: item.name, city: item.city });
+              }}
+              className="text-xs font-semibold text-du-crimson hover:underline"
+            >
+              📅 Create Event
+            </button>
           </div>
         </div>
       )}
