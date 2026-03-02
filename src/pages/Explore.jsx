@@ -73,7 +73,7 @@ function CityPicker({ isAdmin, onSelect }) {
             className="w-full relative overflow-hidden rounded-2xl h-44 shadow-lg group focus:outline-none focus:ring-2 focus:ring-du-crimson"
           >
             {city.bgImage ? (
-              <picture className="absolute inset-0 w-full h-full">
+              <picture style={{ display: "contents" }}>
                 <source media="(min-width: 768px)" srcSet={city.bgImageLandscape} />
                 <img
                   src={city.bgImage}
