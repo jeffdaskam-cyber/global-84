@@ -60,6 +60,20 @@ service cloud.firestore {
           allow create, update: if isSelf(uid);
           allow delete: if isSelf(uid) || isAdmin(cohortId);
         }
+
+        // Event discussion thread — read by any signed-in user;
+        // post only if the user has a going/interested RSVP for this event;
+        // admin can delete; update never allowed.
+        match /messages/{messageId} {
+          allow read: if signedIn();
+          allow create: if signedIn()
+            && request.resource.data.createdByUid == request.auth.uid
+            && request.resource.data.text.size() >= 1
+            && request.resource.data.text.size() <= 1000
+            && get(/databases/$(database)/documents/cohorts/$(cohortId)/events/$(eventId)/rsvps/$(request.auth.uid)).data.status in ["going", "interested"];
+          allow delete: if isAdmin(cohortId);
+          allow update: if false;
+        }
       }
 
       // Group chat
