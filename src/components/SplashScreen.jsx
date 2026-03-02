@@ -4,8 +4,8 @@
 import { useEffect, useRef, useState } from "react";
 
 const PHOTOS = [
-  { src: "/splash-singapore.jpg", label: "Singapore",        flag: "🇸🇬" },
-  { src: "/splash-hcmc.jpg",      label: "Ho Chi Minh City", flag: "🇻🇳" },
+  { src: "/splash-singapore.jpg", srcLandscape: "/splash-singapore-landscape.jpg", label: "Singapore",        flag: "🇸🇬" },
+  { src: "/splash-hcmc.jpg",      srcLandscape: "/splash-hcmc-landscape.jpg",      label: "Ho Chi Minh City", flag: "🇻🇳" },
 ];
 
 const PHOTO_HOLD_MS  = 3000;
@@ -105,16 +105,19 @@ export default function SplashScreen({ onComplete }) {
         {/* ── Photo phases ── */}
         {!showSplash && (
           <>
-            <div
+            <picture
               key={zoomKey}
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url(${photo.src})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                animation: `kenBurnsOut ${PHOTO_HOLD_MS + FADE_MS}ms ease-out forwards`,
-              }}
-            />
+              className="absolute inset-0 w-full h-full"
+              style={{ animation: `kenBurnsOut ${PHOTO_HOLD_MS + FADE_MS}ms ease-out forwards` }}
+            >
+              <source media="(min-width: 768px)" srcSet={photo.srcLandscape} />
+              <img
+                src={photo.src}
+                alt={photo.label}
+                className="absolute inset-0 w-full h-full"
+                style={{ objectFit: "cover", objectPosition: "center" }}
+              />
+            </picture>
 
             <div className="absolute inset-0" style={{
               background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.6) 100%)",

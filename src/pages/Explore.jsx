@@ -12,6 +12,7 @@ const CITIES = [
     description: "The Lion City",
     bgGradient: "from-red-900 via-red-700 to-orange-500",
     bgImage: "/Singapore.jpg",
+    bgImageLandscape: "/Singapore-landscape.jpg",
   },
   {
     key: "Ho Chi Minh City",
@@ -19,6 +20,7 @@ const CITIES = [
     description: "The Pearl of the Far East",
     bgGradient: "from-yellow-800 via-red-700 to-red-900",
     bgImage: "/HCMC.jpg",
+    bgImageLandscape: "/HCMC-landscape.jpg",
   },
 ];
 
@@ -71,7 +73,14 @@ function CityPicker({ isAdmin, onSelect }) {
             className="w-full relative overflow-hidden rounded-2xl h-44 shadow-lg group focus:outline-none focus:ring-2 focus:ring-du-crimson"
           >
             {city.bgImage ? (
-              <img src={city.bgImage} alt={city.label} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <picture className="absolute inset-0 w-full h-full">
+                <source media="(min-width: 768px)" srcSet={city.bgImageLandscape} />
+                <img
+                  src={city.bgImage}
+                  alt={city.label}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </picture>
             ) : (
               <div className={`absolute inset-0 bg-gradient-to-br ${city.bgGradient} transition-transform duration-500 group-hover:scale-105`} />
             )}
