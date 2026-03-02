@@ -185,16 +185,14 @@ export default function SplashScreen({ onComplete }) {
           <div className="absolute inset-0 flex flex-col items-center justify-center" style={{
             background: "linear-gradient(175deg, #0a0204 0%, #1a0508 45%, #BA0C2F 100%)",
           }}>
-            <img
-              src="/du-daniels-logo-white.png"
-              alt="Daniels College of Business - EMBA"
-              style={{
-                width: "220px", marginBottom: "20px",
-                opacity: splashMounted ? 0.9 : 0,
-                transform: splashMounted ? "translateY(0)" : "translateY(12px)",
-                transition: "opacity 0.8s ease-out, transform 0.8s ease-out",
-              }}
-            />
+            <div style={{
+              fontFamily: "Georgia, serif", fontSize: "12px",
+              letterSpacing: "0.22em", textTransform: "uppercase",
+              color: "rgba(196,150,42,0.85)", marginBottom: "16px",
+              opacity: splashMounted ? 1 : 0,
+              transform: splashMounted ? "translateY(0)" : "translateY(12px)",
+              transition: "opacity 0.8s ease-out, transform 0.8s ease-out",
+            }}>Daniels College of Business - EMBA</div>
 
             <div style={{
               fontFamily: "Georgia, serif", fontSize: "64px", fontWeight: 700,
