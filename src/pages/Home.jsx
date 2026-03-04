@@ -162,7 +162,7 @@ export default function Home({ onOpenDrawer }) {
             aria-label="Open menu"
           >
             {[0,1,2].map(i => (
-              <span key={i} style={{ display: "block", width: "18px", height: "2px", borderRadius: "2px", background: "rgba(196,150,42,0.25)" }} />
+              <span key={i} style={{ display: "block", width: "18px", height: "2px", borderRadius: "2px", background: "#ffffff" }} />
             ))}
           </button>
           
