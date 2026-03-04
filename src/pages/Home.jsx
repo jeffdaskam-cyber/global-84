@@ -166,19 +166,8 @@ export default function Home({ onOpenDrawer }) {
               <span key={i} style={{ display: "block", width: "18px", height: "2px", borderRadius: "2px", background: "rgba(255,255,255,0.85)" }} />
             ))}
           </button>
-          {/* Line 1: Daniels College of Business - EMBA */}
-          <p className="transition-all duration-700 ease-out" style={{
-            fontFamily: "Georgia, serif", fontSize: "11px",
-            letterSpacing: "0.22em", textTransform: "uppercase",
-            color: "rgba(196,150,42,0.85)",
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(6px)",
-            transitionDelay: "0ms",
-          }}>
-            Daniels College of Business - EMBA
-          </p>
-
-          {/* Line 2: Global 84 */}
+          
+          {/* Line 1: Global 84 */}
           <div className="flex items-baseline gap-3 mt-2 transition-all duration-700 ease-out" style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(14px)",
@@ -196,7 +185,7 @@ export default function Home({ onOpenDrawer }) {
             }}>84</span>
           </div>
 
-          {/* Line 3: Creating Global Leaders */}
+          {/* Line 2: Creating Global Leaders */}
           <p className="mt-2 transition-all duration-700 ease-out" style={{
             fontFamily: "Georgia, serif", fontSize: "18px",
             fontStyle: "italic", color: "#ffffff",
