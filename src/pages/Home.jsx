@@ -158,7 +158,7 @@ export default function Home({ onOpenDrawer }) {
           {/* Hamburger menu button */}
           <button
             onClick={onOpenDrawer}
-            className="absolute top-6 right-6 flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all active:scale-95"
+            className="absolute top-6 right-2 flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all active:scale-95"
             style={{ background: "rgba(196,150,42,0.15)", border: "1px solid rgba(196,150,42,0.3)" }}
             aria-label="Open menu"
           >
