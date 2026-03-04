@@ -159,7 +159,6 @@ export default function Home({ onOpenDrawer }) {
           <button
             onClick={onOpenDrawer}
             className="absolute top-3 right-2 flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all active:scale-95"
-            style={{ background: "rgba(196,150,42,0.15)", border: "1px solid rgba(196,150,42,0.3)" }}
             aria-label="Open menu"
           >
             {[0,1,2].map(i => (
