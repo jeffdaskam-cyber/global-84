@@ -41,7 +41,7 @@ async function deleteMediaItem(id) {
   await deleteDoc(doc(db, "cohorts", COHORT_ID, "media", id));
 }
 
-// ── YouTube thumbnail helper ──────────────────────────────────────────────────
+// ── YouTube helpers ──────────────────────────────────────────────────────────
 function getYouTubeId(url) {
   try {
     const u = new URL(url);
@@ -54,6 +54,11 @@ function getYouTubeId(url) {
   } catch {
     return null;
   }
+}
+
+function getYouTubeThumbnail(url) {
+  const id = getYouTubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────

@@ -101,6 +101,12 @@ service cloud.firestore {
       match /importLogs/{logId} {
         allow read, write: if isAdmin(cohortId);
       }
+
+      // Media — videos and articles (admin-managed)
+      match /media/{mediaId} {
+        allow read: if signedIn();
+        allow create, update, delete: if isAdmin(cohortId);
+      }
     }
   }
 }
