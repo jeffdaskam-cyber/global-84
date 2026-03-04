@@ -8,9 +8,9 @@ const PHOTOS = [
   { src: "/splash-hcmc.jpg",      srcLandscape: "/splash-hcmc-landscape.jpg",      label: "Ho Chi Minh City", flag: "🇻🇳" },
 ];
 
-const PHOTO_HOLD_MS  = 3000;
+const PHOTO_HOLD_MS  = 2000;
 const FADE_MS        = 600;
-const SPLASH_HOLD_MS = 3000;
+const SPLASH_HOLD_MS = 2000;
 
 // Timeline (ms from start):
 const T_FADE1  = PHOTO_HOLD_MS;                          // start fade out of photo0
