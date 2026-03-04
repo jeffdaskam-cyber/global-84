@@ -45,16 +45,15 @@ async function deleteMediaItem(id) {
 function getYouTubeId(url) {
   try {
     const u = new URL(url);
-    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
-    return u.searchParams.get("v");
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1).split("?")[0];
+    if (u.hostname.includes("youtube.com")) {
+      if (u.pathname.includes("/embed/")) return u.pathname.split("/embed/")[1].split("?")[0];
+      return u.searchParams.get("v");
+    }
+    return null;
   } catch {
     return null;
   }
-}
-
-function getYouTubeThumbnail(url) {
-  const id = getYouTubeId(url);
-  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -235,8 +234,8 @@ function VideoCard({ item, isAdmin, onPlay, onDelete }) {
   }
 
   return (
-    <div
-      onClick={onPlay}
+   <div
+      onClick={() => getYouTubeId(item.url) ? onPlay() : window.open(item.url, "_blank")}
       className="flex gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl overflow-hidden cursor-pointer transition-all active:scale-[0.98]"
     >
       {/* Thumbnail */}
@@ -402,9 +401,7 @@ function AddMediaModal({ onClose, onSave }) {
   async function handleSave() {
     if (!title.trim()) { setError("Title is required."); return; }
     if (!url.trim())   { setError("URL is required."); return; }
-    if (type === "video" && !getYouTubeId(url)) {
-      setError("Please enter a valid YouTube URL.");
-      return;
+    // no URL format validation — YouTube gets auto-thumbnail, others just won't
     }
     setError("");
     setSaving(true);
