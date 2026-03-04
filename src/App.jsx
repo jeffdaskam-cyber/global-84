@@ -287,7 +287,7 @@ export default function App() {
 
         {/* Bottom navigation — trimmed to 4 essentials */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
-          <div className="max-w-xl mx-auto flex">
+          <div className="max-w-l mx-auto flex">
             <TabLink to="/" label="Home" icon="🏠" />
             <TabLink to="/explore" label="Explore" icon="🗺️" />
             <TabLink to="/chat" label="Chat" icon="💬" />
