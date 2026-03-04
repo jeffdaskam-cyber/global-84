@@ -188,6 +188,7 @@ export default function Home({ onOpenDrawer }) {
           <p className="mt-8 transition-all duration-700 ease-out" style={{
             fontFamily: "Georgia, serif", fontSize: "18px",
             fontStyle: "italic", color: "#ffffff",
+            marginLeft: "6px", 
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(8px)",
             transitionDelay: "160ms",
@@ -198,6 +199,7 @@ export default function Home({ onOpenDrawer }) {
             opacity: mounted ? 1 : 0,
             transform: mounted ? "scaleX(1)" : "scaleX(0)",
             transformOrigin: "left center", transitionDelay: "240ms",
+            marginLeft: "6px", 
           }}>
             <div style={{
               height: "2px", width: "110px", borderRadius: "2px",
@@ -210,6 +212,7 @@ export default function Home({ onOpenDrawer }) {
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(10px)",
             transitionDelay: "320ms",
+            marginLeft: "6px", 
           }}>
             <span style={{ fontSize: "16px", color: "#ffffff" }}>Singapore</span>
             <span style={{ color: "#ffffff", fontSize: "9px" }}>◆</span>
