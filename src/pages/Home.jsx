@@ -185,7 +185,7 @@ export default function Home({ onOpenDrawer }) {
           </div>
 
           {/* Line 2: Creating Global Leaders */}
-          <p className="mt-8 transition-all duration-700 ease-out" style={{
+          <p className="mt-12 transition-all duration-700 ease-out" style={{
             fontFamily: "Georgia, serif", fontSize: "18px",
             fontStyle: "italic", color: "#ffffff",
             marginLeft: "6px", 
@@ -195,7 +195,7 @@ export default function Home({ onOpenDrawer }) {
           }}>Creating Global Leaders</p>
 
           {/* Line 4: Gold accent line */}
-          <div className="mt-2 transition-all duration-700 ease-out" style={{
+          <div className="mt-1 transition-all duration-700 ease-out" style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "scaleX(1)" : "scaleX(0)",
             transformOrigin: "left center", transitionDelay: "240ms",
@@ -208,7 +208,7 @@ export default function Home({ onOpenDrawer }) {
           </div>
 
           {/* Line 5: Singapore ◆ Vietnam */}
-          <div className="flex items-center gap-2 mt-2 transition-all duration-700 ease-out" style={{
+          <div className="flex items-center gap-2 mt-1 transition-all duration-700 ease-out" style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(10px)",
             transitionDelay: "320ms",
