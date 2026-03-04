@@ -109,7 +109,7 @@ function WeatherWidget() {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-export default function Home() {
+export default function Home({ onOpenDrawer }) {
   const [items, setItems]     = useState([]);
   const [openNew, setOpenNew] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -155,6 +155,17 @@ export default function Home() {
         }} />
 
         <div className="relative px-6 pt-8 pb-6">
+          {/* Hamburger menu button */}
+          <button
+            onClick={onOpenDrawer}
+            className="absolute top-6 right-6 flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all active:scale-95"
+            style={{ background: "rgba(196,150,42,0.15)", border: "1px solid rgba(196,150,42,0.3)" }}
+            aria-label="Open menu"
+          >
+            {[0,1,2].map(i => (
+              <span key={i} style={{ display: "block", width: "18px", height: "2px", borderRadius: "2px", background: "rgba(255,255,255,0.85)" }} />
+            ))}
+          </button>
           {/* Line 1: Daniels College of Business - EMBA */}
           <p className="transition-all duration-700 ease-out" style={{
             fontFamily: "Georgia, serif", fontSize: "11px",

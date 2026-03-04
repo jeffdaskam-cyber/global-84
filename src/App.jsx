@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Routes, Route, Navigate, NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { Routes, Route, Navigate, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 
 import AuthGate from "./components/AuthGate.jsx";
@@ -12,6 +12,7 @@ import Chat from "./pages/Chat.jsx";
 import Events from "./pages/Events.jsx";
 import Me from "./pages/Me.jsx";
 import Gallery from "./pages/Gallery";
+import Media from "./pages/Media.jsx";
 import EventEditorModal from "./components/features/EventEditorModal.jsx";
 
 import { subscribeIsAdmin } from "./lib/admins.js";
@@ -19,6 +20,123 @@ import { auth, db, COHORT_ID } from "./lib/firebase.js";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 
 const LS_KEY = "global84_lastViewedEventsAt";
+
+// ── Side Drawer ───────────────────────────────────────────────────────────────
+const DRAWER_NAV = [
+  { to: "/",       label: "Home",    icon: "🏠" },
+  { to: "/events", label: "Events",  icon: "📅" },
+  { to: "/chat",   label: "Chat",    icon: "💬" },
+  { to: "/explore",label: "Explore", icon: "🗺️" },
+  { to: "/gallery",label: "Gallery", icon: "📷" },
+  { to: "/media",  label: "Media",   icon: "🎬" },
+  { to: "/me",     label: "Me",      icon: "👤" },
+];
+
+function SideDrawer({ open, onClose }) {
+  const navigate = useNavigate();
+  const drawerRef = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open, onClose]);
+
+  // Prevent body scroll when open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  function handleNav(to) {
+    navigate(to);
+    onClose();
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 transition-opacity duration-300"
+        style={{
+          background: "rgba(13,1,3,0.55)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+        }}
+      />
+
+      {/* Drawer panel */}
+      <div
+        ref={drawerRef}
+        className="fixed top-0 right-0 bottom-0 z-50 flex flex-col"
+        style={{
+          width: "72vw",
+          maxWidth: "300px",
+          background: "linear-gradient(160deg, #0d0103 0%, #1c0408 50%, #2a0a10 100%)",
+          transform: open ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+          boxShadow: open ? "-4px 0 32px rgba(0,0,0,0.5)" : "none",
+        }}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 pt-10 pb-6"
+          style={{ borderBottom: "1px solid rgba(196,150,42,0.2)" }}>
+          <div>
+            <div style={{
+              fontFamily: "Georgia, serif", fontSize: "22px", fontWeight: 700,
+              color: "#ffffff", letterSpacing: "-0.3px",
+            }}>
+              Global <span style={{
+                background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              }}>84</span>
+            </div>
+            <div style={{ fontSize: "10px", letterSpacing: "0.18em", color: "rgba(196,150,42,0.75)", textTransform: "uppercase", marginTop: "2px" }}>
+              Navigation
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center rounded-full"
+            style={{ width: 32, height: 32, background: "rgba(196,150,42,0.12)", color: "rgba(255,255,255,0.7)", fontSize: "18px" }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {DRAWER_NAV.map(({ to, label, icon }) => (
+            <button
+              key={to}
+              onClick={() => handleNav(to)}
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left"
+              style={{ color: "rgba(255,255,255,0.85)" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(196,150,42,0.12)"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ fontSize: "20px" }}>{icon}</span>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: "16px", fontWeight: 600 }}>{label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Drawer footer */}
+        <div className="px-5 py-5" style={{ borderTop: "1px solid rgba(196,150,42,0.15)" }}>
+          <p style={{ fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(196,150,42,0.5)" }}>
+            Singapore ◆ Vietnam
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
 
 function TabLink({ to, label, icon }) {
   return (
@@ -66,6 +184,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [user, setUser] = useState(null);
   const [hasNewEvents, setHasNewEvents] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Global event editor — handles both editing existing events and prefilling from Explore
   const [eventEditorOpen, setEventEditorOpen] = useState(false);
@@ -126,10 +245,14 @@ export default function App() {
   return (
     <AuthGate>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+
+      {/* Side drawer — sits outside page content, above everything */}
+      <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
       <div className="min-h-screen bg-surface-light dark:bg-surface-dark">
         <div className="pb-16">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home onOpenDrawer={() => setDrawerOpen(true)} />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="/gallery" element={<Gallery user={user} isAdmin={isAdmin} />} />
             <Route
@@ -157,19 +280,18 @@ export default function App() {
               }
             />
             <Route path="/me" element={<Me />} />
+            <Route path="/media" element={<Media isAdmin={isAdmin} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
 
-        {/* Bottom navigation */}
+        {/* Bottom navigation — trimmed to 4 essentials */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
           <div className="max-w-xl mx-auto flex">
             <TabLink to="/" label="Home" icon="🏠" />
             <TabLink to="/explore" label="Explore" icon="🗺️" />
             <TabLink to="/chat" label="Chat" icon="💬" />
             <EventsTabLink hasNewEvents={hasNewEvents} />
-            <TabLink to="/gallery" label="Gallery" icon="📷" />
-            <TabLink to="/me" label="Me" icon="👤" />
           </div>
         </div>
       </div>
