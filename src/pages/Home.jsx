@@ -154,7 +154,7 @@ export default function Home({ onOpenDrawer }) {
           background: "linear-gradient(to bottom, transparent, rgba(13,1,3,0.15))",
         }} />
 
-        <div className="relative px-6 pt-2 pb-6">
+        <div className="relative pl-2 pr-6 pt-2 pb-6">
           {/* Hamburger menu button */}
           <button
             onClick={onOpenDrawer}
@@ -162,7 +162,7 @@ export default function Home({ onOpenDrawer }) {
             aria-label="Open menu"
           >
             {[0,1,2].map(i => (
-              <span key={i} style={{ display: "block", width: "18px", height: "2px", borderRadius: "2px", background: "rgba(255,255,255,0.85)" }} />
+              <span key={i} style={{ display: "block", width: "18px", height: "2px", borderRadius: "2px", background: "rgba(196,150,42,0.25)" }} />
             ))}
           </button>
           
