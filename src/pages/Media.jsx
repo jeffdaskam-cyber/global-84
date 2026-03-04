@@ -402,7 +402,6 @@ function AddMediaModal({ onClose, onSave }) {
     if (!title.trim()) { setError("Title is required."); return; }
     if (!url.trim())   { setError("URL is required."); return; }
     // no URL format validation — YouTube gets auto-thumbnail, others just won't
-    }
     setError("");
     setSaving(true);
     try {
