@@ -154,7 +154,7 @@ export default function Home({ onOpenDrawer }) {
           background: "linear-gradient(to bottom, transparent, rgba(13,1,3,0.15))",
         }} />
 
-        <div className="relative px-6 pt-8 pb-6">
+        <div className="relative px-6 pt-4 pb-6">
           {/* Hamburger menu button */}
           <button
             onClick={onOpenDrawer}
@@ -186,7 +186,7 @@ export default function Home({ onOpenDrawer }) {
           </div>
 
           {/* Line 2: Creating Global Leaders */}
-          <p className="mt-2 transition-all duration-700 ease-out" style={{
+          <p className="mt-4 transition-all duration-700 ease-out" style={{
             fontFamily: "Georgia, serif", fontSize: "18px",
             fontStyle: "italic", color: "#ffffff",
             opacity: mounted ? 1 : 0,
