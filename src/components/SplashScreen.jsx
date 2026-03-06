@@ -72,19 +72,9 @@ export default function SplashScreen({ onComplete }) {
 
   function handleSkip() {
     if (doneRef.current) return;
+    doneRef.current = true;
     clearInterval(intervalRef.current);
-    setOpacity(0);
-    setTimeout(() => {
-      setShowSplash(true);
-      setOpacity(1);
-      setTimeout(() => setSplashMounted(true), 80);
-      setTimeout(() => {
-        if (!doneRef.current) {
-          doneRef.current = true;
-          onComplete();
-        }
-      }, SPLASH_HOLD_MS);
-    }, FADE_MS);
+    onComplete();
   }
 
   const photo = PHOTOS[photoIdx];
