@@ -110,7 +110,7 @@ export default function Me() {
   }
 
   async function handleDeleteFile(fileId, storagePath, fileName) {
-    if (!window.confirm(\`Delete "\${fileName}"? This cannot be undone.\`)) return;
+    if (!window.confirm("Delete \"" + fileName + "\"? This cannot be undone.")) return;
     try {
       await deleteFile(user.uid, fileId, storagePath);
     } catch (err) {
@@ -244,7 +244,7 @@ export default function Me() {
           <div className="w-full bg-surface-border dark:bg-surface-darkBorder rounded-full h-1.5 overflow-hidden">
             <div
               className="h-full bg-du-crimson rounded-full transition-all duration-200"
-              style={{ width: \`\${uploadProgress}%\` }}
+              style={{ width: String(uploadProgress) + "%" }}
             />
           </div>
         )}
