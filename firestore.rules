@@ -88,12 +88,15 @@ service cloud.firestore {
       }
 
       // Photos (any signed-in user can read; uploader can create; admin can delete)
+      // Any signed-in user can update the likes array only; uploader can update their own photo fields.
       match /photos/{photoId} {
         allow read: if signedIn();
         allow create: if signedIn()
           && request.resource.data.uploaderUid == request.auth.uid;
         allow update: if signedIn()
           && resource.data.uploaderUid == request.auth.uid;
+        allow update: if signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
         allow delete: if isAdmin(cohortId);
       }
 
@@ -106,6 +109,37 @@ service cloud.firestore {
       match /media/{mediaId} {
         allow read: if signedIn();
         allow create, update, delete: if isAdmin(cohortId);
+      }
+
+      // Teams — private small-group hubs
+      // Team doc + members subcollection: admin read/write only
+      // Messages + meetings: readable/writable only by assigned team members (or admin for meetings/delete)
+      match /teams/{teamId} {
+        allow read, write: if isAdmin(cohortId);
+
+        match /members/{uid} {
+          allow read, write: if isAdmin(cohortId);
+        }
+
+        // Helper: is the requesting user an assigned member of this team?
+        // Checked by looking up their uid in the members subcollection.
+        match /messages/{messageId} {
+          allow read: if isAdmin(cohortId)
+            || exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
+          allow create: if signedIn()
+            && exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid))
+            && request.resource.data.createdByUid == request.auth.uid
+            && request.resource.data.text.size() >= 1
+            && request.resource.data.text.size() <= 1000;
+          allow delete: if isAdmin(cohortId);
+          allow update: if false;
+        }
+
+        match /meetings/{meetingId} {
+          allow read: if isAdmin(cohortId)
+            || exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
+          allow create, update, delete: if isAdmin(cohortId);
+        }
       }
     }
   }

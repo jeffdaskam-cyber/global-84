@@ -14,6 +14,7 @@ import Me from "./pages/Me.jsx";
 import Gallery from "./pages/Gallery";
 import Media from "./pages/Media.jsx";
 import Currency from "./pages/Currency.jsx";
+import Team from "./pages/Team.jsx";
 import EventEditorModal from "./components/features/EventEditorModal.jsx";
 
 import { subscribeIsAdmin } from "./lib/admins.js";
@@ -29,6 +30,7 @@ const DRAWER_NAV = [
   { to: "/chat",   label: "Chat",    icon: "💬" },
   { to: "/explore",label: "Explore", icon: "🗺️" },
   { to: "/gallery",label: "Gallery", icon: "📷" },
+  { to: "/team",     label: "Teams",    icon: "👥" },
   { to: "/media",    label: "Media",    icon: "🎬" },
   { to: "/currency", label: "Currency", icon: "💱" },
   { to: "/me",       label: "Me",       icon: "👤" },
@@ -282,6 +284,7 @@ export default function App() {
               }
             />
             <Route path="/me" element={<Me />} />
+            <Route path="/team" element={<Team isAdmin={isAdmin} />} />
             <Route path="/media" element={<Media isAdmin={isAdmin} />} />
             <Route path="/currency" element={<Currency />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -295,6 +298,7 @@ export default function App() {
             <TabLink to="/explore" label="Explore" icon="🗺️" />
             <TabLink to="/chat" label="Chat" icon="💬" />
             <EventsTabLink hasNewEvents={hasNewEvents} />
+            <TabLink to="/team" label="Teams" icon="👥" />
           </div>
         </div>
       </div>
