@@ -20,5 +20,17 @@ service firebase.storage {
       // belt-and-suspenders; tighten if you add callable Cloud Functions later)
       allow delete: if request.auth != null;
     }
+
+    // User private files: each user can only read/write their own folder.
+    // No other user, including admins, can access another user's files.
+    match /userFiles/{uid}/{fileName} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 10 * 1024 * 1024
+        && (request.resource.contentType == 'application/pdf'
+            || request.resource.contentType.matches('image/.*'));
+      allow read, delete: if request.auth != null
+        && request.auth.uid == uid;
+    }
   }
 }
