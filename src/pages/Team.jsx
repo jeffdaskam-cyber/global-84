@@ -496,8 +496,11 @@ function MeetingCard({ meeting, isAdmin, onEdit, onDelete }) {
 function AdminPanel({ user }) {
   const [teams, setTeams] = useState([]);
   const [cohortMembers, setCohortMembers] = useState([]);
-  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [selectedTeamId, setSelectedTeamId] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
+
+  // Derive selectedTeam from the live teams list so it always stays in sync
+  const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
 
   // Create team modal
   const [showCreate, setShowCreate] = useState(false);
@@ -529,19 +532,18 @@ function AdminPanel({ user }) {
 
   // Subscribe to selected team's members
   useEffect(() => {
-    if (!selectedTeam) { setTeamMembers([]); return; }
-    return subscribeTeamMembers(selectedTeam.id, setTeamMembers);
-  }, [selectedTeam?.id]);
+    if (!selectedTeamId) { setTeamMembers([]); return; }
+    return subscribeTeamMembers(selectedTeamId, setTeamMembers);
+  }, [selectedTeamId]);
 
   async function handleCreateTeam() {
     if (!newTeamName.trim()) return;
     setCreating(true);
     try {
       const id = await createTeam(newTeamName.trim(), user.uid);
+      setSelectedTeamId(id);
       setShowCreate(false);
       setNewTeamName("");
-      const newTeam = { id, name: newTeamName.trim() };
-      setSelectedTeam(newTeam);
     } finally {
       setCreating(false);
     }
@@ -550,7 +552,6 @@ function AdminPanel({ user }) {
   async function handleRenameTeam() {
     if (!renameName.trim() || !selectedTeam) return;
     await updateTeam(selectedTeam.id, renameName.trim());
-    setSelectedTeam({ ...selectedTeam, name: renameName.trim() });
     setShowRename(false);
   }
 
@@ -558,7 +559,7 @@ function AdminPanel({ user }) {
     if (!selectedTeam) return;
     if (!window.confirm(`Delete "${selectedTeam.name}" and all its messages and meetings? This cannot be undone.`)) return;
     await deleteTeam(selectedTeam.id);
-    setSelectedTeam(null);
+    setSelectedTeamId(null);
   }
 
   async function handleAssign() {
@@ -597,7 +598,7 @@ function AdminPanel({ user }) {
             {teams.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setSelectedTeam(t)}
+                onClick={() => setSelectedTeamId(t.id)}
                 style={{
                   padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
                   cursor: "pointer", border: "1px solid",

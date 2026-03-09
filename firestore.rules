@@ -26,6 +26,9 @@ service cloud.firestore {
           && request.resource.data.uid == request.auth.uid;
         allow update: if isSelf(uid)
           && request.resource.data.uid == resource.data.uid;
+        // Admin can update teamId field on any member (for team assignment)
+        allow update: if isAdmin(cohortId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamId']);
 
         // Per-user saved Explore favorites
         match /favorites/{exploreId} {

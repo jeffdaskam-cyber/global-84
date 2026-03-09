@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import { db, COHORT_ID } from "./firebase.js";
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Ref helpers ────────────────────────────────────────────────────────────────
 
 function teamsRef() {
   return collection(db, "cohorts", COHORT_ID, "teams");
@@ -41,6 +41,9 @@ function meetingsRef(teamId) {
 function meetingRef(teamId, meetingId) {
   return doc(db, "cohorts", COHORT_ID, "teams", teamId, "meetings", meetingId);
 }
+function cohortMemberRef(uid) {
+  return doc(db, "cohorts", COHORT_ID, "members", uid);
+}
 
 // ── Team subscriptions ─────────────────────────────────────────────────────────
 
@@ -52,23 +55,45 @@ export function subscribeTeams(callback) {
   });
 }
 
-/** Member: subscribe to the one team the current user belongs to.
- *  Calls callback with the team object (including id) or null. */
+/**
+ * Member: subscribe to this user's team.
+ *
+ * Instead of scanning all teams (unreliable, requires subcollection reads),
+ * we store teamId on the member's own profile doc — which they already have
+ * read access to. We watch that doc for teamId changes, then subscribe to
+ * the actual team doc. Returns a single unsubscribe function.
+ */
 export function subscribeMyTeam(uid, callback) {
-  // We subscribe to all teams and filter client-side for the member doc.
-  // This is safe at cohort scale (< 30 teams max).
-  const q = query(teamsRef(), orderBy("createdAt", "asc"));
-  return onSnapshot(q, async (snap) => {
-    for (const teamDoc of snap.docs) {
-      const mSnap = await getDocs(membersRef(teamDoc.id));
-      const found = mSnap.docs.some((m) => m.id === uid);
-      if (found) {
-        callback({ id: teamDoc.id, ...teamDoc.data() });
-        return;
-      }
+  let teamUnsub = null;
+
+  const memberUnsub = onSnapshot(cohortMemberRef(uid), (memberSnap) => {
+    const teamId = memberSnap.exists() ? memberSnap.data().teamId : null;
+
+    // Clean up previous team listener if it exists
+    if (teamUnsub) {
+      teamUnsub();
+      teamUnsub = null;
     }
-    callback(null);
+
+    if (!teamId) {
+      callback(null);
+      return;
+    }
+
+    // Subscribe to the team doc directly
+    teamUnsub = onSnapshot(teamRef(teamId), (teamSnap) => {
+      if (!teamSnap.exists()) {
+        callback(null);
+      } else {
+        callback({ id: teamSnap.id, ...teamSnap.data() });
+      }
+    });
   });
+
+  return () => {
+    memberUnsub();
+    if (teamUnsub) teamUnsub();
+  };
 }
 
 /** Subscribe to members of a specific team */
@@ -94,30 +119,53 @@ export async function updateTeam(teamId, name) {
   await updateDoc(teamRef(teamId), { name });
 }
 
-/** Delete team and all subcollections (messages, meetings, members).
- *  Firestore does not auto-delete subcollections, so we batch-delete them. */
+/**
+ * Delete a team and all its subcollections.
+ * Also clears teamId from every assigned member's profile doc.
+ */
 export async function deleteTeam(teamId) {
   const batch = writeBatch(db);
 
+  // Clear teamId from cohort member profile docs first
+  const memberSnap = await getDocs(membersRef(teamId));
+  for (const m of memberSnap.docs) {
+    batch.update(cohortMemberRef(m.id), { teamId: null });
+  }
+
+  // Delete all subcollection docs
   for (const subCol of [messagesRef(teamId), meetingsRef(teamId), membersRef(teamId)]) {
     const snap = await getDocs(subCol);
     snap.docs.forEach((d) => batch.delete(d.ref));
   }
+
   batch.delete(teamRef(teamId));
   await batch.commit();
 }
 
 // ── Member assignment (admin only) ────────────────────────────────────────────
 
+/**
+ * Assign a member to a team.
+ * Two writes in one batch:
+ *   1. teams/{teamId}/members/{uid}  — for Firestore rules access check
+ *   2. cohorts/{cohortId}/members/{uid}.teamId — so subscribeMyTeam works instantly
+ */
 export async function assignMember(teamId, uid, displayName) {
-  await setDoc(memberRef(teamId, uid), {
-    displayName,
-    joinedAt: serverTimestamp(),
-  });
+  const batch = writeBatch(db);
+  batch.set(memberRef(teamId, uid), { displayName, joinedAt: serverTimestamp() });
+  batch.update(cohortMemberRef(uid), { teamId });
+  await batch.commit();
 }
 
+/**
+ * Remove a member from a team.
+ * Clears teamId on their profile and removes them from the team's members subcollection.
+ */
 export async function removeMember(teamId, uid) {
-  await deleteDoc(memberRef(teamId, uid));
+  const batch = writeBatch(db);
+  batch.delete(memberRef(teamId, uid));
+  batch.update(cohortMemberRef(uid), { teamId: null });
+  await batch.commit();
 }
 
 // ── Team chat ──────────────────────────────────────────────────────────────────
