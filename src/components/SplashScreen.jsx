@@ -4,8 +4,8 @@
 import { useEffect, useRef, useState } from "react";
 
 const PHOTOS = [
-  { src: "/splash-singapore.jpg", srcLandscape: "/splash-singapore-landscape.jpg", label: "Singapore",        flag: "🇸🇬" },
-  { src: "/splash-hcmc.jpg",      srcLandscape: "/splash-hcmc-landscape.jpg",      label: "Ho Chi Minh City", flag: "🇻🇳" },
+  { src: "/splash-singapore.webp", srcLandscape: "/splash-singapore-landscape.webp", label: "Singapore",        flag: "🇸🇬" },
+  { src: "/splash-hcmc.webp",      srcLandscape: "/splash-hcmc-landscape.webp",      label: "Ho Chi Minh City", flag: "🇻🇳" },
 ];
 
 const PHOTO_HOLD_MS  = 2500;

@@ -36,7 +36,7 @@ service cloud.firestore {
           allow update: if false;
         }
 
-        // Per-user private file metadata (My Files feature)
+        // Per-user private file metadata (My Files feature) — March 10
         // Only the owning user can read, create, or delete — admins have no access.
         match /files/{fileId} {
           allow read, create, delete: if isSelf(uid);
