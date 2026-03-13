@@ -3,6 +3,9 @@
   "include": [
     "src"
   ],
+  "exclude": [
+    "src/genkit-sample.ts"
+  ],
   "compilerOptions": {
     "module": "NodeNext",
     "noImplicitReturns": true,

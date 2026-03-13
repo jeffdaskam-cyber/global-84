@@ -15,6 +15,7 @@ import Gallery from "./pages/Gallery";
 import Media from "./pages/Media.jsx";
 import Currency from "./pages/Currency.jsx";
 import Team from "./pages/Team.jsx";
+import Translate from "./pages/Translate.jsx";
 import EventEditorModal from "./components/features/EventEditorModal.jsx";
 
 import { subscribeIsAdmin } from "./lib/admins.js";
@@ -32,8 +33,9 @@ const DRAWER_NAV = [
   { to: "/gallery",label: "Gallery", icon: "📷" },
   { to: "/team",     label: "Teams",    icon: "👥" },
   { to: "/media",    label: "Media",    icon: "🎬" },
-  { to: "/currency", label: "Currency", icon: "💱" },
-  { to: "/me",       label: "Me",       icon: "👤" },
+  { to: "/currency",  label: "Currency",   icon: "💱" },
+  { to: "/translate", label: "Translator", icon: "🌐" },
+  { to: "/me",        label: "Me",         icon: "👤" },
 ];
 
 function SideDrawer({ open, onClose }) {
@@ -287,6 +289,7 @@ export default function App() {
             <Route path="/team" element={<Team isAdmin={isAdmin} />} />
             <Route path="/media" element={<Media isAdmin={isAdmin} />} />
             <Route path="/currency" element={<Currency />} />
+            <Route path="/translate" element={<Translate />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
