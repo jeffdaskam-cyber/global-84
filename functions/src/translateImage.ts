@@ -13,35 +13,29 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
+import corsLib from "cors";
 
 // Reference the secret stored in Firebase Secret Manager.
 // Set it once with: firebase functions:secrets:set ANTHROPIC_API_KEY
 const anthropicApiKey = defineSecret("ANTHROPIC_API_KEY");
 
-// Allowed origins for CORS. The React app is served from Vercel (production)
-// and localhost:5173 (local Vite dev server).
-const ALLOWED_ORIGINS = [
-  "http://localhost:5173",
-  "https://global-84.vercel.app",
-];
-
-/** Set CORS headers on every response. */
-function setCorsHeaders(req: { headers: { origin?: string } }, res: { setHeader: (k: string, v: string) => void }) {
-  const origin = req.headers.origin ?? "";
-  const isAllowed = ALLOWED_ORIGINS.some(
-    (allowed) => origin === allowed || origin.endsWith(".vercel.app")
-  );
-  if (isAllowed) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  } else {
-    // Fall back to first allowed origin so the preflight isn't blocked during
-    // development if an unexpected origin appears.
-    res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS[0]);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Max-Age", "86400");
-}
+// cors middleware — allows requests from the Vercel production domain,
+// any *.vercel.app preview URL, and localhost:5173 (local Vite dev).
+const cors = corsLib({
+  origin: (origin, callback) => {
+    if (
+      !origin ||
+      origin === "http://localhost:5173" ||
+      origin.endsWith(".vercel.app")
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+});
 
 /**
  * Parse the Anthropic response text into separate "original" and "translated"
@@ -68,69 +62,65 @@ function parseTranslationResponse(text: string): { original: string; translated:
  *   { original: string, translated: string }
  */
 export const translateImage = onRequest(
-  // Grant access to the ANTHROPIC_API_KEY secret at runtime
-  { secrets: [anthropicApiKey] },
-  async (req, res) => {
-    // Set CORS headers for every response (including errors)
-    setCorsHeaders(req, res);
+  {
+    secrets: [anthropicApiKey],
+    invoker: "public",   // allow unauthenticated requests at the platform level
+  },
+  (req, res) => {
+    // Wrap everything in the cors middleware so preflight and actual requests
+    // both get correct Access-Control-* headers before any other logic runs.
+    cors(req, res, async () => {
+      // Only accept POST after CORS is handled
+      if (req.method !== "POST") {
+        res.status(405).json({ error: "Method not allowed. Use POST." });
+        return;
+      }
 
-    // Handle CORS preflight
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
+      // Validate request body
+      const { imageBase64, mediaType } = req.body as {
+        imageBase64?: string;
+        mediaType?: string;
+      };
 
-    // Only accept POST
-    if (req.method !== "POST") {
-      res.status(405).json({ error: "Method not allowed. Use POST." });
-      return;
-    }
+      if (!imageBase64 || typeof imageBase64 !== "string") {
+        res.status(400).json({ error: "Missing required field: imageBase64" });
+        return;
+      }
+      if (!mediaType || typeof mediaType !== "string") {
+        res.status(400).json({ error: "Missing required field: mediaType" });
+        return;
+      }
 
-    // Validate request body
-    const { imageBase64, mediaType } = req.body as {
-      imageBase64?: string;
-      mediaType?: string;
-    };
+      const apiKey = anthropicApiKey.value();
 
-    if (!imageBase64 || typeof imageBase64 !== "string") {
-      res.status(400).json({ error: "Missing required field: imageBase64" });
-      return;
-    }
-    if (!mediaType || typeof mediaType !== "string") {
-      res.status(400).json({ error: "Missing required field: mediaType" });
-      return;
-    }
+      try {
+        logger.info("translateImage: calling Anthropic API", { mediaType });
 
-    const apiKey = anthropicApiKey.value();
-
-    try {
-      logger.info("translateImage: calling Anthropic API", { mediaType });
-
-      const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1024,
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image",
-                  source: {
-                    type: "base64",
-                    media_type: mediaType,
-                    data: imageBase64,
+        const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1024,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image",
+                    source: {
+                      type: "base64",
+                      media_type: mediaType,
+                      data: imageBase64,
+                    },
                   },
-                },
-                {
-                  type: "text",
-                  text: `Please examine this image and perform two tasks:
+                  {
+                    type: "text",
+                    text: `Please examine this image and perform two tasks:
 1. Extract all visible text exactly as it appears in the original language.
 2. Translate that text into English.
 
@@ -143,43 +133,44 @@ ENGLISH TRANSLATION:
 [The English translation of the above text]
 
 If there is no readable text in the image, write "No text detected" under each section.`,
-                },
-              ],
-            },
-          ],
-        }),
-      });
+                  },
+                ],
+              },
+            ],
+          }),
+        });
 
-      if (!anthropicResponse.ok) {
-        const errorBody = await anthropicResponse.text();
-        logger.error("translateImage: Anthropic API error", {
-          status: anthropicResponse.status,
-          body: errorBody,
+        if (!anthropicResponse.ok) {
+          const errorBody = await anthropicResponse.text();
+          logger.error("translateImage: Anthropic API error", {
+            status: anthropicResponse.status,
+            body: errorBody,
+          });
+          res.status(502).json({
+            error: `Translation service error (${anthropicResponse.status}). Please try again.`,
+          });
+          return;
+        }
+
+        const anthropicData = await anthropicResponse.json() as {
+          content: Array<{ type: string; text: string }>;
+        };
+
+        const responseText = anthropicData.content
+          .filter((block) => block.type === "text")
+          .map((block) => block.text)
+          .join("\n");
+
+        const result = parseTranslationResponse(responseText);
+
+        logger.info("translateImage: success");
+        res.status(200).json(result);
+      } catch (err) {
+        logger.error("translateImage: unexpected error", err);
+        res.status(500).json({
+          error: "An unexpected error occurred. Please try again.",
         });
-        res.status(502).json({
-          error: `Translation service error (${anthropicResponse.status}). Please try again.`,
-        });
-        return;
       }
-
-      const anthropicData = await anthropicResponse.json() as {
-        content: Array<{ type: string; text: string }>;
-      };
-
-      const responseText = anthropicData.content
-        .filter((block) => block.type === "text")
-        .map((block) => block.text)
-        .join("\n");
-
-      const result = parseTranslationResponse(responseText);
-
-      logger.info("translateImage: success");
-      res.status(200).json(result);
-    } catch (err) {
-      logger.error("translateImage: unexpected error", err);
-      res.status(500).json({
-        error: "An unexpected error occurred. Please try again.",
-      });
-    }
+    });
   }
 );
