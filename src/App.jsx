@@ -24,23 +24,49 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 
 const LS_KEY = "global84_lastViewedEventsAt";
 
-// ── Side Drawer ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Drawer nav structure
+// Plain items: { to, label, icon }
+// Group items: { group, label, icon, children: [{ to, label, icon }] }
+// ─────────────────────────────────────────────────────────────────────────────
 const DRAWER_NAV = [
-  { to: "/",       label: "Home",    icon: "🏠" },
-  { to: "/events", label: "Events",  icon: "📅" },
-  { to: "/chat",   label: "Chat",    icon: "💬" },
-  { to: "/explore",label: "Explore", icon: "🗺️" },
-  { to: "/gallery",label: "Gallery", icon: "📷" },
-  { to: "/team",     label: "Teams",    icon: "👥" },
-  { to: "/media",    label: "Media",    icon: "🎬" },
-  { to: "/currency",  label: "Currency",   icon: "💱" },
-  { to: "/translate", label: "Translator", icon: "🌐" },
-  { to: "/me",        label: "Me",         icon: "👤" },
+  { to: "/",        label: "Home",    icon: "🏠" },
+  { to: "/explore", label: "Explore", icon: "🗺️" },
+  { to: "/gallery", label: "Gallery", icon: "📷" },
+  {
+    group: "connect",
+    label: "Connect",
+    icon: "💬",
+    children: [
+      { to: "/chat", label: "Chat",  icon: "💬" },
+      { to: "/team", label: "Teams", icon: "👥" },
+    ],
+  },
+  { to: "/events", label: "Events", icon: "📅" },
+  { to: "/media",  label: "Media",  icon: "🎬" },
+  {
+    group: "utilities",
+    label: "Utilities",
+    icon: "🔧",
+    children: [
+      { to: "/currency",  label: "Currency Exchange", icon: "💱" },
+      { to: "/translate", label: "Translator",        icon: "🌐" },
+    ],
+  },
+  { to: "/me", label: "Me", icon: "👤" },
 ];
 
+// ── Side Drawer ───────────────────────────────────────────────────────────────
 function SideDrawer({ open, onClose }) {
   const navigate = useNavigate();
   const drawerRef = useRef(null);
+
+  // Track which collapsible groups are open — both closed by default
+  const [openGroups, setOpenGroups] = useState({ connect: false, utilities: false });
+
+  function toggleGroup(key) {
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   // Close on outside click
   useEffect(() => {
@@ -54,7 +80,7 @@ function SideDrawer({ open, onClose }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose]);
 
-  // Prevent body scroll when open
+  // Prevent body scroll when drawer is open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -64,6 +90,10 @@ function SideDrawer({ open, onClose }) {
     navigate(to);
     onClose();
   }
+
+  // Shared hover style handlers (avoids Tailwind specificity issues on buttons)
+  const hoverOn  = (e) => { e.currentTarget.style.background = "rgba(196,150,42,0.12)"; };
+  const hoverOff = (e) => { e.currentTarget.style.background = "transparent"; };
 
   return (
     <>
@@ -91,51 +121,188 @@ function SideDrawer({ open, onClose }) {
         }}
       >
         {/* Drawer header */}
-        <div className="flex items-center justify-between px-5 pt-10 pb-6"
-          style={{ borderBottom: "1px solid rgba(196,150,42,0.2)" }}>
+        <div
+          className="flex items-center justify-between px-5 pt-10 pb-6"
+          style={{ borderBottom: "1px solid rgba(196,150,42,0.2)" }}
+        >
           <div>
-            <div style={{
-              fontFamily: "Georgia, serif", fontSize: "22px", fontWeight: 700,
-              color: "#ffffff", letterSpacing: "-0.3px",
-            }}>
-              Global <span style={{
-                background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-              }}>84</span>
+            <div
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: "22px",
+                fontWeight: 700,
+                color: "#ffffff",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              Global{" "}
+              <span
+                style={{
+                  background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                84
+              </span>
             </div>
-            <div style={{ fontSize: "10px", letterSpacing: "0.18em", color: "rgba(196,150,42,0.75)", textTransform: "uppercase", marginTop: "2px" }}>
+            <div
+              style={{
+                fontSize: "10px",
+                letterSpacing: "0.18em",
+                color: "rgba(196,150,42,0.75)",
+                textTransform: "uppercase",
+                marginTop: "2px",
+              }}
+            >
               Navigation
             </div>
           </div>
           <button
             onClick={onClose}
             className="flex items-center justify-center rounded-full"
-            style={{ width: 32, height: 32, background: "rgba(196,150,42,0.12)", color: "rgba(255,255,255,0.7)", fontSize: "18px" }}
+            style={{
+              width: 32,
+              height: 32,
+              background: "rgba(196,150,42,0.12)",
+              color: "rgba(255,255,255,0.7)",
+              fontSize: "18px",
+            }}
           >
             ✕
           </button>
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {DRAWER_NAV.map(({ to, label, icon }) => (
-            <button
-              key={to}
-              onClick={() => handleNav(to)}
-              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left"
-              style={{ color: "rgba(255,255,255,0.85)" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(196,150,42,0.12)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
-              <span style={{ fontSize: "20px" }}>{icon}</span>
-              <span style={{ fontFamily: "Georgia, serif", fontSize: "16px", fontWeight: 600 }}>{label}</span>
-            </button>
-          ))}
+        <nav
+          className="flex-1 px-3 py-4 overflow-y-auto"
+          style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+        >
+          {DRAWER_NAV.map((item) => {
+
+            // ── Collapsible group (Connect, Utilities) ──────────────────────
+            if (item.group) {
+              const isOpen = openGroups[item.group];
+              return (
+                <div key={item.group}>
+                  {/* Group header — tap to expand/collapse */}
+                  <button
+                    onClick={() => toggleGroup(item.group)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-left"
+                    style={{ color: "rgba(255,255,255,0.85)" }}
+                    onMouseEnter={hoverOn}
+                    onMouseLeave={hoverOff}
+                  >
+                    <div className="flex items-center gap-4">
+                      <span style={{ fontSize: "20px" }}>{item.icon}</span>
+                      <span
+                        style={{
+                          fontFamily: "Georgia, serif",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                    </div>
+                    {/* Chevron rotates 180° when the group is open */}
+                    <svg
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        color: "rgba(196,150,42,0.75)",
+                        transition: "transform 0.2s ease",
+                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        flexShrink: 0,
+                      }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Child links — rendered only when group is open */}
+                  {isOpen && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "1px",
+                        marginTop: "1px",
+                      }}
+                    >
+                      {item.children.map(({ to, label, icon }) => (
+                        <button
+                          key={to}
+                          onClick={() => handleNav(to)}
+                          className="w-full flex items-center gap-3 rounded-xl transition-all text-left"
+                          style={{
+                            paddingLeft: "52px",
+                            paddingTop: "10px",
+                            paddingBottom: "10px",
+                            paddingRight: "16px",
+                            color: "rgba(255,255,255,0.75)",
+                          }}
+                          onMouseEnter={hoverOn}
+                          onMouseLeave={hoverOff}
+                        >
+                          <span style={{ fontSize: "17px" }}>{icon}</span>
+                          <span
+                            style={{
+                              fontFamily: "Georgia, serif",
+                              fontSize: "14px",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // ── Plain nav link ──────────────────────────────────────────────
+            return (
+              <button
+                key={item.to}
+                onClick={() => handleNav(item.to)}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left"
+                style={{ color: "rgba(255,255,255,0.85)" }}
+                onMouseEnter={hoverOn}
+                onMouseLeave={hoverOff}
+              >
+                <span style={{ fontSize: "20px" }}>{item.icon}</span>
+                <span
+                  style={{
+                    fontFamily: "Georgia, serif",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* Drawer footer */}
         <div className="px-5 py-5" style={{ borderTop: "1px solid rgba(196,150,42,0.15)" }}>
-          <p style={{ fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(196,150,42,0.5)" }}>
+          <p
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              color: "rgba(196,150,42,0.5)",
+            }}
+          >
             Singapore ◆ Vietnam
           </p>
         </div>
@@ -144,6 +311,9 @@ function SideDrawer({ open, onClose }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Bottom nav tab components — unchanged from original
+// ─────────────────────────────────────────────────────────────────────────────
 function TabLink({ to, label, icon }) {
   return (
     <NavLink
@@ -185,6 +355,9 @@ function EventsTabLink({ hasNewEvents }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// App root — unchanged from original
+// ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -194,7 +367,7 @@ export default function App() {
 
   // Global event editor — handles both editing existing events and prefilling from Explore
   const [eventEditorOpen, setEventEditorOpen] = useState(false);
-  const [eventEditorEvent, setEventEditorEvent] = useState(null);    // existing event (edit mode)
+  const [eventEditorEvent, setEventEditorEvent] = useState(null);     // existing event (edit mode)
   const [eventEditorPrefill, setEventEditorPrefill] = useState(null); // place data (from Explore)
 
   // Call with an existing event object to edit it, a prefill object to pre-fill a new event,
@@ -294,7 +467,7 @@ export default function App() {
           </Routes>
         </div>
 
-        {/* Bottom navigation — trimmed to 4 essentials */}
+        {/* Bottom navigation — 5 tabs, unchanged */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
           <div className="max-w-l mx-auto flex">
             <TabLink to="/" label="Home" icon="🏠" />
