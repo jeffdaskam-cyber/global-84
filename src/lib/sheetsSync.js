@@ -10,19 +10,36 @@
 // Column order in the sheet doesn't matter — the parser matches by header name.
 
 /**
- * Fetches the raw CSV text from the published Google Sheet URL.
- * The URL is read from VITE_EXPLORE_SHEET_URL.
+ * Fetches the raw CSV text from the published Google Sheet.
+ * In production, uses a Vercel serverless proxy (/api/sheets) to avoid CORS
+ * issues with organizational Google Workspace accounts.
+ * In local dev, fetches the Google Sheet URL directly.
  */
 export async function fetchSheetData() {
-  const url = import.meta.env.VITE_EXPLORE_SHEET_URL;
-  if (!url) {
+  const sheetUrl = import.meta.env.VITE_EXPLORE_SHEET_URL;
+  if (!sheetUrl) {
     throw new Error(
       "Sheet URL not configured. Set VITE_EXPLORE_SHEET_URL in your .env file."
     );
   }
 
-  const res = await fetch(url);
+  // Use the serverless proxy in production to bypass CORS restrictions.
+  // In local dev (Vite), fetch Google directly since there's no /api route.
+  const isDev = import.meta.env.DEV;
+  const fetchUrl = isDev ? sheetUrl : "/api/sheets";
+
+  const res = await fetch(fetchUrl);
+
   if (!res.ok) {
+    // The proxy returns JSON errors
+    if (!isDev) {
+      try {
+        const body = await res.json();
+        throw new Error(body.error || `Proxy returned HTTP ${res.status}`);
+      } catch (e) {
+        if (e.message) throw e;
+      }
+    }
     throw new Error(
       `Failed to fetch Google Sheet (HTTP ${res.status}). Make sure the sheet is published to web.`
     );
@@ -116,17 +133,9 @@ export function parseSheetCSV(csvText) {
       const key = header[c];
       let value = (line[c] ?? "").trim();
 
-      if (key === "tags") {
-        // Split comma-separated tags into an array
-        obj[key] = value
-          ? value
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [];
-      } else {
-        obj[key] = value;
-      }
+      // Leave all fields as strings — cleanExploreRow() in explore.js
+      // handles tag splitting and normalization downstream.
+      obj[key] = value;
     }
     rows.push(obj);
   }

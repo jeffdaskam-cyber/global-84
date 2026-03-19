@@ -67,8 +67,14 @@ function CityPicker({ isAdmin, onSelect }) {
     setIsSyncing(true);
     setSyncStatus("Fetching from Google Sheets...");
     try {
+      console.log("[sheets sync] starting fetch...");
       const csvText = await fetchSheetData();
+      console.log("[sheets sync] fetched CSV length:", csvText.length);
+      console.log("[sheets sync] first 500 chars:", csvText.slice(0, 500));
       const rows = parseSheetCSV(csvText);
+      console.log("[sheets sync] parsed rows:", rows.length);
+      if (rows.length > 0) console.log("[sheets sync] first row keys:", Object.keys(rows[0]));
+      if (rows.length > 0) console.log("[sheets sync] first row:", rows[0]);
       setSyncStatus(`Syncing ${rows.length} items to Firestore...`);
       const result = await importExploreItems(rows, { fileName: "Google Sheets sync" });
       setSyncStatus(
@@ -76,6 +82,7 @@ function CityPicker({ isAdmin, onSelect }) {
         (result.removedDuplicates ? ` Removed ${result.removedDuplicates} duplicates.` : "")
       );
     } catch (err) {
+      console.error("[sheets sync] error:", err);
       setSyncStatus(`Sync failed: ${err.message}`);
     } finally {
       setIsSyncing(false);
