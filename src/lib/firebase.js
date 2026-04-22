@@ -18,6 +18,4 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const COHORT_ID = import.meta.env.VITE_COHORT_ID;
-
-console.log("COHORT_ID:", COHORT_ID);
 export const ALLOWED_DOMAIN = (import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN || "du.edu").toLowerCase();

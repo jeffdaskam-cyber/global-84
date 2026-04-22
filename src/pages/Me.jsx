@@ -50,7 +50,7 @@ export default function Me() {
     });
 
     return () => unsub();
-  }, [user?.uid]);
+  }, [user?.displayName, user?.uid]);
 
 
   // Subscribe to this user's files

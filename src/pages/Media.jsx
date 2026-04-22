@@ -71,7 +71,6 @@ export default function Media({ isAdmin }) {
   const [lightboxUrl, setLightboxUrl] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
     const unsub = subscribeMedia((data) => {
       setItems(data);
       setLoading(false);

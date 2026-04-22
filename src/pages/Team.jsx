@@ -752,10 +752,10 @@ function MemberView({ user, isAdmin }) {
   useEffect(() => {
     if (!user) return;
     return subscribeMyTeam(user.uid, (team) => setMyTeam(team));
-  }, [user?.uid]);
+  }, [user]);
 
   useEffect(() => {
-    if (!myTeam?.id) { setTeamMembers([]); return; }
+    if (!myTeam?.id) return;
     return subscribeTeamMembers(myTeam.id, setTeamMembers);
   }, [myTeam?.id]);
 

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { cleanupExploreDuplicates, getExploreImportPreview, importExploreItems } from "../lib/explore";
-import { auth, COHORT_ID } from "../lib/firebase";
+
+const REQUIRED_HEADERS = ["city", "type", "name"];
 
 function normalizeKey(k) {
   return (k || "").trim().toLowerCase();
@@ -89,8 +90,10 @@ export default function ExploreImport({ isAdmin }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  const required = ["city", "type", "name"];
-  const hasRequiredHeaders = useMemo(() => required.every((r) => headers.includes(r)), [headers]);
+  const hasRequiredHeaders = useMemo(
+    () => REQUIRED_HEADERS.every((header) => headers.includes(header)),
+    [headers]
+  );
   const preview = useMemo(() => getExploreImportPreview(rows, 8), [rows]);
 
   async function onPickFile(e) {
@@ -113,12 +116,12 @@ export default function ExploreImport({ isAdmin }) {
 
     if (!isAdmin) return setError("Admin access required.");
     if (!rows.length) return setError("Pick a CSV file first.");
-    if (!hasRequiredHeaders) return setError(`CSV must include headers: ${required.join(", ")}.`);
+    if (!hasRequiredHeaders) {
+      return setError(`CSV must include headers: ${REQUIRED_HEADERS.join(", ")}.`);
+    }
 
     setBusy(true);
     try {
-      const u = auth.currentUser;
-      console.info("[explore import] ui submit", { cohortId: COHORT_ID, uid: u?.uid, email: u?.email, rowCount: rows.length });
       const r = await importExploreItems(rows, { fileName });
       setResult(r);
     } catch (err) {

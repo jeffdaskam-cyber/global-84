@@ -10,81 +10,75 @@ const LS_KEY = "global84_lastViewedEventsAt";
 
 export default function Events({ onViewed }) {
   const user = auth.currentUser;
-
-  const [member, setMember]     = useState(null);
-  const [city, setCity]         = useState("Singapore");
-  const [events, setEvents]     = useState([]);
-  const [allRsvps, setAllRsvps] = useState({}); // { [eventId]: rsvp[] }
-
+  const [viewedAt] = useState(() => Date.now());
+  const [member, setMember] = useState(null);
+  const [selectedCity, setSelectedCity] = useState("Singapore");
+  const [events, setEvents] = useState([]);
+  const [allRsvps, setAllRsvps] = useState({});
   const [openEditor, setOpenEditor] = useState(false);
-  const [editing, setEditing]       = useState(null);
+  const [editing, setEditing] = useState(null);
 
-  // Clear the nav badge and record the visit timestamp
   useEffect(() => {
-    localStorage.setItem(LS_KEY, Date.now().toString());
+    localStorage.setItem(LS_KEY, String(viewedAt));
     onViewed?.();
-  }, []);
+  }, [onViewed, viewedAt]);
 
   useEffect(() => {
     if (!user?.uid) return;
-    const unsub = subscribeMember(user.uid, setMember);
-    return () => unsub();
+    return subscribeMember(user.uid, setMember);
   }, [user?.uid]);
 
-  useEffect(() => {
-    if (member?.defaultCity) setCity(member.defaultCity);
-  }, [member?.defaultCity]);
+  const city = member?.defaultCity || selectedCity;
 
-  useEffect(() => {
-    const unsub = subscribeEventsByCity(city, setEvents);
-    return () => unsub();
-  }, [city]);
+  useEffect(() => subscribeEventsByCity(city, setEvents), [city]);
 
-  // Subscribe to RSVPs for each event so we can split into sections
   useEffect(() => {
     if (events.length === 0) return;
-    const unsubs = events.map((ev) =>
-      subscribeRsvps(ev.id, (rsvps) =>
-        setAllRsvps((prev) => ({ ...prev, [ev.id]: rsvps }))
-      )
+
+    const unsubscribers = events.map((event) =>
+      subscribeRsvps(event.id, (rsvps) => {
+        setAllRsvps((previous) => ({ ...previous, [event.id]: rsvps }));
+      })
     );
-    return () => unsubs.forEach((u) => u());
+
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, [events]);
 
-  // Split events into "New for You" vs "All Events"
   const { newForYou, allEvents } = useMemo(() => {
-    const now = Date.now();
     const uid = user?.uid;
-    const newForYou = [];
-    const allEvents = [];
+    const newItems = [];
+    const regularItems = [];
 
-    for (const ev of events) {
-      const rsvps      = allRsvps[ev.id] ?? [];
-      const myRsvp     = rsvps.find((r) => r.uid === uid);
-      const hasRsvp    = !!myRsvp;
-      const eventDate  = ev.startTime?.toMillis?.() ?? 0;
-      const inFuture   = eventDate > now;
+    for (const event of events) {
+      const rsvps = allRsvps[event.id] ?? [];
+      const hasRsvp = rsvps.some((rsvp) => rsvp.uid === uid);
+      const eventDate = event.startTime?.toMillis?.() ?? 0;
 
-      if (!hasRsvp && inFuture) {
-        newForYou.push(ev);
+      if (!hasRsvp && eventDate > viewedAt) {
+        newItems.push(event);
       } else {
-        allEvents.push(ev);
+        regularItems.push(event);
       }
     }
 
-    // New for You: newest first; All Events: chronological by startTime
-    newForYou.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
-    allEvents.sort((a, b) => (a.startTime?.toMillis?.() ?? 0) - (b.startTime?.toMillis?.() ?? 0));
+    newItems.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+    regularItems.sort((a, b) => (a.startTime?.toMillis?.() ?? 0) - (b.startTime?.toMillis?.() ?? 0));
 
-    return { newForYou, allEvents };
-  }, [events, allRsvps, user?.uid]);
+    return { newForYou: newItems, allEvents: regularItems };
+  }, [allRsvps, events, user?.uid, viewedAt]);
 
-  function openCreate() { setEditing(null); setOpenEditor(true); }
-  function openEdit(ev)  { setEditing(ev);   setOpenEditor(true); }
+  function openCreate() {
+    setEditing(null);
+    setOpenEditor(true);
+  }
+
+  function openEdit(event) {
+    setEditing(event);
+    setOpenEditor(true);
+  }
 
   return (
     <div className="p-5 space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-xl font-semibold text-ink-main dark:text-ink-onDark">
@@ -100,19 +94,18 @@ export default function Events({ onViewed }) {
         </button>
       </div>
 
-      {/* City filter */}
       <div className="flex gap-2">
-        {CITIES.map((c) => (
+        {CITIES.map((option) => (
           <button
-            key={c}
-            onClick={() => setCity(c)}
+            key={option}
+            onClick={() => setSelectedCity(option)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              city === c
+              city === option
                 ? "bg-du-crimson text-white"
                 : "bg-surface-border/60 text-ink-sub hover:bg-surface-border dark:bg-surface-darkBorder dark:text-ink-subOnDark"
             }`}
           >
-            {c === "Ho Chi Minh City" ? "HCMC" : "Singapore"}
+            {option === "Ho Chi Minh City" ? "HCMC" : "Singapore"}
           </button>
         ))}
       </div>
@@ -132,23 +125,18 @@ export default function Events({ onViewed }) {
         </div>
       ) : (
         <div className="space-y-6">
-
-          {/* ── New for You ── */}
           {newForYou.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-du-crimson uppercase tracking-wide">
-                  🆕 New for You
-                </span>
+                <span className="text-xs font-semibold text-du-crimson uppercase tracking-wide">New for You</span>
                 <div className="flex-1 h-px bg-du-crimson/20" />
               </div>
-              {newForYou.map((e) => (
-                <EventCard key={e.id} event={e} onEdit={openEdit} />
+              {newForYou.map((event) => (
+                <EventCard key={event.id} event={event} onEdit={openEdit} />
               ))}
             </div>
           )}
 
-          {/* ── All Events ── */}
           {allEvents.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -157,12 +145,11 @@ export default function Events({ onViewed }) {
                 </span>
                 <div className="flex-1 h-px bg-surface-border dark:bg-surface-darkBorder" />
               </div>
-              {allEvents.map((e) => (
-                <EventCard key={e.id} event={e} onEdit={openEdit} />
+              {allEvents.map((event) => (
+                <EventCard key={event.id} event={event} onEdit={openEdit} />
               ))}
             </div>
           )}
-
         </div>
       )}
 
