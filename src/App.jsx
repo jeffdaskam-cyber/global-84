@@ -24,30 +24,30 @@ const EventEditorModal = lazy(() => import("./components/features/EventEditorMod
 const LS_KEY = "global84_lastViewedEventsAt";
 
 const DRAWER_NAV = [
-  { to: "/", label: "Home", icon: "Home" },
-  { to: "/explore", label: "Explore", icon: "Explore" },
-  { to: "/gallery", label: "Gallery", icon: "Gallery" },
+  { to: "/", label: "Home", icon: "🏠" },
+  { to: "/explore", label: "Explore", icon: "🗺️" },
+  { to: "/gallery", label: "Gallery", icon: "📷" },
   {
     group: "connect",
     label: "Connect",
-    icon: "Connect",
+    icon: "💬",
     children: [
-      { to: "/chat", label: "Chat", icon: "Chat" },
-      { to: "/team", label: "Teams", icon: "Teams" },
+      { to: "/chat", label: "Chat", icon: "💬" },
+      { to: "/team", label: "Teams", icon: "👥" },
     ],
   },
-  { to: "/events", label: "Events", icon: "Events" },
-  { to: "/media", label: "Media", icon: "Media" },
+  { to: "/events", label: "Events", icon: "📅" },
+  { to: "/media", label: "Media", icon: "🎬" },
   {
     group: "utilities",
     label: "Utilities",
-    icon: "Tools",
+    icon: "🔧",
     children: [
-      { to: "/currency", label: "Currency Exchange", icon: "Currency" },
-      { to: "/translate", label: "Translator", icon: "Translate" },
+      { to: "/currency", label: "Currency Exchange", icon: "💱" },
+      { to: "/translate", label: "Translator", icon: "🌐" },
     ],
   },
-  { to: "/me", label: "Me", icon: "Profile" },
+  { to: "/me", label: "Me", icon: "👤" },
 ];
 
 function PageLoader() {
@@ -178,7 +178,7 @@ function SideDrawer({ open, onClose }) {
                     {...hoverHandlers}
                   >
                     <div className="flex items-center gap-4">
-                      <span style={{ fontSize: "14px" }}>{item.icon}</span>
+                      <span style={{ fontSize: "20px" }}>{item.icon}</span>
                       <span style={{ fontFamily: "Georgia, serif", fontSize: "16px", fontWeight: 600 }}>{item.label}</span>
                     </div>
                     <span style={{ color: "rgba(196,150,42,0.75)" }}>{isOpen ? "−" : "+"}</span>
@@ -200,7 +200,7 @@ function SideDrawer({ open, onClose }) {
                           }}
                           {...hoverHandlers}
                         >
-                          <span style={{ fontSize: "14px" }}>{child.icon}</span>
+                          <span style={{ fontSize: "18px" }}>{child.icon}</span>
                           <span style={{ fontFamily: "Georgia, serif", fontSize: "14px", fontWeight: 500 }}>{child.label}</span>
                         </button>
                       ))}
@@ -218,7 +218,7 @@ function SideDrawer({ open, onClose }) {
                 style={{ color: "rgba(255,255,255,0.85)" }}
                 {...hoverHandlers}
               >
-                <span style={{ fontSize: "14px" }}>{item.icon}</span>
+                <span style={{ fontSize: "20px" }}>{item.icon}</span>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: "16px", fontWeight: 600 }}>{item.label}</span>
               </button>
             );
@@ -254,7 +254,7 @@ function TabLink({ to, label, icon }) {
         }`
       }
     >
-      <span className="text-sm leading-none">{icon}</span>
+      <span className="text-xl leading-none">{icon}</span>
       <span className="text-xs font-semibold">{label}</span>
     </NavLink>
   );
@@ -273,10 +273,10 @@ function EventsTabLink({ hasNewEvents }) {
           : "text-ink-sub dark:text-ink-subOnDark hover:text-ink-main dark:hover:text-ink-onDark"
       }`}
     >
-      <span className="text-sm leading-none relative inline-block">
-        Events
+      <span className="text-xl leading-none relative inline-block">
+        📅
         {hasNewEvents && !isActive && (
-          <span className="absolute -top-0.5 -right-2 w-2.5 h-2.5 rounded-full bg-du-crimson border-2 border-white dark:border-surface-darkCard" />
+          <span className="absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full bg-du-crimson border-2 border-white dark:border-surface-darkCard" />
         )}
       </span>
       <span className="text-xs font-semibold">Events</span>
@@ -370,11 +370,11 @@ export default function App() {
 
         <div className="fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
           <div className="max-w-l mx-auto flex">
-            <TabLink to="/" label="Home" icon="Home" />
-            <TabLink to="/explore" label="Explore" icon="Explore" />
-            <TabLink to="/chat" label="Chat" icon="Chat" />
+            <TabLink to="/" label="Home" icon="🏠" />
+            <TabLink to="/explore" label="Explore" icon="🗺️" />
+            <TabLink to="/chat" label="Chat" icon="💬" />
             <EventsTabLink hasNewEvents={hasNewEvents} />
-            <TabLink to="/team" label="Teams" icon="Teams" />
+            <TabLink to="/team" label="Teams" icon="👥" />
           </div>
         </div>
       </div>
