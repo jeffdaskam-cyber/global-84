@@ -166,6 +166,7 @@
     }
 
     .hero {
+      width: 100%;
       max-width: var(--max-width);
       margin: 0 auto;
       padding: 42px 28px 34px;
@@ -178,12 +179,14 @@
 
     .hero-copy {
       max-width: 720px;
+      min-width: 0;
     }
 
     .kicker {
       display: inline-flex;
       align-items: center;
       gap: 10px;
+      max-width: 100%;
       padding: 10px 14px;
       border-radius: 999px;
       background: rgba(255, 250, 245, 0.92);
@@ -193,6 +196,7 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.16em;
+      line-height: 1.45;
       color: var(--crimson);
     }
 
@@ -294,6 +298,7 @@
 
     .hero-visual {
       position: relative;
+      min-width: 0;
     }
 
     .orbital-badge {
@@ -361,6 +366,7 @@
       display: grid;
       grid-template-columns: 1.05fr 0.95fr;
       gap: 18px;
+      min-width: 0;
     }
 
     .visual-photo {
@@ -411,6 +417,7 @@
       background: rgba(255, 255, 255, 0.68);
       border: 1px solid rgba(116, 57, 68, 0.08);
       min-height: 0;
+      min-width: 0;
     }
 
     .panel-dark {
@@ -588,6 +595,237 @@
       max-width: 650px;
     }
 
+    .preview-stage {
+      position: relative;
+      padding: 26px;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(135deg, rgba(255, 250, 245, 0.9), rgba(246, 232, 221, 0.84)),
+        radial-gradient(circle at 82% 8%, rgba(196, 150, 42, 0.18), transparent 0 24%);
+      border: 1px solid rgba(116, 57, 68, 0.1);
+      box-shadow: var(--shadow-xl);
+      overflow: hidden;
+    }
+
+    .preview-stage::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border-radius: 28px;
+      border: 1px solid rgba(196, 150, 42, 0.16);
+      pointer-events: none;
+    }
+
+    .phone-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .phone-card {
+      min-height: 430px;
+      padding: 14px;
+      border-radius: 34px;
+      background: linear-gradient(180deg, #321419 0%, #641526 100%);
+      box-shadow: 0 24px 52px rgba(70, 20, 30, 0.2);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .phone-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 30px 62px rgba(70, 20, 30, 0.24);
+    }
+
+    .phone-screen {
+      height: 100%;
+      border-radius: 24px;
+      padding: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 250, 245, 0.98), rgba(249, 240, 230, 0.96)),
+        radial-gradient(circle at 50% 0, rgba(196, 150, 42, 0.16), transparent 0 30%);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .phone-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--ink-soft);
+    }
+
+    .status-tag,
+    .micro-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: fit-content;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(186, 12, 47, 0.08);
+      color: var(--crimson);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .status-tag::before,
+    .micro-tag::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(196, 150, 42, 0.12);
+    }
+
+    .phone-card h3 {
+      margin: 2px 0 0;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 2rem;
+      line-height: 0.98;
+    }
+
+    .phone-card p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+
+    .app-feed {
+      display: grid;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .app-row {
+      padding: 13px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(116, 57, 68, 0.08);
+      color: var(--ink);
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.45;
+      box-shadow: 0 8px 20px rgba(101, 43, 54, 0.06);
+    }
+
+    .app-row.highlight {
+      background: linear-gradient(135deg, rgba(186, 12, 47, 0.1), rgba(196, 150, 42, 0.13));
+      border-color: rgba(186, 12, 47, 0.12);
+    }
+
+    .app-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .app-pill {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(196, 150, 42, 0.14);
+      color: #634415;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .journey-grid,
+    .program-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .journey-card,
+    .program-card {
+      position: relative;
+      min-height: 250px;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 250, 245, 0.84);
+      border: 1px solid rgba(116, 57, 68, 0.1);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .journey-card::before {
+      content: "";
+      position: absolute;
+      top: 32px;
+      left: 22px;
+      right: -22px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(196, 150, 42, 0.8), rgba(186, 12, 47, 0.12));
+    }
+
+    .journey-card:last-child::before {
+      right: 22px;
+    }
+
+    .journey-marker {
+      position: relative;
+      z-index: 1;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--crimson), var(--gold));
+      box-shadow: 0 0 0 9px rgba(196, 150, 42, 0.13);
+      margin-bottom: 48px;
+    }
+
+    .journey-card h3,
+    .program-card h3 {
+      margin: 0 0 10px;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.72rem;
+      line-height: 1;
+    }
+
+    .journey-card p,
+    .program-card p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 0.92rem;
+      line-height: 1.7;
+    }
+
+    .program-card {
+      min-height: 230px;
+      background:
+        linear-gradient(180deg, rgba(255, 250, 245, 0.92), rgba(248, 237, 228, 0.88));
+    }
+
+    .program-card:nth-child(1) {
+      background: linear-gradient(165deg, #8f1b33 0%, #ba0c2f 68%, #d45f79 100%);
+      color: #fff8f1;
+    }
+
+    .program-card:nth-child(1) p,
+    .program-card:nth-child(1) .micro-tag {
+      color: rgba(255, 245, 238, 0.9);
+    }
+
+    .program-card:nth-child(1) .micro-tag {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .program-card .micro-tag {
+      margin-bottom: 42px;
+    }
+
     .feature-grid {
       display: grid;
       grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -709,92 +947,6 @@
       border-radius: 50%;
       background: linear-gradient(135deg, var(--gold), var(--crimson));
       flex-shrink: 0;
-    }
-
-    .benefit-wrap {
-      display: grid;
-      grid-template-columns: 0.88fr 1.12fr;
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .quote-card,
-    .benefits-card {
-      border-radius: 28px;
-      padding: 28px;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .quote-card {
-      background: linear-gradient(165deg, #8f1b33 0%, #ba0c2f 56%, #d45f79 100%);
-      color: #fff8f1;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .quote-card::after {
-      content: "";
-      position: absolute;
-      width: 220px;
-      height: 220px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.08);
-      right: -90px;
-      top: -70px;
-    }
-
-    .quote-card blockquote {
-      margin: 0;
-      font-family: "Cormorant Garamond", Georgia, serif;
-      font-size: 2rem;
-      line-height: 1.06;
-      font-weight: 600;
-      position: relative;
-      z-index: 1;
-    }
-
-    .quote-card p {
-      position: relative;
-      z-index: 1;
-      margin: 18px 0 0;
-      font-size: 0.94rem;
-      line-height: 1.75;
-      color: rgba(255, 245, 238, 0.86);
-      max-width: 420px;
-    }
-
-    .benefits-card {
-      background: rgba(255, 250, 245, 0.86);
-      border: 1px solid rgba(116, 57, 68, 0.1);
-    }
-
-    .benefit-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 8px;
-    }
-
-    .benefit-item {
-      padding: 18px;
-      border-radius: 18px;
-      background: rgba(247, 238, 230, 0.72);
-      border: 1px solid rgba(116, 57, 68, 0.08);
-    }
-
-    .benefit-item strong {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 1rem;
-      font-weight: 800;
-      color: var(--ink);
-    }
-
-    .benefit-item span {
-      display: block;
-      font-size: 0.9rem;
-      line-height: 1.7;
-      color: var(--ink-soft);
     }
 
     .includes-grid {
@@ -1083,7 +1235,6 @@
     @media (max-width: 1080px) {
       .hero,
       .section-header,
-      .benefit-wrap,
       .login-grid,
       .cta-inner,
       .includes-visual {
@@ -1094,9 +1245,35 @@
         grid-template-columns: 1fr;
       }
 
+      .phone-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .phone-card {
+        min-height: 360px;
+      }
+
+      .journey-grid,
+      .program-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .journey-card::before {
+        display: none;
+      }
+
+      .journey-marker {
+        margin-bottom: 28px;
+      }
+
       .hero {
         min-height: auto;
         padding-top: 28px;
+        display: block;
+      }
+
+      .hero-visual {
+        margin-top: 34px;
       }
     }
 
@@ -1106,7 +1283,6 @@
       }
 
       .includes-grid,
-      .benefit-list,
       .hero-stats {
         grid-template-columns: 1fr;
       }
@@ -1140,12 +1316,36 @@
         font-size: 0.84rem;
       }
 
+      .kicker {
+        display: flex;
+        width: 100%;
+        align-items: flex-start;
+        font-size: 0.68rem;
+        letter-spacing: 0.13em;
+      }
+
+      h1 {
+        font-size: 3.05rem;
+        line-height: 0.96;
+        overflow-wrap: anywhere;
+        max-width: 100%;
+      }
+
+      .lede {
+        font-size: 1rem;
+      }
+
+      .hero-copy,
+      .hero-visual {
+        width: 100%;
+        max-width: 100%;
+      }
+
       .visual-card,
       .feature-card,
-      .quote-card,
-      .benefits-card,
       .login-card,
       .steps-card,
+      .preview-stage,
       .cta-card {
         padding: 20px;
         border-radius: 24px;
@@ -1166,6 +1366,20 @@
       .button,
       .cta-button {
         width: 100%;
+      }
+
+      .journey-grid,
+      .program-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .phone-card {
+        border-radius: 28px;
+        min-height: auto;
+      }
+
+      .phone-screen {
+        border-radius: 20px;
       }
 
       .step {
@@ -1189,10 +1403,10 @@
         </div>
 
         <nav class="topnav" aria-label="Primary">
+          <a href="#preview">Preview</a>
           <a href="#features">Features</a>
-          <a href="#benefits">Benefits</a>
-          <a href="#includes">Also Includes</a>
-          <a href="#login">Login</a>
+          <a href="#includes">Utilities</a>
+          <a href="#login">Access</a>
         </nav>
       </div>
     </header>
@@ -1200,30 +1414,29 @@
     <main>
       <section class="hero">
         <div class="hero-copy reveal">
-          <div class="kicker">Designed for global cohorts and immersive programs</div>
-          <h1>One elegant home for a cohort moving across <span class="accent">cities, teams, and shared experiences</span>.</h1>
+          <div class="kicker">Designed for global cohorts and immersive EMBA travel</div>
+          <h1>Global 84 turns the international EMBA experience into <span class="accent">one connected, living journey</span>.</h1>
           <p class="lede">
-            Global 84 brings itinerary planning, conversation, team collaboration, and local discovery into a single polished experience.
-            It helps a cohort stay informed, connected, and organized from the first pre-departure message to the final shared photo.
+            From pre-departure planning to company visits, team coordination, city discovery, translation, photos, and shared memories, Global 84 gives the cohort one polished place to stay connected across Singapore and Vietnam.
           </p>
 
           <div class="hero-actions">
-            <a class="button button-primary" href="#features">Explore the Experience</a>
-            <a class="button button-secondary" href="#login">See the Login Flow</a>
+            <a class="button button-primary" href="#preview">Preview the Cohort Experience</a>
+            <a class="button button-secondary" href="#features">See What's Inside</a>
           </div>
 
           <div class="hero-stats">
             <div class="stat-card">
-              <div class="stat-value">5</div>
-              <div class="stat-label">Core features highlighted for discovery, planning, and cohort communication</div>
+              <div class="stat-value">21 + Staff</div>
+              <div class="stat-label">Built for the full EMBA Cohort 84 travel group</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">2</div>
-              <div class="stat-label">Destination-ready city contexts built around Singapore and Vietnam</div>
+              <div class="stat-value">2 Cities</div>
+              <div class="stat-label">Singapore and Vietnam content, events, media, and travel tools</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">1</div>
-              <div class="stat-label">Simple access flow for approved `@du.edu` users</div>
+              <div class="stat-value">1 Hub</div>
+              <div class="stat-label">Communication, events, teams, discovery, files, photos, and utilities</div>
             </div>
           </div>
         </div>
@@ -1286,7 +1499,7 @@
                 </div>
 
                 <div class="message-card">
-                  “Meet at the hotel lobby at 6:15 PM. Gallery upload is open for tonight’s visit.”
+                  Pinned: Company visit departure time updated. New gallery photos from tonight's visit.
                 </div>
               </div>
             </div>
@@ -1294,14 +1507,121 @@
         </div>
       </section>
 
+      <section class="section" id="preview">
+        <div class="section-header reveal">
+          <div>
+            <div class="section-eyebrow">Mobile-first by design</div>
+            <h2>Built for the way the cohort actually travels.</h2>
+          </div>
+          <p class="section-copy">
+            Global 84 is designed as a phone-first companion for moments that happen in motion: checking an announcement before boarding a bus, finding a saved restaurant, translating a menu, joining a team conversation, or reviewing tomorrow's schedule from the hotel lobby.
+          </p>
+        </div>
+
+        <div class="preview-stage reveal">
+          <div class="phone-grid">
+            <article class="phone-card">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <span>Global 84</span>
+                  <span class="status-tag">Live</span>
+                </div>
+                <span class="micro-tag">Home + Announcements</span>
+                <h3>Know what matters now.</h3>
+                <p>Immediate updates and the next useful detail stay close at hand.</p>
+                <div class="app-feed">
+                  <div class="app-row highlight">Pinned: Company visit departure time updated.</div>
+                  <div class="app-row">Weather: Singapore 84 F</div>
+                  <div class="app-row">Next event: Welcome dinner at 6:30 PM.</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="phone-card">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <span>Explore</span>
+                  <span class="status-tag">Saved</span>
+                </div>
+                <span class="micro-tag">Explore + Events</span>
+                <h3>Turn discovery into plans.</h3>
+                <p>Curated city content connects naturally to cohort plans and RSVP flow.</p>
+                <div class="app-feed">
+                  <div class="app-row highlight">Saved: Maxwell Food Centre.</div>
+                  <div class="app-row">Create Event from place card</div>
+                  <div class="app-pill-row" aria-label="Sample RSVP options">
+                    <span class="app-pill">Going</span>
+                    <span class="app-pill">Interested</span>
+                    <span class="app-pill">Not Going</span>
+                  </div>
+                  <div class="app-row">Explore sync complete: 42 listings updated.</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="phone-card">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <span>Team 3</span>
+                  <span class="status-tag">Private</span>
+                </div>
+                <span class="micro-tag">Teams + Travel Tools</span>
+                <h3>Coordinate in the moments that matter.</h3>
+                <p>Small-group planning and practical travel utilities live in the same experience.</p>
+                <div class="app-feed">
+                  <div class="app-row highlight">Team 3 added a meeting before tomorrow's briefing.</div>
+                  <div class="app-row">Translation copied.</div>
+                  <div class="app-row">USD -> SGD / VND converter</div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="journey">
+        <div class="section-header reveal">
+          <div>
+            <div class="section-eyebrow">From planning to shared memory</div>
+            <h2>Built for every phase of the global experience.</h2>
+          </div>
+          <p class="section-copy">
+            The app supports the cohort before travel begins, while the group is moving through Singapore and Vietnam, and after the trip becomes part of the cohort story.
+          </p>
+        </div>
+
+        <div class="journey-grid">
+          <article class="journey-card reveal">
+            <div class="journey-marker"></div>
+            <h3>Before Departure</h3>
+            <p>Announcements, media, destination context, and curated Explore content help the cohort prepare before travel begins.</p>
+          </article>
+          <article class="journey-card reveal">
+            <div class="journey-marker"></div>
+            <h3>On the Ground</h3>
+            <p>Events, chat, teams, currency tools, translation, and city guides help the group coordinate in real time.</p>
+          </article>
+          <article class="journey-card reveal">
+            <div class="journey-marker"></div>
+            <h3>After the Trip</h3>
+            <p>Gallery, shared conversation, and saved resources preserve the experience as a living cohort memory.</p>
+          </article>
+          <article class="journey-card reveal">
+            <div class="journey-marker"></div>
+            <h3>Future Cohorts</h3>
+            <p>The framework can be adapted with new cities, imagery, cohort identity, admins, access rules, content, and launch materials.</p>
+          </article>
+        </div>
+      </section>
+
       <section class="section" id="features">
         <div class="section-header reveal">
           <div>
             <div class="section-eyebrow">Core Features</div>
-            <h2>The five experiences that make the app feel immediately useful.</h2>
+            <h2>What the cohort can do inside Global 84.</h2>
           </div>
           <p class="section-copy">
-            These are the areas that give Global 84 its strongest first impression: practical value for the trip, a cleaner coordination experience for organizers, and a more connected cohort experience for students.
+            The app brings the practical pieces of the international experience into one place: communication, discovery, events, team coordination, media, photos, and personal travel support.
           </p>
         </div>
 
@@ -1397,59 +1717,33 @@
               <div class="feature-point">Meeting coordination built into the same experience</div>
             </div>
           </article>
-        </div>
-      </section>
 
-      <section class="section" id="benefits">
-        <div class="section-header reveal">
-          <div>
-            <div class="section-eyebrow">Benefits</div>
-            <h2>More than a website. It becomes the operating layer for the cohort experience.</h2>
-          </div>
-          <p class="section-copy">
-            Global 84 is useful because it reduces friction. People know where to look, how to coordinate, and how to keep the group experience feeling shared rather than fragmented.
-          </p>
-        </div>
-
-        <div class="benefit-wrap">
-          <div class="quote-card reveal">
-            <blockquote>A cohort app should feel like part concierge, part command center, and part memory book.</blockquote>
-            <p>
-              This design direction positions Global 84 as a polished digital companion for international programs, with enough structure for organizers and enough warmth for students.
-            </p>
-          </div>
-
-          <div class="benefits-card reveal">
-            <div class="benefit-list">
-              <div class="benefit-item">
-                <strong>Stronger coordination</strong>
-                <span>Events, chat, and shared updates give the cohort a common rhythm before and during travel.</span>
-              </div>
-              <div class="benefit-item">
-                <strong>Better sense of place</strong>
-                <span>Destination-specific features make the app feel tied to the program experience rather than generic.</span>
-              </div>
-              <div class="benefit-item">
-                <strong>Cleaner team collaboration</strong>
-                <span>Private team spaces let smaller groups work without losing connection to the larger cohort.</span>
-              </div>
-              <div class="benefit-item">
-                <strong>More memorable experience</strong>
-                <span>Photos, media, and shared conversation help preserve the program as a living narrative.</span>
-              </div>
+          <article class="feature-card reveal">
+            <div class="feature-top">
+              <div class="feature-number">6</div>
+              <div class="feature-chip">Media</div>
             </div>
-          </div>
+            <h3>Destination Learning</h3>
+            <p>
+              Curated videos and articles give Singapore and Vietnam context before arrival, helping the cohort connect company visits, cultural moments, and city exploration into a richer program story.
+            </p>
+            <div class="feature-points">
+              <div class="feature-point">Program-relevant destination media in one place</div>
+              <div class="feature-point">Useful before travel and during on-the-ground reflection</div>
+              <div class="feature-point">Supports a stronger sense of place across the cohort</div>
+            </div>
+          </article>
         </div>
       </section>
 
       <section class="section" id="includes">
         <div class="section-header reveal">
           <div>
-            <div class="section-eyebrow">Also Includes</div>
-            <h2>Additional tools that round out the cohort journey.</h2>
+            <div class="section-eyebrow">Practical tools for the trip</div>
+            <h2>Travel-ready tools built into the same experience.</h2>
           </div>
           <p class="section-copy">
-            Beyond the headline features, Global 84 includes a set of supporting utilities that make the experience more practical for real travel, communication, and day-to-day program use.
+            Global 84 goes beyond planning. It gives cohort members practical tools they can use while moving through airports, hotels, company visits, restaurants, and cultural experiences.
           </p>
         </div>
 
@@ -1464,56 +1758,91 @@
           <div class="includes-photo reveal">
             <img src="public/Singapore-landscape.jpg" alt="Singapore skyline at dusk" />
             <div class="includes-caption">
-              <strong>Elegant, not overloaded.</strong>
-              <span>The supporting tools strengthen the experience without turning the page into a checklist of technical features.</span>
+              <strong>Useful without feeling crowded.</strong>
+              <span>Translation copied. Currency checked. Files available. The practical moments stay inside one polished experience.</span>
             </div>
           </div>
         </div>
 
         <div class="includes-grid">
           <div class="include-card reveal">
-            <strong>Announcements</strong>
-            <span>A central home for pinned updates and important program notices.</span>
-          </div>
-          <div class="include-card reveal">
-            <strong>Media</strong>
-            <span>Curated city-specific articles and videos for context before and during the trip.</span>
-          </div>
-          <div class="include-card reveal">
-            <strong>Currency Exchange</strong>
-            <span>Quick conversion help for common program destinations and everyday purchases.</span>
-          </div>
-          <div class="include-card reveal">
             <strong>Photo Translator</strong>
-            <span>Translate signage, menus, and documents into English using the phone camera workflow.</span>
+            <span>Use the phone camera to translate signs, menus, and documents into English.</span>
           </div>
           <div class="include-card reveal">
-            <strong>Profile Tools</strong>
-            <span>Member-specific settings and identity details inside the app.</span>
+            <strong>Currency Converter</strong>
+            <span>Estimate SGD and VND spending quickly without leaving the app.</span>
           </div>
           <div class="include-card reveal">
-            <strong>Destination Context</strong>
-            <span>City-based framing that keeps the experience grounded in where the cohort actually is.</span>
+            <strong>My Files</strong>
+            <span>Keep personal travel documents available inside a private user space.</span>
           </div>
           <div class="include-card reveal">
-            <strong>Administrative Control</strong>
-            <span>Organizers can manage announcements, events, media, and team structures.</span>
+            <strong>Media Library</strong>
+            <span>Curated videos and articles help the cohort understand each destination before arrival.</span>
           </div>
           <div class="include-card reveal">
-            <strong>Mobile-Friendly Access</strong>
-            <span>Designed for on-the-go use when schedules, plans, and communication need to move quickly.</span>
+            <strong>Announcements</strong>
+            <span>Important program updates stay visible in one central place.</span>
           </div>
+          <div class="include-card reveal">
+            <strong>Gallery</strong>
+            <span>Shared photos turn the trip into a collective record.</span>
+          </div>
+          <div class="include-card reveal">
+            <strong>Explore Sync</strong>
+            <span>Saved places and refreshed listings keep city discovery current during the trip.</span>
+          </div>
+          <div class="include-card reveal">
+            <strong>Private Profiles</strong>
+            <span>Cohort members keep identity, preferences, and personal tools close at hand.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="program-value">
+        <div class="section-header reveal">
+          <div>
+            <div class="section-eyebrow">Designed to hand forward</div>
+            <h2>A more coordinated, memorable, and scalable cohort experience.</h2>
+          </div>
+          <p class="section-copy">
+            Global 84 is built around Cohort 84's Singapore and Vietnam experience, but the structure is designed to be reused. Future cohorts can refresh the identity, destinations, imagery, admins, access rules, Explore content, currency tools, and launch materials without rebuilding the concept from scratch.
+          </p>
+        </div>
+
+        <div class="program-grid">
+          <article class="program-card reveal">
+            <span class="micro-tag">Common rhythm</span>
+            <h3>Better Coordination</h3>
+            <p>Events, announcements, chat, and team spaces reduce scattered communication and give the cohort a common operating rhythm.</p>
+          </article>
+          <article class="program-card reveal">
+            <span class="micro-tag">Identity</span>
+            <h3>Stronger Program Identity</h3>
+            <p>Destination-specific imagery, media, and curated content make the app feel like part of the EMBA experience rather than a generic travel tool.</p>
+          </article>
+          <article class="program-card reveal">
+            <span class="micro-tag">Utility</span>
+            <h3>Student-Centered Utility</h3>
+            <p>Translation, currency, files, photos, and city discovery support the real moments students encounter while traveling.</p>
+          </article>
+          <article class="program-card reveal">
+            <span class="micro-tag">Reusable</span>
+            <h3>Ready to Hand Forward</h3>
+            <p>The model can be adapted for future cohorts by updating the cohort identity, destination cities, branding, admins, access domain, content, and rollout materials.</p>
+          </article>
         </div>
       </section>
 
       <section class="section login-shell" id="login">
         <div class="section-header reveal">
           <div>
-            <div class="section-eyebrow">Login Process</div>
-            <h2>Simple access for approved DU users.</h2>
+            <div class="section-eyebrow">Private cohort access</div>
+            <h2>Simple, secure DU access.</h2>
           </div>
           <p class="section-copy">
-            The sign-in experience is intentionally straightforward. Users enter their University of Denver email address, receive a secure email link, and open that link to access the app.
+            Cohort members sign in with approved DU email access, keeping the experience private to the people participating in the program.
           </p>
         </div>
 
@@ -1522,14 +1851,14 @@
             <div class="section-eyebrow" style="margin-bottom: 8px;">What users see</div>
             <h3 style="margin: 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 2.2rem; line-height: 1;">Email-link sign in</h3>
             <p style="margin: 14px 0 0; font-size: 0.98rem; line-height: 1.8; color: var(--ink-soft);">
-              The app accepts DU email addresses and sends a one-time sign-in link. That keeps the process lightweight while still limiting access to the intended user group.
+              The access flow stays lightweight for travelers: use a DU email address, open the secure link, and return to the cohort app ready to go.
             </p>
 
             <div class="login-demo">
               <div class="section-eyebrow" style="margin-bottom: 0;">Demo</div>
               <div class="input-shell">name@du.edu</div>
               <button class="demo-button" type="button">Send sign-in link</button>
-              <div class="note">DU email required (`@du.edu`). After clicking the email link, the user returns to the app already authenticated.</div>
+              <div class="note">DU email required. After clicking the email link, the user returns to the app with private cohort access.</div>
             </div>
           </div>
 
@@ -1540,7 +1869,7 @@
                 <div class="step-number">1</div>
                 <div>
                   <strong>Enter a DU email address</strong>
-                  <span>The user starts with a University of Denver email account in the format `name@du.edu`.</span>
+                  <span>The user starts with an approved University of Denver email account.</span>
                 </div>
               </div>
               <div class="step">
@@ -1566,12 +1895,12 @@
         <div class="cta-card reveal">
           <div class="cta-inner">
             <div>
-              <h3>A polished model for future cohort apps.</h3>
+              <h3>A launch model this cohort can use - and future cohorts can inherit.</h3>
               <p>
-                Global 84 shows how a program-specific app can combine utility, identity, and shared experience in one place. It is designed to feel premium without feeling heavy, and structured without feeling institutional.
+                Global 84 was built for Cohort 84's Singapore and Vietnam experience, but the framework is designed to be handed forward. A future cohort can update the cohort identity, destinations, branding, photos, currency tools, admins, Explore content, and launch materials while preserving the same connected experience.
               </p>
             </div>
-            <a class="button cta-button" href="#features">Review the Feature Set</a>
+            <a class="button cta-button" href="#program-value">Explore the Cohort Model</a>
           </div>
         </div>
       </section>
