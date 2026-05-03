@@ -1,0 +1,3080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Global 84 — Cohort Launch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5ede4;
+      --bg-tone: #efe3d4;
+      --paper: #fffaf3;
+      --ink: #1a0d10;
+      --ink-2: #3b1f24;
+      --ink-soft: #6e555a;
+      --ink-faint: #a08a8e;
+      --crimson: #ba0c2f;
+      --crimson-deep: #821026;
+      --crimson-ink: #4a0716;
+      --gold: #c4962a;
+      --gold-light: #e8cf85;
+      --gold-deep: #8a6418;
+      --line: rgba(74, 30, 38, 0.14);
+      --line-soft: rgba(74, 30, 38, 0.08);
+      --shadow-xl: 0 32px 80px -20px rgba(74, 16, 26, 0.28);
+      --shadow-lg: 0 18px 44px -12px rgba(74, 16, 26, 0.18);
+      --shadow-md: 0 8px 22px -6px rgba(74, 16, 26, 0.14);
+      --max: 1240px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Manrope", system-ui, sans-serif;
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    .serif { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; }
+    .mono  { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+    /* ─────────────────────────  TOP BAR  ───────────────────────── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 60;
+      padding: 18px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 24px;
+      color: #fffaf3;
+      transition: background 220ms ease, backdrop-filter 220ms ease, color 220ms ease, border-color 220ms ease;
+      border-bottom: 1px solid transparent;
+    }
+    .topbar.scrolled {
+      background: rgba(245, 237, 228, 0.86);
+      backdrop-filter: blur(14px);
+      color: var(--ink);
+      border-bottom-color: var(--line-soft);
+    }
+    .brand-lockup { display: flex; align-items: center; gap: 14px; }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 12px;
+      background:
+        radial-gradient(circle at 30% 28%, rgba(255,255,255,0.55), transparent 55%),
+        linear-gradient(155deg, var(--crimson) 0%, var(--crimson-deep) 70%);
+      display: grid; place-items: center;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset, 0 8px 18px rgba(74,16,26,0.32);
+      position: relative;
+    }
+    .brand-mark span {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--gold-light);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
+    .brand-text .top { font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em; opacity: 0.72; font-weight: 700; }
+    .brand-text .bot { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+    .brand-text .bot em { font-style: normal; color: var(--gold-light); }
+    .topbar.scrolled .brand-text .bot em { color: var(--gold-deep); }
+
+    .topnav { display: flex; gap: 4px; align-items: center; }
+    .topnav a {
+      padding: 9px 14px; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.01em;
+      border-radius: 999px;
+      opacity: 0.82;
+      transition: 180ms ease;
+    }
+    .topnav a:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+    .topbar.scrolled .topnav a:hover { background: rgba(74,16,26,0.06); }
+    .topnav .pill-cta {
+      margin-left: 8px;
+      padding: 9px 16px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.28);
+      opacity: 1;
+    }
+    .topbar.scrolled .topnav .pill-cta {
+      background: var(--crimson);
+      color: #fffaf3;
+      border-color: transparent;
+    }
+
+    @media (max-width: 880px) {
+      .topbar { padding: 14px 20px; }
+      .topnav a:not(.pill-cta) { display: none; }
+    }
+
+    /* ─────────────────────────  HERO  ───────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      color: #fffaf3;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero-photo {
+      position: absolute; inset: 0; z-index: -2;
+    }
+    .hero-photo img {
+      width: 100%; height: 100%; object-fit: cover;
+      animation: heroDrift 24s ease-in-out infinite alternate;
+    }
+    @keyframes heroDrift {
+      0% { transform: scale(1.06) translate3d(0, -1%, 0); }
+      100% { transform: scale(1.12) translate3d(-1%, 0, 0); }
+    }
+    .hero::after {
+      content: ""; position: absolute; inset: 0; z-index: -1;
+      background:
+        linear-gradient(180deg, rgba(20,8,14,0.55) 0%, rgba(20,8,14,0.18) 40%, rgba(20,8,14,0.4) 70%, rgba(20,8,14,0.85) 100%),
+        radial-gradient(circle at 18% 32%, rgba(186,12,47,0.25), transparent 42%);
+    }
+
+    .hero-grid {
+      position: relative;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 130px 32px 120px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 60px;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 12px;
+      padding: 8px 14px 8px 8px;
+      border-radius: 999px;
+      background: rgba(255, 250, 243, 0.1);
+      border: 1px solid rgba(255, 250, 243, 0.2);
+      backdrop-filter: blur(8px);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 28px;
+    }
+    .hero-eyebrow .dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      display: grid; place-items: center;
+      color: var(--crimson-deep);
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .hero h1 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(3.4rem, 7.5vw, 6.5rem);
+      line-height: 0.93;
+      letter-spacing: -0.035em;
+      margin: 0 0 26px;
+      text-wrap: balance;
+    }
+    .hero h1 em {
+      font-style: italic;
+      font-weight: 500;
+      color: var(--gold-light);
+    }
+    .hero h1 .stroke {
+      position: relative;
+      display: inline-block;
+    }
+    .hero h1 .stroke::after {
+      content: "";
+      position: absolute;
+      left: -2%; right: -2%;
+      bottom: 0.06em;
+      height: 0.28em;
+      background: rgba(186,12,47,0.55);
+      z-index: -1;
+      border-radius: 2px;
+      transform: skewX(-8deg);
+    }
+
+    .hero-lede {
+      font-size: 1.18rem;
+      line-height: 1.65;
+      max-width: 560px;
+      color: rgba(255, 250, 243, 0.86);
+      margin: 0 0 38px;
+      text-wrap: pretty;
+    }
+
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 26px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--crimson) 0%, var(--crimson-deep) 100%);
+      color: #fffaf3;
+      box-shadow: 0 14px 36px -10px rgba(186,12,47,0.7), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    }
+    .btn-ghost {
+      background: rgba(255,250,243,0.06);
+      border-color: rgba(255,250,243,0.28);
+      color: #fffaf3;
+      backdrop-filter: blur(8px);
+    }
+    .btn-ghost:hover { background: rgba(255,250,243,0.12); }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+      color: var(--crimson-deep);
+      box-shadow: 0 14px 36px -10px rgba(196,150,42,0.65);
+    }
+
+    .hero-meta {
+      margin-top: 56px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 28px 22px;
+      max-width: 640px;
+      padding-top: 28px;
+      border-top: 1px solid rgba(255,250,243,0.16);
+    }
+    .hero-meta div .label {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,250,243,0.6);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .hero-meta div .value {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 1.65rem;
+      line-height: 1.05;
+      color: #fffaf3;
+    }
+    .hero-meta div .value em { color: var(--gold-light); font-style: normal; }
+
+    /* Hero phone */
+    .hero-phone-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d;
+    }
+    .hero-phone-wrap .glow {
+      position: absolute; inset: 8% -10% 8% -10%;
+      background: radial-gradient(closest-side, rgba(196,150,42,0.4), transparent 65%);
+      filter: blur(20px);
+      z-index: 0;
+    }
+    .hero-phone {
+      position: relative;
+      transform: rotate(-3deg);
+      filter: drop-shadow(0 50px 70px rgba(20,8,14,0.55));
+    }
+    .hero-phone-back {
+      position: absolute;
+      left: -36%; top: 6%;
+      transform: rotate(6deg);
+      opacity: 0.95;
+      filter: drop-shadow(0 36px 60px rgba(20,8,14,0.6));
+      z-index: -1;
+    }
+
+    /* Phone frame */
+    .phone {
+      --pw: 290px;
+      --ph: 600px;
+      width: var(--pw);
+      height: var(--ph);
+      border-radius: 44px;
+      padding: 11px;
+      background: linear-gradient(155deg, #2b1218 0%, #0f0507 50%, #2b1218 100%);
+      box-shadow:
+        0 0 0 1.5px rgba(255,255,255,0.08) inset,
+        0 0 0 6px #1c0a0e,
+        0 0 0 7px rgba(196,150,42,0.22),
+        0 30px 60px rgba(20,8,14,0.28);
+      position: relative;
+    }
+    .phone .screen {
+      width: 100%; height: 100%;
+      background: var(--paper);
+      border-radius: 33px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .phone .notch {
+      position: absolute;
+      top: 16px; left: 50%; transform: translateX(-50%);
+      width: 92px; height: 24px;
+      background: #060203;
+      border-radius: 999px;
+      z-index: 5;
+    }
+    .phone.compact { --pw: 246px; --ph: 510px; border-radius: 38px; padding: 9px; }
+    .phone.compact .screen { border-radius: 28px; }
+    .phone.compact .notch { width: 78px; height: 20px; top: 13px; }
+
+    .status-bar {
+      height: 44px;
+      flex-shrink: 0;
+      padding: 0 22px 0 26px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; font-weight: 700;
+      color: var(--ink-2);
+      letter-spacing: 0.01em;
+    }
+    .status-bar .status-icons {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .status-bar .status-icons .bars,
+    .status-bar .status-icons .wifi,
+    .status-bar .status-icons .battery { width: 16px; height: 11px; }
+    .status-bar .status-icons .battery {
+      width: 24px; border: 1px solid currentColor; border-radius: 3px;
+      position: relative;
+    }
+    .status-bar .status-icons .battery::before {
+      content:""; position:absolute; right:-3px; top: 3px; bottom: 3px; width: 1.5px; background: currentColor; border-radius: 0 1px 1px 0;
+    }
+    .status-bar .status-icons .battery::after {
+      content:""; position:absolute; left: 1px; top: 1px; bottom: 1px; width: 70%; background: currentColor; border-radius: 1px;
+    }
+
+    .phone-app {
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column;
+      background: var(--paper);
+    }
+
+    /* ─────────────────────────  SECTIONS  ───────────────────────── */
+    .section {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 110px 32px;
+    }
+    .section-tight { padding: 72px 32px; }
+
+    .section-eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--crimson);
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .section-eyebrow::before {
+      content: "";
+      display: inline-block;
+      width: 22px; height: 1px;
+      background: var(--crimson);
+    }
+
+    h2.section-title {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(2.4rem, 4.6vw, 4rem);
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+      margin: 0;
+      text-wrap: balance;
+      color: var(--ink);
+    }
+    h2.section-title em { color: var(--crimson); font-style: italic; font-weight: 500; }
+    .section-lede {
+      max-width: 620px;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--ink-soft);
+      margin-top: 16px;
+    }
+
+    /* ─────────────────────────  MARQUEE STRIP  ───────────────────────── */
+    .strip {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 22px 0;
+      overflow: hidden;
+      border-top: 1px solid rgba(255,250,243,0.06);
+      border-bottom: 1px solid rgba(255,250,243,0.06);
+    }
+    .strip-inner {
+      display: flex; gap: 56px; align-items: center;
+      animation: marquee 40s linear infinite;
+      width: max-content;
+    }
+    .strip-item {
+      display: flex; align-items: center; gap: 14px;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 1.6rem;
+      font-style: italic;
+      color: rgba(255,250,243,0.86);
+      white-space: nowrap;
+    }
+    .strip-item .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold);
+    }
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ─────────────────────────  PILLARS (3-up)  ───────────────────────── */
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      margin-top: 60px;
+    }
+    .pillar {
+      background: var(--paper);
+      border-radius: 22px;
+      padding: 30px 28px;
+      border: 1px solid var(--line-soft);
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+    .pillar .num {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-size: 4rem;
+      line-height: 1;
+      color: var(--crimson);
+      opacity: 0.18;
+      position: absolute; top: 18px; right: 24px;
+    }
+    .pillar h3 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 1.65rem;
+      letter-spacing: -0.01em;
+      margin: 0 0 12px;
+      color: var(--ink);
+    }
+    .pillar p {
+      font-size: 0.96rem;
+      line-height: 1.65;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+
+    /* ─────────────────────────  PHONE GALLERY  ───────────────────────── */
+    .phone-gallery-section {
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-tone) 100%);
+      padding: 110px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .phone-gallery-section::before {
+      content: ""; position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(800px 320px at 80% 0%, rgba(196,150,42,0.18), transparent 60%),
+        radial-gradient(600px 300px at 0% 100%, rgba(186,12,47,0.1), transparent 60%);
+      pointer-events: none;
+    }
+    .phone-gallery-section .section { padding-top: 0; padding-bottom: 0; position: relative; }
+    .phone-gallery {
+      margin-top: 70px;
+      position: relative;
+      display: flex; gap: 36px;
+      overflow-x: auto;
+      padding: 30px 32px 60px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(186,12,47,0.4) transparent;
+    }
+    .phone-gallery::-webkit-scrollbar { height: 6px; }
+    .phone-gallery::-webkit-scrollbar-thumb { background: rgba(186,12,47,0.35); border-radius: 4px; }
+    .phone-gallery > .phone-stack {
+      scroll-snap-align: center;
+      flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    .phone-gallery > .phone-stack:nth-child(odd) { transform: translateY(-12px); }
+    .phone-stack .caption {
+      text-align: center;
+      max-width: 260px;
+    }
+    .phone-stack .caption .tag {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--crimson);
+      margin-bottom: 6px;
+    }
+    .phone-stack .caption h4 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 1.4rem;
+      letter-spacing: -0.01em;
+      margin: 0 0 4px;
+    }
+    .phone-stack .caption p {
+      font-size: 0.86rem;
+      color: var(--ink-soft);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* ─────────────────────────  APP UI MOCK STYLES  ───────────────────────── */
+    /* Generic chip / row utilities used inside phone screens */
+    .a-eyebrow { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: var(--crimson); }
+    .a-h { font-family: "Cormorant Garamond", serif; font-weight: 600; font-size: 22px; letter-spacing: -0.01em; line-height: 1.05; margin: 0; color: var(--ink); }
+    .a-sub { font-size: 11px; color: var(--ink-soft); margin: 0; line-height: 1.5; }
+    .a-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .a-pill.crimson { background: rgba(186,12,47,0.1); color: var(--crimson); }
+    .a-pill.gold { background: rgba(196,150,42,0.18); color: var(--gold-deep); }
+    .a-pill.green { background: rgba(34,120,76,0.15); color: #1f6a44; }
+    .a-pill.dark { background: var(--ink); color: var(--paper); }
+    .a-pill.ghost { background: rgba(74,30,38,0.06); color: var(--ink-2); }
+    .a-pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+    .a-pill.no-dot::before { display: none; }
+
+    .a-bottom-nav {
+      flex-shrink: 0;
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      padding: 8px 6px 16px;
+      border-top: 1px solid var(--line-soft);
+      background: var(--paper);
+    }
+    .a-bottom-nav .it {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      font-size: 9px; font-weight: 700;
+      color: var(--ink-faint);
+    }
+    .a-bottom-nav .it.active { color: var(--crimson); }
+    .a-bottom-nav .ic {
+      width: 22px; height: 22px;
+      display: grid; place-items: center;
+      color: currentColor;
+    }
+
+    /* HOME app */
+    .app-home { display:flex; flex-direction: column; height:100%; }
+    .app-home .hero-card {
+      margin: 8px 14px 14px;
+      padding: 18px 18px 22px;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 80% -10%, rgba(196,150,42,0.4), transparent 50%),
+        linear-gradient(160deg, var(--crimson-deep) 0%, var(--crimson) 70%);
+      color: var(--paper);
+      position: relative;
+      overflow: hidden;
+    }
+    .app-home .hero-card::after {
+      content: ""; position: absolute;
+      width: 160px; height: 160px;
+      right: -40px; bottom: -60px;
+      border: 1px solid rgba(255,250,243,0.18);
+      border-radius: 50%;
+    }
+    .app-home .hero-card::before {
+      content: ""; position: absolute;
+      width: 100px; height: 100px;
+      right: -10px; bottom: -30px;
+      border: 1px solid rgba(196,150,42,0.45);
+      border-radius: 50%;
+    }
+    .app-home .hero-card .top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .app-home .hero-card .top .logo {
+      width: 26px; height: 26px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      display: grid; place-items: center;
+      color: var(--crimson-deep);
+      font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 14px; line-height: 1;
+    }
+    .app-home .hero-card .top .ham {
+      display: grid; gap: 3px;
+    }
+    .app-home .hero-card .top .ham span {
+      width: 18px; height: 1.5px; background: var(--gold-light); border-radius: 2px;
+    }
+    .app-home .hero-card .ek { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.8; font-weight: 700; }
+    .app-home .hero-card h2 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 500;
+      font-style: italic;
+      font-size: 26px;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      margin: 6px 0 0;
+    }
+    .app-home .hero-card h2 b { font-style: normal; font-weight: 600; color: var(--gold-light); }
+
+    .app-home .weather {
+      margin: 0 14px 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .app-home .weather .w {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .app-home .weather .w .city { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); font-weight: 700; }
+    .app-home .weather .w .deg {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 22px;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .app-home .weather .w .deg sup { font-size: 14px; font-family: "Manrope", sans-serif; font-weight: 600; color: var(--ink-soft); }
+    .app-home .weather .w .cond { font-size: 9px; color: var(--ink-soft); }
+    .app-home .weather .div { width: 1px; background: var(--line-soft); position: absolute; height: 38px; }
+
+    .app-home .ann-list {
+      margin: 8px 14px 14px;
+      display: flex; flex-direction: column; gap: 8px;
+      flex: 1;
+    }
+    .app-home .ann {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .app-home .ann.pinned {
+      background: linear-gradient(135deg, rgba(196,150,42,0.14), rgba(186,12,47,0.06));
+      border-color: rgba(196,150,42,0.3);
+    }
+    .app-home .ann .meta { display: flex; align-items: center; justify-content: space-between; }
+    .app-home .ann .meta .who { font-size: 9px; color: var(--ink-soft); font-weight: 600; letter-spacing: 0.05em; }
+    .app-home .ann .title { font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+    .app-home .ann .body { font-size: 11px; color: var(--ink-soft); line-height: 1.45; }
+
+    /* EXPLORE app */
+    .app-explore { display: flex; flex-direction: column; height: 100%; }
+    .app-explore .top {
+      padding: 6px 16px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .app-explore .search {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(74,30,38,0.05);
+      font-size: 11px;
+      color: var(--ink-faint);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .app-explore .search::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink-faint); display: inline-block; }
+    .app-explore .tabs {
+      display: flex; gap: 6px;
+    }
+    .app-explore .tabs .t {
+      flex: 1;
+      padding: 8px 10px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      background: rgba(74,30,38,0.05);
+      color: var(--ink-soft);
+    }
+    .app-explore .tabs .t.active { background: var(--ink); color: var(--paper); }
+    .app-explore .city-cards {
+      padding: 0 14px 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .app-explore .ccard {
+      height: 110px;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      color: var(--paper);
+    }
+    .app-explore .ccard img { position:absolute; inset:0; width:100%; height:100%; object-fit: cover; }
+    .app-explore .ccard::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(20,8,14,0.05) 0%, rgba(20,8,14,0.7) 100%);
+    }
+    .app-explore .ccard .lab {
+      position: absolute; left: 12px; bottom: 10px; z-index: 1;
+      display: flex; flex-direction: column;
+    }
+    .app-explore .ccard .lab strong {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+    .app-explore .ccard .lab span { font-size: 9px; opacity: 0.85; margin-top: 2px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+    .app-explore .list {
+      flex: 1; min-height: 0;
+      padding: 0 14px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+      overflow: hidden;
+    }
+    .app-explore .row {
+      display: flex; gap: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+    }
+    .app-explore .row .thumb {
+      width: 56px; height: 56px; border-radius: 10px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      position: relative;
+      overflow: hidden;
+    }
+    .app-explore .row .thumb.b2 { background: linear-gradient(135deg, #cf7184, var(--crimson)); }
+    .app-explore .row .thumb.b3 { background: linear-gradient(135deg, #e9bb6c, #b07327); }
+    .app-explore .row .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .app-explore .row .info .name { font-size: 12px; font-weight: 700; color: var(--ink); }
+    .app-explore .row .info .meta { font-size: 10px; color: var(--ink-soft); }
+    .app-explore .row .info .tags { display: flex; gap: 4px; margin-top: 4px; }
+    .app-explore .row .star {
+      width: 24px; height: 24px;
+      display: grid; place-items: center;
+      color: var(--gold);
+      font-size: 16px;
+    }
+    .app-explore .row .star.off { color: var(--ink-faint); }
+
+    /* EVENTS app */
+    .app-events { display:flex; flex-direction:column; height:100%; }
+    .app-events .head { padding: 6px 18px 14px; }
+    .app-events .head h2 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 24px;
+      margin: 0;
+    }
+    .app-events .head p { font-size: 11px; color: var(--ink-soft); margin: 4px 0 0; }
+    .app-events .group-label {
+      padding: 0 18px 8px;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--crimson);
+      font-weight: 700;
+    }
+    .app-events .ev-list {
+      flex: 1;
+      padding: 0 14px 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      overflow: hidden;
+    }
+    .app-events .ev {
+      padding: 12px;
+      border-radius: 16px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      display: flex; gap: 10px;
+    }
+    .app-events .ev .date {
+      width: 52px; flex-shrink: 0;
+      border-radius: 10px;
+      background: var(--ink);
+      color: var(--paper);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 6px 0;
+    }
+    .app-events .ev .date .m { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.78; }
+    .app-events .ev .date .d {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .app-events .ev.featured .date {
+      background: linear-gradient(160deg, var(--crimson-deep), var(--crimson));
+    }
+    .app-events .ev .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .app-events .ev .body .ti { font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.25; }
+    .app-events .ev .body .lo { font-size: 10px; color: var(--ink-soft); }
+    .app-events .ev .rsvp {
+      display: flex; gap: 4px; margin-top: 4px;
+    }
+    .app-events .ev .rsvp .rs {
+      flex: 1; padding: 4px 6px;
+      border-radius: 999px;
+      text-align: center;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(74,30,38,0.05);
+      color: var(--ink-soft);
+    }
+    .app-events .ev .rsvp .rs.on { background: var(--crimson); color: var(--paper); }
+    .app-events .ev .rsvp .rs.int { background: rgba(196,150,42,0.2); color: var(--gold-deep); }
+
+    /* CHAT app */
+    .app-chat { display:flex; flex-direction:column; height:100%; background: var(--paper); }
+    .app-chat .hd {
+      padding: 6px 16px 12px;
+      border-bottom: 1px solid var(--line-soft);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .app-chat .hd h2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size: 20px; margin: 0; }
+    .app-chat .hd .live { font-size: 9px; padding: 4px 8px; border-radius: 999px; background: rgba(34,120,76,0.16); color: #1f6a44; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .app-chat .hd .live::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #2c8a5a; margin-right: 5px; vertical-align: middle; animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .app-chat .stream {
+      flex: 1; min-height: 0;
+      padding: 14px 14px 8px;
+      display: flex; flex-direction: column; gap: 10px;
+      overflow: hidden;
+    }
+    .app-chat .b {
+      display: flex; gap: 8px; align-items: flex-end;
+    }
+    .app-chat .b.me { flex-direction: row-reverse; }
+    .app-chat .b .av {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      flex-shrink: 0;
+      display: grid; place-items: center;
+      font-size: 10px; font-weight: 700; color: var(--crimson-deep);
+    }
+    .app-chat .b .av.b2 { background: linear-gradient(135deg, #f6c5c5, #b3344e); color: var(--paper); }
+    .app-chat .b .av.b3 { background: linear-gradient(135deg, #cdd9c0, #5b7a3b); color: var(--paper); }
+    .app-chat .b .bub {
+      max-width: 78%;
+      padding: 8px 12px;
+      border-radius: 16px;
+      font-size: 11px;
+      line-height: 1.4;
+      background: rgba(74,30,38,0.06);
+      color: var(--ink-2);
+    }
+    .app-chat .b.me .bub {
+      background: var(--crimson);
+      color: var(--paper);
+      border-bottom-right-radius: 4px;
+    }
+    .app-chat .b:not(.me) .bub {
+      border-bottom-left-radius: 4px;
+    }
+    .app-chat .b .bub .nm {
+      font-size: 9px; font-weight: 700; color: var(--crimson);
+      margin-bottom: 2px;
+      letter-spacing: 0.04em;
+    }
+    .app-chat .b.me .bub .nm { color: rgba(255,250,243,0.7); }
+    .app-chat .input {
+      margin: 6px 12px 12px;
+      padding: 8px 10px 8px 14px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      background: var(--paper);
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px;
+      color: var(--ink-faint);
+    }
+    .app-chat .input .send {
+      margin-left: auto;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--crimson);
+      color: var(--paper);
+      display: grid; place-items: center;
+      font-size: 14px;
+    }
+
+    /* TEAMS app */
+    .app-teams { display:flex; flex-direction:column; height:100%; }
+    .app-teams .hd { padding: 6px 18px 14px; }
+    .app-teams .hd .ek { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--crimson); font-weight: 700; }
+    .app-teams .hd h2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size: 26px; margin: 4px 0 4px; line-height: 1; }
+    .app-teams .hd p { font-size: 11px; color: var(--ink-soft); margin: 0; }
+
+    .app-teams .members {
+      padding: 0 14px 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .app-teams .members .av {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--paper);
+      margin-left: -6px;
+      display: grid; place-items: center;
+      font-size: 10px; font-weight: 700;
+      color: var(--paper);
+    }
+    .app-teams .members .av:first-child { margin-left: 0; }
+    .app-teams .members .av.a1 { background: var(--crimson); }
+    .app-teams .members .av.a2 { background: var(--gold-deep); }
+    .app-teams .members .av.a3 { background: #2c5b8a; }
+    .app-teams .members .av.a4 { background: #4d6b3a; color: var(--paper); }
+    .app-teams .members .av.a5 { background: #8a4523; }
+    .app-teams .members .more { font-size: 10px; color: var(--ink-soft); margin-left: 8px; font-weight: 600; }
+
+    .app-teams .meeting-card {
+      margin: 0 14px 12px;
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(160deg, var(--crimson-deep), var(--crimson));
+      color: var(--paper);
+      position: relative;
+      overflow: hidden;
+    }
+    .app-teams .meeting-card::after {
+      content: "";
+      position: absolute;
+      width: 90px; height: 90px;
+      right: -25px; top: -30px;
+      border-radius: 50%;
+      border: 1px solid rgba(196,150,42,0.4);
+    }
+    .app-teams .meeting-card .ek { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-light); font-weight: 700; }
+    .app-teams .meeting-card .ti {
+      font-family: "Cormorant Garamond", serif; font-weight: 600;
+      font-size: 16px; margin: 4px 0 6px; line-height: 1.2;
+    }
+    .app-teams .meeting-card .meta { font-size: 10px; opacity: 0.84; line-height: 1.5; }
+    .app-teams .meeting-card .meta b { color: var(--gold-light); font-weight: 700; }
+
+    .app-teams .chat-prev {
+      margin: 0 14px 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+    }
+    .app-teams .chat-prev .ek { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; margin-bottom: 6px; }
+    .app-teams .chat-prev .b { display: flex; gap: 8px; padding: 4px 0; align-items: flex-start; }
+    .app-teams .chat-prev .b .av { width: 22px; height: 22px; border-radius: 50%; background: var(--crimson); color: var(--paper); display: grid; place-items: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+    .app-teams .chat-prev .b .av.g { background: var(--gold-deep); }
+    .app-teams .chat-prev .b .ms { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+    .app-teams .chat-prev .b .ms .nm { font-size: 9px; font-weight: 700; color: var(--ink); letter-spacing: 0.04em; }
+    .app-teams .chat-prev .b .ms .tx { font-size: 10px; color: var(--ink-soft); line-height: 1.4; }
+
+    /* TRANSLATE app */
+    .app-translate { display:flex; flex-direction:column; height:100%; background: var(--paper); }
+    .app-translate .hd { padding: 6px 18px 12px; }
+    .app-translate .hd .ek { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--crimson); font-weight: 700; }
+    .app-translate .hd h2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size: 22px; margin: 4px 0 0; }
+    .app-translate .img-frame {
+      margin: 0 14px 12px;
+      height: 130px; border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(20,8,14,0.05), rgba(20,8,14,0.3)),
+        repeating-linear-gradient(45deg, #f3e3c8 0 8px, #ecd9b8 8px 16px);
+      position: relative; overflow: hidden;
+      border: 1px solid var(--line-soft);
+      display: flex; align-items: flex-end;
+      padding: 14px;
+    }
+    .app-translate .img-frame::before {
+      content: "";
+      position: absolute;
+      top: 14px; left: 14px;
+      width: 36px; height: 36px;
+      background: rgba(255,250,243,0.85);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      box-shadow: 0 6px 14px rgba(20,8,14,0.2);
+    }
+    .app-translate .img-frame::after {
+      content: "Bún bò Huế";
+      position: absolute;
+      top: 22px; left: 60px;
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-weight: 600;
+      font-size: 19px;
+      color: var(--crimson-deep);
+      text-shadow: 1px 1px 0 rgba(255,250,243,0.6);
+    }
+    .app-translate .img-frame .menu-line {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-size: 13px;
+      color: var(--ink);
+      background: rgba(255,250,243,0.85);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .app-translate .result {
+      margin: 0 14px 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+    }
+    .app-translate .result.crimson {
+      background: linear-gradient(140deg, var(--crimson-deep), var(--crimson));
+      color: var(--paper);
+      border: none;
+    }
+    .app-translate .result .lbl { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; opacity: 0.75; margin-bottom: 6px; }
+    .app-translate .result .tx {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+    .app-translate .result.crimson .tx { color: var(--gold-light); }
+
+    .app-translate .copy-btn {
+      margin: auto 14px 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--ink);
+      color: var(--paper);
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* CURRENCY app */
+    .app-currency { display:flex; flex-direction:column; height:100%; }
+    .app-currency .hd { padding: 6px 18px 14px; }
+    .app-currency .hd .ek { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--crimson); font-weight: 700; }
+    .app-currency .hd h2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size: 24px; margin: 4px 0 0; }
+    .app-currency .ccard {
+      margin: 0 14px 12px;
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+    }
+    .app-currency .ccard.dark {
+      background: linear-gradient(160deg, var(--ink) 0%, #2b1218 100%);
+      color: var(--paper);
+      border: none;
+    }
+    .app-currency .ccard .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .app-currency .ccard .top .pair { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+    .app-currency .ccard .top .rt { font-size: 9px; opacity: 0.7; }
+    .app-currency .ccard .row {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .app-currency .ccard:not(.dark) .row { border-bottom-color: var(--line-soft); }
+    .app-currency .ccard .row:last-of-type { border: none; }
+    .app-currency .ccard .row .ccode { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; opacity: 0.7; }
+    .app-currency .ccard .row .num {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 22px;
+      letter-spacing: -0.01em;
+    }
+    .app-currency .ccard.dark .num { color: var(--gold-light); }
+    .app-currency .tip {
+      font-size: 10px;
+      color: var(--ink-soft);
+      padding: 0 4px;
+      line-height: 1.5;
+    }
+    .app-currency .tip b { color: var(--ink); font-weight: 700; }
+
+    /* GALLERY app */
+    .app-gallery { display:flex; flex-direction:column; height:100%; }
+    .app-gallery .hd { padding: 6px 18px 12px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .app-gallery .hd h2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size: 24px; margin: 0; }
+    .app-gallery .hd .ct { font-size: 10px; color: var(--ink-soft); }
+    .app-gallery .tabs {
+      padding: 0 14px 10px;
+      display: flex; gap: 6px;
+    }
+    .app-gallery .tabs .t {
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(74,30,38,0.05);
+      color: var(--ink-soft);
+    }
+    .app-gallery .tabs .t.active { background: var(--ink); color: var(--paper); }
+    .app-gallery .grid {
+      flex: 1;
+      padding: 0 14px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-rows: 80px;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .app-gallery .g {
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .app-gallery .g img { width: 100%; height: 100%; object-fit: cover; }
+    .app-gallery .g.tall { grid-row: span 2; }
+    .app-gallery .g .heart {
+      position: absolute; bottom: 4px; right: 4px;
+      width: 18px; height: 18px;
+      background: rgba(20,8,14,0.55);
+      backdrop-filter: blur(4px);
+      border-radius: 50%;
+      color: var(--paper);
+      font-size: 10px;
+      display: grid; place-items: center;
+    }
+
+    /* FILES app */
+    .app-files { display:flex; flex-direction: column; height:100%; }
+    .app-files .hd { padding: 6px 18px 12px; }
+    .app-files .hd .ek { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--crimson); font-weight: 700; }
+    .app-files .hd h2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size: 22px; margin: 4px 0 0; }
+    .app-files .hd p { font-size: 11px; color: var(--ink-soft); margin: 4px 0 0; }
+    .app-files .upload {
+      margin: 0 14px 12px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1.5px dashed rgba(186,12,47,0.4);
+      background: rgba(186,12,47,0.04);
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--crimson);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .app-files .list { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 6px; flex:1; overflow:hidden; }
+    .app-files .it {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .app-files .it .ic {
+      width: 30px; height: 36px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #fde6cb, #f0c280);
+      display: grid; place-items: center;
+      color: var(--gold-deep);
+      font-size: 9px; font-weight: 700;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .app-files .it .ic::after {
+      content: ""; position: absolute; top: 0; right: 0;
+      width: 8px; height: 8px;
+      background: var(--paper);
+      border-bottom-left-radius: 4px;
+    }
+    .app-files .it .ic.pdf { background: linear-gradient(135deg, #f7c1cb, #b3344e); color: var(--paper); }
+    .app-files .it .ic.img { background: linear-gradient(135deg, #c8d5b9, #5b7a3b); color: var(--paper); }
+    .app-files .it .info { flex:1; min-width: 0; }
+    .app-files .it .info .nm { font-size: 11px; font-weight: 700; color: var(--ink); }
+    .app-files .it .info .meta { font-size: 9px; color: var(--ink-soft); margin-top: 1px; }
+    .app-files .it .more { width: 18px; color: var(--ink-faint); font-size: 16px; line-height: 1; }
+
+    /* ─────────────────────────  FEATURE GRID  ───────────────────────── */
+    .features-section { background: var(--paper); padding: 110px 0; position: relative; }
+    .features-section::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--line), transparent);
+    }
+    .feat-head {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: end;
+      margin-bottom: 70px;
+    }
+    .feat-head p {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--ink-soft);
+      margin: 0;
+      max-width: 540px;
+    }
+    .feat-grid {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+    }
+    .fcard {
+      grid-column: span 4;
+      padding: 28px 26px 30px;
+      background: var(--bg);
+      border-radius: 22px;
+      border: 1px solid var(--line-soft);
+      display: flex; flex-direction: column; gap: 14px;
+      min-height: 280px;
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+    .fcard:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .fcard.span-6 { grid-column: span 6; }
+    .fcard.span-8 { grid-column: span 8; }
+    .fcard .num {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-style: italic;
+      font-size: 1.25rem;
+      color: var(--crimson);
+      letter-spacing: 0.02em;
+    }
+    .fcard h3 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 1.85rem;
+      letter-spacing: -0.015em;
+      margin: 0;
+      color: var(--ink);
+      line-height: 1.05;
+    }
+    .fcard p {
+      font-size: 0.96rem;
+      line-height: 1.65;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+    .fcard ul {
+      list-style: none; margin: auto 0 0; padding: 0;
+      display: flex; flex-direction: column; gap: 7px;
+    }
+    .fcard ul li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      color: var(--ink-2);
+    }
+    .fcard ul li::before {
+      content: "";
+      width: 5px; height: 5px;
+      flex-shrink: 0;
+      margin-top: 7px;
+      border-radius: 50%;
+      background: var(--crimson);
+    }
+    .fcard.dark {
+      background: linear-gradient(160deg, var(--ink) 0%, #2c1218 100%);
+      color: var(--paper);
+      border: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .fcard.dark::after {
+      content: ""; position: absolute;
+      width: 220px; height: 220px;
+      right: -80px; bottom: -80px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(196,150,42,0.3), transparent);
+    }
+    .fcard.dark h3 { color: var(--paper); }
+    .fcard.dark p { color: rgba(255,250,243,0.78); }
+    .fcard.dark .num { color: var(--gold-light); }
+    .fcard.dark ul li { color: rgba(255,250,243,0.85); }
+    .fcard.dark ul li::before { background: var(--gold); }
+
+    .fcard.photo {
+      padding: 0;
+      overflow: hidden;
+      min-height: 280px;
+      position: relative;
+      color: var(--paper);
+    }
+    .fcard.photo img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .fcard.photo::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(20,8,14,0.05) 0%, rgba(20,8,14,0.78) 100%);
+    }
+    .fcard.photo .photo-content {
+      position: relative; z-index: 1;
+      padding: 28px 26px;
+      display: flex; flex-direction: column; gap: 12px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .fcard.photo h3 { color: var(--paper); }
+    .fcard.photo p { color: rgba(255,250,243,0.85); }
+    .fcard.photo .num { color: var(--gold-light); }
+
+    /* ─────────────────────────  SHOWCASE  ───────────────────────── */
+    .showcase {
+      background: linear-gradient(180deg, var(--bg-tone) 0%, var(--bg) 100%);
+      padding: 110px 0;
+      overflow: hidden;
+    }
+    .showcase-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .showcase-inner.flip { grid-template-columns: 1.1fr 1fr; }
+    .showcase-inner.flip .showcase-text { order: 2; }
+    .showcase-text h2 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: clamp(2.2rem, 4.2vw, 3.4rem);
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      margin: 0 0 22px;
+      text-wrap: balance;
+    }
+    .showcase-text h2 em { color: var(--crimson); font-style: italic; font-weight: 500; }
+    .showcase-text p {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--ink-soft);
+      margin: 0 0 18px;
+    }
+    .feat-mini {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .feat-mini > div {
+      padding: 16px;
+      background: var(--paper);
+      border-radius: 14px;
+      border: 1px solid var(--line-soft);
+    }
+    .feat-mini strong {
+      display: block;
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 1.2rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+    .feat-mini span {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+
+    .showcase-visual {
+      position: relative;
+      min-height: 540px;
+    }
+    .showcase-visual .phone {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%) rotate(-3deg);
+    }
+    .showcase-visual .phone.b {
+      transform: translate(-30%, -52%) rotate(-9deg);
+      z-index: 0;
+      opacity: 0.65;
+      filter: blur(0.4px);
+    }
+    .showcase-visual .phone.f {
+      transform: translate(-65%, -48%) rotate(3deg);
+      z-index: 2;
+    }
+    .showcase-visual .accent-circle {
+      position: absolute;
+      width: 260px; height: 260px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      left: 60%; top: 12%;
+      pointer-events: none;
+    }
+    .showcase-visual .accent-circle::after {
+      content: "";
+      position: absolute; inset: 30px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+    }
+
+    /* ─────────────────────────  TIMELINE  ───────────────────────── */
+    .timeline {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 28px;
+      margin-top: 60px;
+    }
+    .tl {
+      position: relative;
+      padding-top: 32px;
+    }
+    .tl::before {
+      content: "";
+      position: absolute;
+      top: 8px; left: 0; right: -28px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--crimson), var(--gold), transparent);
+    }
+    .tl:last-child::before { right: 0; background: linear-gradient(90deg, var(--crimson), var(--gold)); }
+    .tl::after {
+      content: "";
+      position: absolute;
+      top: 5px; left: 0;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--crimson);
+      box-shadow: 0 0 0 4px rgba(186,12,47,0.18);
+    }
+    .tl .ord {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-size: 0.92rem;
+      color: var(--crimson);
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .tl h4 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 1.5rem;
+      letter-spacing: -0.01em;
+      margin: 0 0 8px;
+    }
+    .tl p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+
+    /* ─────────────────────────  HANDOFF (future cohorts)  ───────────────────────── */
+    .handoff {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 110px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .handoff::before {
+      content: "";
+      position: absolute;
+      width: 800px; height: 800px;
+      right: -300px; top: -300px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(186,12,47,0.4), transparent);
+    }
+    .handoff::after {
+      content: "";
+      position: absolute;
+      width: 600px; height: 600px;
+      left: -200px; bottom: -200px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(196,150,42,0.18), transparent);
+    }
+    .handoff-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .handoff-text h2 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: clamp(2.6rem, 4.8vw, 4rem);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin: 0 0 28px;
+      color: var(--paper);
+      text-wrap: balance;
+    }
+    .handoff-text h2 em { color: var(--gold-light); font-style: italic; font-weight: 500; }
+    .handoff-text p {
+      font-size: 1.08rem;
+      line-height: 1.7;
+      color: rgba(255,250,243,0.82);
+      max-width: 540px;
+      margin: 0 0 16px;
+    }
+    .ho-eyebrow { color: var(--gold-light); }
+    .ho-eyebrow::before { background: var(--gold-light); }
+
+    .swap-board {
+      background: rgba(255,250,243,0.04);
+      border: 1px solid rgba(255,250,243,0.12);
+      border-radius: 24px;
+      padding: 32px;
+      backdrop-filter: blur(8px);
+    }
+    .swap-board h4 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-style: italic;
+      font-size: 1.5rem;
+      margin: 0 0 6px;
+      color: var(--gold-light);
+    }
+    .swap-board .sub {
+      font-size: 0.86rem;
+      color: rgba(255,250,243,0.6);
+      margin: 0 0 24px;
+      letter-spacing: 0.02em;
+    }
+    .swap-rows { display: flex; flex-direction: column; gap: 0; }
+    .swap-row {
+      display: grid;
+      grid-template-columns: 130px 1fr 18px 1fr;
+      align-items: center;
+      gap: 16px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255,250,243,0.08);
+      font-size: 0.9rem;
+    }
+    .swap-row:last-child { border: none; }
+    .swap-row .key {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      color: var(--gold-light);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .swap-row .from { color: rgba(255,250,243,0.86); }
+    .swap-row .arr { color: var(--gold); text-align: center; }
+    .swap-row .to {
+      color: var(--paper);
+      font-style: italic;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 1.08rem;
+      letter-spacing: -0.005em;
+    }
+
+    /* ─────────────────────────  ACCESS / CTA  ───────────────────────── */
+    .access {
+      background: var(--bg);
+      padding: 110px 0;
+    }
+    .access-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .access-card {
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      border-radius: 28px;
+      padding: 36px 34px;
+      box-shadow: var(--shadow-lg);
+    }
+    .access-card .ek { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700; color: var(--crimson); margin-bottom: 18px; display: block; }
+    .access-card h3 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 2.2rem;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+    }
+    .access-card p {
+      font-size: 0.98rem;
+      color: var(--ink-soft);
+      line-height: 1.65;
+      margin: 0 0 26px;
+      max-width: 420px;
+    }
+    .access-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 10px 10px 18px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+    }
+    .access-input input {
+      border: none; outline: none;
+      background: transparent;
+      flex: 1; min-width: 0;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--ink);
+      padding: 8px 0;
+    }
+    .access-input input::placeholder { color: var(--ink-faint); }
+    .access-input button {
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-deep));
+      color: var(--paper);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 180ms ease;
+    }
+    .access-input button:hover { transform: translateY(-1px); }
+    .access-card .note { font-size: 0.84rem; color: var(--ink-faint); margin-top: 14px; }
+    .access-card .note b { color: var(--ink); }
+
+    .access-steps {
+      display: flex; flex-direction: column; gap: 22px;
+    }
+    .access-step {
+      display: grid; grid-template-columns: 56px 1fr; gap: 18px; align-items: flex-start;
+    }
+    .access-step .n {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      display: grid; place-items: center;
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 1.65rem;
+      color: var(--crimson);
+      box-shadow: var(--shadow-md);
+    }
+    .access-step strong {
+      display: block;
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 600;
+      font-size: 1.4rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+    .access-step span {
+      font-size: 0.94rem;
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+
+    /* ─────────────────────────  CLOSING  ───────────────────────── */
+    .closing {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 60px 32px 30px;
+      text-align: center;
+    }
+    .closing h2 {
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 500;
+      font-style: italic;
+      font-size: clamp(2.5rem, 5vw, 4.4rem);
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      margin: 0 auto 30px;
+      max-width: 18ch;
+      color: var(--ink);
+      text-wrap: balance;
+    }
+    .closing h2 em { color: var(--crimson); font-style: italic; }
+    .closing-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    .footer {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 40px 32px 56px;
+      border-top: 1px solid var(--line-soft);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+      color: var(--ink-soft);
+      font-size: 0.82rem;
+    }
+    .footer .br { display: flex; align-items: center; gap: 12px; }
+    .footer .br .mk {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-deep));
+      display: grid; place-items: center;
+      color: var(--gold-light);
+      font-family: "Cormorant Garamond", serif;
+      font-weight: 700; font-size: 14px;
+      line-height: 1;
+    }
+    .footer .br b { color: var(--ink); font-weight: 800; }
+    .footer .meta { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.7; }
+
+    /* ─────────────────────────  REVEALS  ───────────────────────── */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 700ms ease, transform 700ms ease; }
+    .reveal.in { opacity: 1; transform: none; }
+
+    /* ─────────────────────────  RESPONSIVE  ───────────────────────── */
+    @media (max-width: 1080px) {
+      .hero-grid { grid-template-columns: 1fr; padding: 110px 28px 80px; min-height: auto; }
+      .hero-phone-back { display: none; }
+      .pillars { grid-template-columns: 1fr; }
+      .feat-grid { grid-template-columns: repeat(6, 1fr); }
+      .fcard, .fcard.span-6, .fcard.span-8 { grid-column: span 6; }
+      .feat-head, .showcase-inner, .access-inner, .handoff-inner { grid-template-columns: 1fr; gap: 40px; }
+      .showcase-inner.flip .showcase-text { order: 1; }
+      .showcase-visual { min-height: 480px; margin: 20px 0; }
+      .timeline { grid-template-columns: 1fr 1fr; }
+      .swap-row { grid-template-columns: 100px 1fr 18px 1fr; }
+    }
+    @media (max-width: 720px) {
+      .hero h1 { font-size: 3rem; }
+      .hero-meta { grid-template-columns: 1fr 1fr; }
+      .feat-grid { grid-template-columns: 1fr; }
+      .fcard, .fcard.span-6, .fcard.span-8 { grid-column: span 1; }
+      .timeline { grid-template-columns: 1fr; }
+      .tl::before { display: none; }
+      .swap-row { grid-template-columns: 1fr; gap: 4px; }
+      .swap-row .arr { display: none; }
+      .swap-row .from, .swap-row .to { padding-left: 0; }
+      .showcase-visual { min-height: 580px; }
+      .showcase-visual .phone { transform: translate(-50%, -50%) rotate(-3deg) scale(0.9); }
+      .showcase-visual .phone.b { transform: translate(-30%, -55%) rotate(-9deg) scale(0.85); }
+      .showcase-visual .phone.f { transform: translate(-70%, -45%) rotate(3deg) scale(0.85); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ───── TOP BAR ───── -->
+  <header class="topbar" id="topbar">
+    <div class="brand-lockup">
+      <div class="brand-mark"><span>G84</span></div>
+      <div class="brand-text">
+        <span class="top">DU EMBA · Cohort 84</span>
+        <span class="bot">Global <em>84</em></span>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="#experience">Experience</a>
+      <a href="#features">Features</a>
+      <a href="#journey">Journey</a>
+      <a href="#cohorts">Future Cohorts</a>
+      <a href="#access" class="pill-cta">Get the App</a>
+    </nav>
+  </header>
+
+  <!-- ───── HERO ───── -->
+  <section class="hero" id="top">
+    <div class="hero-photo">
+      <img src="splash-singapore-1.webp" alt="Singapore — Marina Bay Sands at sunset" />
+    </div>
+
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="hero-eyebrow">
+          <span class="dot">G</span>
+          <span>The Cohort 84 Companion · Singapore × Vietnam</span>
+        </div>
+        <h1>
+          Twenty-one classmates.<br/>
+          Two cities.<br/>
+          <em>One pocket-sized companion</em><br/>
+          for the <span class="stroke">trip of the program</span>.
+        </h1>
+        <p class="hero-lede">
+          Global 84 is the cohort's mobile home base for our international <span data-noun="singular">trip</span> — a Progressive Web App that puts announcements, events, team rooms, city discovery, photo translation, currency conversion, and shared photos within thumb's reach, on every plane, in every taxi, between every company visit.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-gold" href="#access">Install on your phone →</a>
+          <a class="btn btn-ghost" href="#experience">Take the tour</a>
+        </div>
+
+        <div class="hero-meta">
+          <div>
+            <div class="label">Cohort</div>
+            <div class="value">21 <em>+</em> 5</div>
+          </div>
+          <div>
+            <div class="label">Cities</div>
+            <div class="value">Singapore <em>·</em> Vietnam</div>
+          </div>
+          <div>
+            <div class="label">Surfaces</div>
+            <div class="value">Phone <em>·</em> Tablet <em>·</em> Web</div>
+          </div>
+          <div>
+            <div class="label">Built on</div>
+            <div class="value">React <em>·</em> Firebase</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-phone-wrap">
+        <div class="glow"></div>
+
+        <!-- background phone -->
+        <div class="phone hero-phone-back compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar">
+              <span>9:41</span>
+              <span class="status-icons" aria-hidden="true">
+                <svg class="bars" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" fill="currentColor" rx="0.5"/><rect x="5" y="6" width="3" height="6" fill="currentColor" rx="0.5"/><rect x="10" y="3" width="3" height="9" fill="currentColor" rx="0.5"/><rect x="15" y="0" width="3" height="12" fill="currentColor" rx="0.5"/></svg>
+                <span class="battery"></span>
+              </span>
+            </div>
+            <div class="phone-app">
+              <div class="app-explore">
+                <div class="top">
+                  <div class="search">Pho · Ramen · Hawker · Roof Bar</div>
+                  <div class="tabs">
+                    <div class="t active">All</div>
+                    <div class="t">Dining</div>
+                    <div class="t">Activity</div>
+                  </div>
+                </div>
+                <div class="city-cards">
+                  <div class="ccard"><img src="splash-singapore-2.webp" alt=""/><div class="lab"><strong>Singapore</strong><span>42 places</span></div></div>
+                  <div class="ccard"><img src="splash-hcmc-1.webp" alt=""/><div class="lab"><strong>Vietnam</strong><span>38 places</span></div></div>
+                </div>
+                <div class="list">
+                  <div class="row">
+                    <div class="thumb"></div>
+                    <div class="info">
+                      <div class="name">Maxwell Food Centre</div>
+                      <div class="meta">Hawker · Tanjong Pagar · S$</div>
+                      <div class="tags"><span class="a-pill gold no-dot">Saved</span></div>
+                    </div>
+                    <div class="star">★</div>
+                  </div>
+                  <div class="row">
+                    <div class="thumb b2"></div>
+                    <div class="info">
+                      <div class="name">Pho 2000</div>
+                      <div class="meta">Vietnamese · District 1 · ₫</div>
+                      <div class="tags"><span class="a-pill ghost no-dot">Lunch</span></div>
+                    </div>
+                    <div class="star off">☆</div>
+                  </div>
+                  <div class="row">
+                    <div class="thumb b3"></div>
+                    <div class="info">
+                      <div class="name">CÉ LA VI</div>
+                      <div class="meta">Rooftop bar · Marina Bay</div>
+                      <div class="tags"><span class="a-pill crimson no-dot">Cohort pick</span></div>
+                    </div>
+                    <div class="star">★</div>
+                  </div>
+                </div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it active"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- foreground phone -->
+        <div class="phone hero-phone">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar">
+              <span>9:41</span>
+              <span class="status-icons" aria-hidden="true">
+                <svg class="bars" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" fill="currentColor" rx="0.5"/><rect x="5" y="6" width="3" height="6" fill="currentColor" rx="0.5"/><rect x="10" y="3" width="3" height="9" fill="currentColor" rx="0.5"/><rect x="15" y="0" width="3" height="12" fill="currentColor" rx="0.5"/></svg>
+                <span class="battery"></span>
+              </span>
+            </div>
+            <div class="phone-app app-home">
+              <div class="hero-card">
+                <div class="top">
+                  <div class="logo">G</div>
+                  <div class="ham"><span></span><span></span><span></span></div>
+                </div>
+                <div class="ek">DU EMBA · Cohort 84</div>
+                <h2>Creating <b>Global Leaders</b><br/>across Singapore &amp; Vietnam.</h2>
+              </div>
+              <div class="weather">
+                <div class="w">
+                  <span class="city">Singapore</span>
+                  <span class="deg">84<sup>°F</sup></span>
+                  <span class="cond">Hazy · 7:42 PM</span>
+                </div>
+                <div class="w">
+                  <span class="city">Ho Chi Minh</span>
+                  <span class="deg">88<sup>°F</sup></span>
+                  <span class="cond">Showers · 6:42 PM</span>
+                </div>
+              </div>
+              <div class="ann-list">
+                <div class="ann pinned">
+                  <div class="meta">
+                    <span class="who">Pinned · Program Office</span>
+                    <span class="a-pill gold no-dot">New</span>
+                  </div>
+                  <div class="title">Bus to DBS HQ leaves 7:45 — lobby check-in by 7:30.</div>
+                </div>
+                <div class="ann">
+                  <div class="meta">
+                    <span class="who">Aman R. · Cohort lead</span>
+                  </div>
+                  <div class="title">Welcome dinner reservations confirmed at Candlenut.</div>
+                  <div class="body">Smart-casual. Vegetarian options noted on the menu link.</div>
+                </div>
+                <div class="ann">
+                  <div class="meta">
+                    <span class="who">Program Office</span>
+                  </div>
+                  <div class="title">42 new Explore listings synced for Saigon.</div>
+                </div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it active"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── MARQUEE ───── -->
+  <div class="strip" aria-hidden="true">
+    <div class="strip-inner">
+      <span class="strip-item">Announcements <span class="dot"></span></span>
+      <span class="strip-item">Cohort Chat <span class="dot"></span></span>
+      <span class="strip-item">Events &amp; RSVPs <span class="dot"></span></span>
+      <span class="strip-item">Team Rooms <span class="dot"></span></span>
+      <span class="strip-item">City Guide <span class="dot"></span></span>
+      <span class="strip-item">Photo Translator <span class="dot"></span></span>
+      <span class="strip-item">Currency Converter <span class="dot"></span></span>
+      <span class="strip-item">Shared Gallery <span class="dot"></span></span>
+      <span class="strip-item">Private Files <span class="dot"></span></span>
+      <span class="strip-item">Destination Media <span class="dot"></span></span>
+      <!-- repeat for seamless loop -->
+      <span class="strip-item">Announcements <span class="dot"></span></span>
+      <span class="strip-item">Cohort Chat <span class="dot"></span></span>
+      <span class="strip-item">Events &amp; RSVPs <span class="dot"></span></span>
+      <span class="strip-item">Team Rooms <span class="dot"></span></span>
+      <span class="strip-item">City Guide <span class="dot"></span></span>
+      <span class="strip-item">Photo Translator <span class="dot"></span></span>
+      <span class="strip-item">Currency Converter <span class="dot"></span></span>
+      <span class="strip-item">Shared Gallery <span class="dot"></span></span>
+      <span class="strip-item">Private Files <span class="dot"></span></span>
+      <span class="strip-item">Destination Media <span class="dot"></span></span>
+    </div>
+  </div>
+
+  <!-- ───── PILLARS ───── -->
+  <section class="section" id="experience">
+    <div class="reveal">
+      <div class="section-eyebrow">Why Global 84 exists</div>
+      <h2 class="section-title">A <span data-noun="singular">trip</span> this complex deserves <em>one home base.</em></h2>
+      <p class="section-lede">
+        International <span data-noun="plural">trips</span> live across thirty-seven WhatsApp threads, four shared documents, and one frantic group email at 6:14 AM in a hotel lobby. Global 84 collapses all of that into a single, polished mobile experience — designed for the way our cohort actually moves through Singapore and Vietnam.
+      </p>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar reveal">
+        <div class="num serif">i</div>
+        <h3>Stays close to the moment.</h3>
+        <p>Built phone-first. Whether you're queuing at customs or settling into a company visit, the next thing you need is one tap from the home screen.</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="num serif">ii</div>
+        <h3>Holds the cohort together.</h3>
+        <p>One feed, one chat, one calendar — shared by all 21 classmates and 5 program staff. Side-channels finally optional, not mandatory.</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="num serif">iii</div>
+        <h3>Made for two cities at once.</h3>
+        <p>Singapore and Vietnam each get their own rhythm: weather, currency, hawker stalls, hidden cafés, and a feed of cohort favorites that grows in real time.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── PHONE GALLERY ───── -->
+  <section class="phone-gallery-section" id="features">
+    <div class="section">
+      <div style="max-width: 760px;" class="reveal">
+        <div class="section-eyebrow">A look inside</div>
+        <h2 class="section-title">Nine modules. <em>One mobile home.</em></h2>
+        <p class="section-lede">
+          Each tab lives less than a thumb away. Below: actual screen mockups of the experience cohort members will install on their phones during the soft-launch this month.
+        </p>
+      </div>
+    </div>
+
+    <div class="phone-gallery">
+      <!-- 1. HOME -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-home">
+              <div class="hero-card">
+                <div class="top">
+                  <div class="logo">G</div>
+                  <div class="ham"><span></span><span></span><span></span></div>
+                </div>
+                <div class="ek">Today · Singapore</div>
+                <h2>Day 03<br/>of <b>the <span data-noun="singular">trip</span></b></h2>
+              </div>
+              <div class="weather">
+                <div class="w"><span class="city">Singapore</span><span class="deg">84<sup>°F</sup></span><span class="cond">Hazy · 7:42 PM</span></div>
+                <div class="w"><span class="city">Ho Chi Minh</span><span class="deg">88<sup>°F</sup></span><span class="cond">Showers</span></div>
+              </div>
+              <div class="ann-list">
+                <div class="ann pinned">
+                  <div class="meta"><span class="who">Pinned · Program Office</span><span class="a-pill gold no-dot">New</span></div>
+                  <div class="title">DBS visit moved to 9:00 — bus boards 7:45.</div>
+                </div>
+                <div class="ann">
+                  <div class="meta"><span class="who">Aman R.</span></div>
+                  <div class="title">Welcome dinner at Candlenut — smart-casual.</div>
+                </div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it active"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">01 · Home</div>
+          <h4>Today, at a glance</h4>
+          <p>Pinned announcements, live weather for both cities, and the next thing on the schedule.</p>
+        </div>
+      </div>
+
+      <!-- 2. EXPLORE -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-explore">
+              <div class="top">
+                <div style="padding: 0 4px;">
+                  <div class="a-eyebrow" style="margin-bottom: 4px;">City guide</div>
+                  <h2 class="a-h" style="font-size: 22px;">Where to go</h2>
+                </div>
+                <div class="search">Search Singapore &amp; Vietnam</div>
+                <div class="tabs">
+                  <div class="t active">All</div>
+                  <div class="t">Dining</div>
+                  <div class="t">Activity</div>
+                  <div class="t">★</div>
+                </div>
+              </div>
+              <div class="city-cards">
+                <div class="ccard"><img src="splash-singapore-2.webp" alt=""/><div class="lab"><strong>Singapore</strong><span>42 places</span></div></div>
+                <div class="ccard"><img src="splash-hcmc-2.webp" alt=""/><div class="lab"><strong>Vietnam</strong><span>38 places</span></div></div>
+              </div>
+              <div class="list">
+                <div class="row">
+                  <div class="thumb"></div>
+                  <div class="info">
+                    <div class="name">Maxwell Food Centre</div>
+                    <div class="meta">Hawker · Tanjong Pagar</div>
+                  </div>
+                  <div class="star">★</div>
+                </div>
+                <div class="row">
+                  <div class="thumb b2"></div>
+                  <div class="info">
+                    <div class="name">Pho 2000</div>
+                    <div class="meta">Vietnamese · District 1</div>
+                  </div>
+                  <div class="star off">☆</div>
+                </div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it active"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">02 · Explore</div>
+          <h4>Discover, save, decide</h4>
+          <p>Curated places by city and category. Star a spot — and turn it into an event in two taps.</p>
+        </div>
+      </div>
+
+      <!-- 3. EVENTS -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-events">
+              <div class="hd">
+                <div class="a-eyebrow">This week</div>
+                <h2 style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:24px;margin:4px 0 0;">Events</h2>
+                <p style="font-size:11px;color:var(--ink-soft);margin:4px 0 0;">3 new for you · 9 upcoming</p>
+              </div>
+              <div class="group-label">New for you</div>
+              <div class="ev-list">
+                <div class="ev featured">
+                  <div class="date"><span class="m">Wed</span><span class="d">14</span></div>
+                  <div class="body">
+                    <div class="ti">DBS Headquarters company visit</div>
+                    <div class="lo">Marina Bay Financial Centre · 9:00–11:30</div>
+                    <div class="rsvp">
+                      <div class="rs on">Going</div>
+                      <div class="rs">Interested</div>
+                      <div class="rs">No</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ev">
+                  <div class="date"><span class="m">Wed</span><span class="d">14</span></div>
+                  <div class="body">
+                    <div class="ti">Welcome dinner @ Candlenut</div>
+                    <div class="lo">Dempsey Hill · 7:00 PM</div>
+                    <div class="rsvp">
+                      <div class="rs">Going</div>
+                      <div class="rs int">Interested</div>
+                      <div class="rs">No</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ev">
+                  <div class="date"><span class="m">Thu</span><span class="d">15</span></div>
+                  <div class="body">
+                    <div class="ti">Hawker crawl — Team 3</div>
+                    <div class="lo">Lau Pa Sat · 8:30 PM</div>
+                  </div>
+                </div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it active"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">03 · Events</div>
+          <h4>The shared calendar</h4>
+          <p>Official program events plus side-plans, with simple Going / Interested RSVPs and per-event chat.</p>
+        </div>
+      </div>
+
+      <!-- 4. CHAT -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-chat">
+              <div class="hd">
+                <div>
+                  <div class="a-eyebrow">Cohort 84</div>
+                  <h2>Group chat</h2>
+                </div>
+                <div class="live">Live</div>
+              </div>
+              <div class="stream">
+                <div class="b">
+                  <div class="av b2">SR</div>
+                  <div class="bub">
+                    <div class="nm">Sara R.</div>
+                    Just landed at Changi — anyone need a ride into town?
+                  </div>
+                </div>
+                <div class="b">
+                  <div class="av b3">JT</div>
+                  <div class="bub">
+                    <div class="nm">Jeff T.</div>
+                    Grab from terminal 3 has been smooth, ~18 min to Marina Bay.
+                  </div>
+                </div>
+                <div class="b me">
+                  <div class="av">YO</div>
+                  <div class="bub">
+                    <div class="nm">You</div>
+                    Posting our hawker crawl plan at 8:30 — see Events!
+                  </div>
+                </div>
+                <div class="b">
+                  <div class="av b2">PA</div>
+                  <div class="bub">
+                    <div class="nm">Priya A.</div>
+                    Brought 3 extra adapters. Room 1402 if anyone needs.
+                  </div>
+                </div>
+              </div>
+              <div class="input">
+                Message Cohort 84
+                <span class="send">↑</span>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it active"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">04 · Chat</div>
+          <h4>One thread, the whole group</h4>
+          <p>Real-time cohort chat replaces the dozen WhatsApp side-channels you'd otherwise be juggling.</p>
+        </div>
+      </div>
+
+      <!-- 5. TEAMS -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-teams">
+              <div class="hd">
+                <div class="ek">Private team space</div>
+                <h2>Team 3 · Saigon</h2>
+                <p>Strategy team · 5 members</p>
+              </div>
+              <div class="members">
+                <div class="av a1">JT</div>
+                <div class="av a2">PA</div>
+                <div class="av a3">SR</div>
+                <div class="av a4">DK</div>
+                <div class="av a5">MV</div>
+                <span class="more">+ 0</span>
+              </div>
+              <div class="meeting-card">
+                <div class="ek">Next meeting</div>
+                <div class="ti">Final case review — Vietnam consumer banking</div>
+                <div class="meta"><b>Tue · 7:30 PM</b><br/>Hotel Continental, Lounge 4F</div>
+              </div>
+              <div class="chat-prev">
+                <div class="ek">Team chat · 3 new</div>
+                <div class="b"><div class="av">JT</div><div class="ms"><span class="nm">Jeff T.</span><span class="tx">Pushed the deck draft v3 to My Files.</span></div></div>
+                <div class="b"><div class="av g">PA</div><div class="ms"><span class="nm">Priya A.</span><span class="tx">Reviewing now — comments by 6.</span></div></div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it active"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">05 · Teams</div>
+          <h4>Private rooms for small groups</h4>
+          <p>Team-only chat, meeting schedule, and roster. Strictly invite-only — even admins stay out.</p>
+        </div>
+      </div>
+
+      <!-- 6. TRANSLATE -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-translate">
+              <div class="hd">
+                <div class="ek">Photo translator</div>
+                <h2>Read anything,<br/>anywhere.</h2>
+              </div>
+              <div class="img-frame">
+                <span class="menu-line">Cà phê sữa đá — 35.000₫</span>
+              </div>
+              <div class="result">
+                <div class="lbl" style="color:var(--ink-soft);">Detected · Vietnamese</div>
+                <div class="tx" style="font-style: italic;">Bún bò Huế · Cà phê sữa đá · 35.000₫</div>
+              </div>
+              <div class="result crimson">
+                <div class="lbl">English translation</div>
+                <div class="tx">Spicy Hue beef noodle soup · Iced milk coffee · 35,000 VND</div>
+              </div>
+              <div class="copy-btn">⧉ Copy translation</div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">06 · Translator</div>
+          <h4>Menus, signs, documents</h4>
+          <p>Snap a photo. Get the original text and a clean English translation, powered by Claude.</p>
+        </div>
+      </div>
+
+      <!-- 7. CURRENCY -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-currency">
+              <div class="hd">
+                <div class="ek">Live FX</div>
+                <h2>Currency</h2>
+              </div>
+              <div class="ccard">
+                <div class="top">
+                  <div class="pair">USD ⇄ SGD</div>
+                  <div class="rt">Updated · 2 min ago</div>
+                </div>
+                <div class="row"><span class="ccode">USD</span><span class="num">$ 100.00</span></div>
+                <div class="row"><span class="ccode">SGD</span><span class="num">S$ 134.42</span></div>
+                <div class="tip" style="margin-top:8px;"><b>Tip:</b> roughly 4× to 3 — multiply USD by 1.34.</div>
+              </div>
+              <div class="ccard dark">
+                <div class="top">
+                  <div class="pair" style="color:var(--gold-light);">USD ⇄ VND</div>
+                  <div class="rt" style="color:rgba(255,250,243,0.6);">Updated · 2 min ago</div>
+                </div>
+                <div class="row"><span class="ccode">USD</span><span class="num">$ 100</span></div>
+                <div class="row"><span class="ccode">VND</span><span class="num">2,536,500₫</span></div>
+                <div class="tip" style="margin-top:8px; color: rgba(255,250,243,0.75);"><b style="color:var(--gold-light);">Mental math:</b> drop three zeros &amp; multiply by 4.</div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">07 · Currency</div>
+          <h4>SGD &amp; VND, instantly</h4>
+          <p>Bidirectional converters with live rates and mental-math tips for either direction.</p>
+        </div>
+      </div>
+
+      <!-- 8. GALLERY -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-gallery">
+              <div class="hd">
+                <h2>Gallery</h2>
+                <span class="ct">324 photos · 21 contributors</span>
+              </div>
+              <div class="tabs">
+                <div class="t active">All</div>
+                <div class="t">Singapore</div>
+                <div class="t">Vietnam</div>
+                <div class="t">Mine</div>
+              </div>
+              <div class="grid">
+                <div class="g tall"><img src="splash-singapore-3.webp" alt=""/><span class="heart">♡ 8</span></div>
+                <div class="g"><img src="splash-hcmc-2.webp" alt=""/><span class="heart">♡ 12</span></div>
+                <div class="g"><img src="splash-hcmc-4.webp" alt=""/><span class="heart">♡ 4</span></div>
+                <div class="g"><img src="splash-singapore-4.webp" alt=""/><span class="heart">♡ 21</span></div>
+                <div class="g tall"><img src="splash-hcmc-1.webp" alt=""/><span class="heart">♡ 6</span></div>
+                <div class="g"><img src="splash-singapore-2.webp" alt=""/><span class="heart">♡ 9</span></div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">08 · Gallery</div>
+          <h4>The cohort's shared archive</h4>
+          <p>Everyone uploads, everyone sees. Tagged by city, organized into a living memory of the trip.</p>
+        </div>
+      </div>
+
+      <!-- 9. FILES -->
+      <div class="phone-stack">
+        <div class="phone compact">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-files">
+              <div class="hd">
+                <div class="ek">Private to you</div>
+                <h2>My Files</h2>
+                <p>Boarding passes, hotel docs, visas — encrypted &amp; offline-ready.</p>
+              </div>
+              <div class="upload">＋ Upload PDF, JPG or PNG</div>
+              <div class="list">
+                <div class="it">
+                  <div class="ic pdf">PDF</div>
+                  <div class="info"><div class="nm">SQ-027 boarding pass</div><div class="meta">PDF · 412 KB · 2 hr ago</div></div>
+                  <div class="more">⋯</div>
+                </div>
+                <div class="it">
+                  <div class="ic pdf">PDF</div>
+                  <div class="info"><div class="nm">Marina Mandarin reservation</div><div class="meta">PDF · 198 KB · yesterday</div></div>
+                  <div class="more">⋯</div>
+                </div>
+                <div class="it">
+                  <div class="ic">JPG</div>
+                  <div class="info"><div class="nm">Vietnam e-visa</div><div class="meta">JPG · 1.4 MB · 4 days ago</div></div>
+                  <div class="more">⋯</div>
+                </div>
+                <div class="it">
+                  <div class="ic img">IMG</div>
+                  <div class="info"><div class="nm">Vaccination record</div><div class="meta">JPG · 822 KB · 1 wk ago</div></div>
+                  <div class="more">⋯</div>
+                </div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="tag">09 · My Files</div>
+          <h4>Travel docs, locked to you</h4>
+          <p>Your private file vault. Owner-only — neither admins nor classmates can see what you upload.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── FEATURE GRID ───── -->
+  <section class="features-section">
+    <div class="feat-head">
+      <div class="reveal">
+        <div class="section-eyebrow">Capabilities</div>
+        <h2 class="section-title">A purpose-built toolkit, <em>not a generic portal.</em></h2>
+      </div>
+      <p class="reveal">
+        Every screen earns its place: it has to be useful in transit, on hotel Wi-Fi, in a fluorescent meeting room, between sessions. No ornament. No filler. Just the practical cohort experience, made to feel premium.
+      </p>
+    </div>
+
+    <div class="feat-grid">
+      <div class="fcard span-6 dark reveal">
+        <div class="num">i.</div>
+        <h3>Mobile-first PWA<br/>installed in 30 seconds.</h3>
+        <p>No App Store. No download queue. Open the link in Safari or Chrome, tap "Add to Home Screen" — and the cohort experience lives next to Maps and Messages.</p>
+        <ul>
+          <li>Works on iPhone, Android, iPad — same single codebase.</li>
+          <li>Offline-aware: cached announcements load even on a Cathay flight.</li>
+          <li>Branded splash screen randomized across the cohort photo pool.</li>
+        </ul>
+      </div>
+
+      <div class="fcard photo span-6 reveal">
+        <img src="splash-singapore-4.webp" alt="Haji Lane, Singapore" />
+        <div class="photo-content">
+          <div class="num" style="color: var(--gold-light);">ii.</div>
+          <h3>Discovery that feels<br/>like cohort wisdom.</h3>
+          <p>Curated places, not a TripAdvisor dump. Saved spots, "recommended-by" credit, and a one-tap path from <em>I should try this</em> to <em>let's do it tonight</em> as a cohort event.</p>
+        </div>
+      </div>
+
+      <div class="fcard reveal">
+        <div class="num">iii.</div>
+        <h3>Real-time cohort chat.</h3>
+        <p>One stream, one source of truth. Replaces the WhatsApp side-channels with a moderated cohort thread.</p>
+        <ul>
+          <li>Live updates, threaded discussion per event</li>
+          <li>1,000-char limit; admin moderation</li>
+          <li>Last 100 messages, oldest-first</li>
+        </ul>
+      </div>
+
+      <div class="fcard reveal">
+        <div class="num">iv.</div>
+        <h3>Private team rooms.</h3>
+        <p>For your study group's case work. Roster, meeting schedule, and team-only chat — invisible to other teams.</p>
+        <ul>
+          <li>Team-only meeting calendar</li>
+          <li>Strictly private — admins outside the team see nothing</li>
+          <li>Atomic team assignment via Firestore batch writes</li>
+        </ul>
+      </div>
+
+      <div class="fcard reveal">
+        <div class="num">v.</div>
+        <h3>Photo translator.</h3>
+        <p>Snap a Vietnamese menu, a Singapore street sign, an HR document — get the original text + clean English in seconds. Powered by Claude, key kept server-side.</p>
+        <ul>
+          <li>JPG / PNG / WEBP up to 5 MB</li>
+          <li>Camera capture supported on mobile</li>
+          <li>Copy-to-clipboard on the translation</li>
+        </ul>
+      </div>
+
+      <div class="fcard span-8 reveal">
+        <div class="num">vi.</div>
+        <h3>Practical travel utilities, never further than the side drawer.</h3>
+        <p>The unglamorous tools that make a <span data-noun="singular">trip</span> feel less stressful — kept tucked into the navigation drawer so the main interface stays focused.</p>
+        <ul>
+          <li><strong>Currency converter</strong> — bidirectional USD ⇄ SGD and USD ⇄ VND with live rates and mental-math tips.</li>
+          <li><strong>My Files</strong> — your private 10MB-per-file document vault for boarding passes, visas, and reservations.</li>
+          <li><strong>Media library</strong> — pre-departure videos and articles for Singapore and Vietnam, curated by the program office.</li>
+          <li><strong>Shared gallery</strong> — masonry photo grid tagged by city, with likes and one-tap downloads.</li>
+        </ul>
+      </div>
+
+      <div class="fcard span-4 reveal" style="background: linear-gradient(160deg, rgba(196,150,42,0.16), rgba(186,12,47,0.1)); border: 1px solid rgba(196,150,42,0.25);">
+        <div class="num" style="color: var(--gold-deep);">vii.</div>
+        <h3>Secure, cohort-only access.</h3>
+        <p>Email-link sign-in restricted to <span class="mono" style="font-size: 0.86rem;">@du.edu</span>. Firestore rules enforce membership at every collection — your data never leaks to another cohort, ever.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── SHOWCASE ───── -->
+  <section class="showcase">
+    <div class="showcase-inner">
+      <div class="showcase-text reveal">
+        <div class="section-eyebrow">Built for the moments in motion</div>
+        <h2>Designed around what you'll <em>actually be doing</em> at 6:42 PM.</h2>
+        <p>
+          Every feature was scoped against a real cohort moment. Stuck deciphering a hawker stall menu? <em>Translate.</em> Trying to settle a bill split? <em>Currency.</em> Lost your boarding-pass screenshot? <em>My Files.</em> Late to the bus? <em>Pinned announcement on Home.</em>
+        </p>
+        <p>
+          The result is an app that disappears into the background until you need it — then is exactly the tap you'd hope for.
+        </p>
+        <div class="feat-mini">
+          <div>
+            <strong>~250ms</strong>
+            <span>Average screen-to-screen transition on phone hardware</span>
+          </div>
+          <div>
+            <strong>9 modules</strong>
+            <span>Each scoped to a single, repeatable cohort task</span>
+          </div>
+          <div>
+            <strong>2 cities</strong>
+            <span>City-aware content, weather, currency, and gallery</span>
+          </div>
+          <div>
+            <strong>0 servers</strong>
+            <span>Firebase + Vercel — operationally lean to hand off</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-visual">
+        <div class="accent-circle"></div>
+        <!-- back phone -->
+        <div class="phone compact b">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-translate">
+              <div class="hd">
+                <div class="ek">Photo translator</div>
+                <h2>Read anything,<br/>anywhere.</h2>
+              </div>
+              <div class="img-frame">
+                <span class="menu-line">Cà phê sữa đá</span>
+              </div>
+              <div class="result crimson">
+                <div class="lbl">English translation</div>
+                <div class="tx">Iced milk coffee</div>
+              </div>
+              <div class="copy-btn">⧉ Copy</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- front phone -->
+        <div class="phone compact f">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span>9:41</span><span class="status-icons"><span class="battery"></span></span></div>
+            <div class="phone-app app-events">
+              <div class="hd">
+                <div class="a-eyebrow">Tomorrow</div>
+                <h2 style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:24px;margin:4px 0 0;">Events</h2>
+                <p style="font-size:11px;color:var(--ink-soft);margin:4px 0 0;">3 confirmed · 2 you might join</p>
+              </div>
+              <div class="ev-list">
+                <div class="ev featured">
+                  <div class="date"><span class="m">Wed</span><span class="d">14</span></div>
+                  <div class="body">
+                    <div class="ti">DBS HQ visit</div>
+                    <div class="lo">Marina Bay · 9:00</div>
+                    <div class="rsvp">
+                      <div class="rs on">Going</div>
+                      <div class="rs">Int.</div>
+                      <div class="rs">No</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ev">
+                  <div class="date"><span class="m">Wed</span><span class="d">14</span></div>
+                  <div class="body">
+                    <div class="ti">Welcome dinner</div>
+                    <div class="lo">Candlenut · 7:00</div>
+                  </div>
+                </div>
+                <div class="ev">
+                  <div class="date"><span class="m">Thu</span><span class="d">15</span></div>
+                  <div class="body">
+                    <div class="ti">Hawker crawl</div>
+                    <div class="lo">Lau Pa Sat · 8:30</div>
+                  </div>
+                </div>
+              </div>
+              <div class="a-bottom-nav">
+                <div class="it"><div class="ic">⌂</div>Home</div>
+                <div class="it"><div class="ic">◎</div>Explore</div>
+                <div class="it"><div class="ic">✦</div>Chat</div>
+                <div class="it active"><div class="ic">▣</div>Events</div>
+                <div class="it"><div class="ic">◐</div>Teams</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── JOURNEY (timeline) ───── -->
+  <section class="section" id="journey">
+    <div style="max-width: 760px;" class="reveal">
+      <div class="section-eyebrow">Across the <span data-noun="singular">trip</span></div>
+      <h2 class="section-title">A companion that <em>changes role</em> across the journey.</h2>
+      <p class="section-lede">
+        Global 84 isn't a single screen — it's a tool whose center of gravity moves from anticipation, to coordination, to memory.
+      </p>
+    </div>
+
+    <div class="timeline">
+      <div class="tl reveal">
+        <div class="ord">Phase i.</div>
+        <h4>Before departure</h4>
+        <p>Welcome announcements, destination videos, and pre-loaded Explore listings build momentum and shared anticipation across the cohort.</p>
+      </div>
+      <div class="tl reveal">
+        <div class="ord">Phase ii.</div>
+        <h4>In Singapore</h4>
+        <p>Live weather, hawker recs, real-time chat, RSVPs to company visits, and currency conversion — the daily loop.</p>
+      </div>
+      <div class="tl reveal">
+        <div class="ord">Phase iii.</div>
+        <h4>In Vietnam</h4>
+        <p>Photo translator earns its keep on every menu. Team rooms power final case work. The gallery fills with the trip's best moments.</p>
+      </div>
+      <div class="tl reveal">
+        <div class="ord">Phase iv.</div>
+        <h4>After the trip</h4>
+        <p>The shared chat, gallery, and event archive become the cohort's living memory — long after we're back in Denver.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── HANDOFF ───── -->
+  <section class="handoff" id="cohorts">
+    <div class="handoff-inner">
+      <div class="handoff-text reveal">
+        <div class="section-eyebrow ho-eyebrow">Built to hand forward</div>
+        <h2>Cohort 84 will use it. <em>Cohort 85 can inherit it.</em></h2>
+        <p>
+          Global 84 was scoped from day one as a reusable platform. The cities, brand color, currencies, splash imagery, admins, and access domain are all variables — not assumptions buried in code.
+        </p>
+        <p>
+          A future cohort lead can fork the repository, work through a pre-launch checklist, and have a rebranded version live for their <span data-noun="singular">trip</span> in roughly a week — without rewriting a single feature.
+        </p>
+        <div style="display:flex; gap: 12px; margin-top: 28px; flex-wrap: wrap;">
+          <span class="a-pill no-dot" style="background: rgba(196,150,42,0.18); color: var(--gold-light); padding: 8px 14px; font-size: 11px;">React + Tailwind</span>
+          <span class="a-pill no-dot" style="background: rgba(196,150,42,0.18); color: var(--gold-light); padding: 8px 14px; font-size: 11px;">Firebase Auth · Firestore · Storage</span>
+          <span class="a-pill no-dot" style="background: rgba(196,150,42,0.18); color: var(--gold-light); padding: 8px 14px; font-size: 11px;">Vercel deploy</span>
+          <span class="a-pill no-dot" style="background: rgba(196,150,42,0.18); color: var(--gold-light); padding: 8px 14px; font-size: 11px;">Anthropic Claude</span>
+        </div>
+      </div>
+
+      <div class="swap-board reveal">
+        <h4>What a future cohort swaps</h4>
+        <p class="sub">A handful of variables. The architecture stays.</p>
+        <div class="swap-rows">
+          <div class="swap-row">
+            <span class="key">cohort_id</span>
+            <span class="from">cohort84</span>
+            <span class="arr">→</span>
+            <span class="to">cohort85</span>
+          </div>
+          <div class="swap-row">
+            <span class="key">cities</span>
+            <span class="from">Singapore · Vietnam</span>
+            <span class="arr">→</span>
+            <span class="to">Tokyo · Barcelona</span>
+          </div>
+          <div class="swap-row">
+            <span class="key">currencies</span>
+            <span class="from">SGD · VND</span>
+            <span class="arr">→</span>
+            <span class="to">JPY · EUR</span>
+          </div>
+          <div class="swap-row">
+            <span class="key">brand_color</span>
+            <span class="from">DU Crimson</span>
+            <span class="arr">→</span>
+            <span class="to">Your school</span>
+          </div>
+          <div class="swap-row">
+            <span class="key">splash_pool</span>
+            <span class="from">8 cohort photos</span>
+            <span class="arr">→</span>
+            <span class="to">8 new photos</span>
+          </div>
+          <div class="swap-row">
+            <span class="key">auth_domain</span>
+            <span class="from">@du.edu</span>
+            <span class="arr">→</span>
+            <span class="to">@theirschool.edu</span>
+          </div>
+          <div class="swap-row">
+            <span class="key">admins</span>
+            <span class="from">5 program staff UIDs</span>
+            <span class="arr">→</span>
+            <span class="to">Theirs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── ACCESS ───── -->
+  <section class="access" id="access">
+    <div class="access-inner">
+      <div class="access-card reveal">
+        <span class="ek">Cohort access</span>
+        <h3>Sign in is one email link.</h3>
+        <p>Restricted to <b style="font-family:'JetBrains Mono', monospace; font-size: 0.92rem;">@du.edu</b> — no passwords, no app stores, no friction. Open the link, you're in.</p>
+        <div class="access-input">
+          <input type="email" placeholder="firstname.lastname@du.edu" />
+          <button type="button">Send link</button>
+        </div>
+        <div class="note">After install: open the link → tap <b>Share</b> → <b>Add to Home Screen</b>. Global 84 then lives next to your favorite apps.</div>
+      </div>
+
+      <div class="access-steps reveal">
+        <div class="access-step">
+          <div class="n">i</div>
+          <div>
+            <strong>Verify with DU email.</strong>
+            <span>Firebase Auth restricts sign-in to approved cohort domains, enforced at the Firestore rules layer.</span>
+          </div>
+        </div>
+        <div class="access-step">
+          <div class="n">ii</div>
+          <div>
+            <strong>Add to Home Screen.</strong>
+            <span>iOS Safari and Android Chrome both support full PWA install — no app store gatekeeping involved.</span>
+          </div>
+        </div>
+        <div class="access-step">
+          <div class="n">iii</div>
+          <div>
+            <strong>You're live, with the cohort.</strong>
+            <span>The first run prompts for a display name. After that, every screen reflects your role and your team in real time.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── CLOSING ───── -->
+  <section class="closing reveal">
+    <h2>The cohort <span data-noun="singular">trip</span> is going to be<br/>memorable. <em>Let's make sure it's organized too.</em></h2>
+    <div class="closing-actions">
+      <a class="btn btn-primary" href="#access">Install Global 84</a>
+      <a class="btn btn-ghost" style="border-color: var(--line); color: var(--ink); background: var(--paper);" href="#cohorts">Adapt it for your cohort →</a>
+    </div>
+  </section>
+
+  <!-- ───── FOOTER ───── -->
+  <footer class="footer">
+    <div class="br">
+      <div class="mk">G</div>
+      <div>
+        <b>Global 84</b> · A DU EMBA Cohort 84 cohort-experience PWA<br/>
+        <span class="meta">Singapore × Vietnam · 2026</span>
+      </div>
+    </div>
+    <div class="meta">
+      Built by Jeff · Hosted on Vercel · Powered by Firebase &amp; Claude
+    </div>
+  </footer>
+
+  <!-- ───── TWEAKS PANEL ───── -->
+  <div id="tweaks-panel" aria-hidden="true">
+    <div class="tw-head">
+      <div class="tw-title">
+        <span class="tw-dot"></span>
+        Tweaks
+      </div>
+      <button class="tw-close" type="button" aria-label="Close tweaks">×</button>
+    </div>
+    <div class="tw-body">
+      <div class="tw-section">
+        <div class="tw-label">Word for the trip</div>
+        <div class="tw-help">Replaces every mention across the page.</div>
+        <div class="tw-segmented" role="radiogroup" aria-label="Noun for the trip">
+          <button type="button" data-noun-choice="trip" role="radio">Trip</button>
+          <button type="button" data-noun-choice="global trip" role="radio">Global Trip</button>
+          <button type="button" data-noun-choice="program" role="radio">Program</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    #tweaks-panel {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: 320px;
+      background: rgba(26, 13, 16, 0.94);
+      backdrop-filter: blur(18px);
+      color: var(--paper);
+      border: 1px solid rgba(255, 250, 243, 0.14);
+      border-radius: 20px;
+      padding: 18px 18px 20px;
+      box-shadow: 0 32px 80px -16px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,150,42,0.18) inset;
+      z-index: 200;
+      font-family: "Manrope", system-ui, sans-serif;
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+    #tweaks-panel.open { opacity: 1; transform: none; pointer-events: auto; }
+    #tweaks-panel .tw-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    #tweaks-panel .tw-title {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-weight: 600;
+      font-size: 1.3rem;
+      color: var(--gold-light);
+      display: flex; align-items: center; gap: 10px;
+      letter-spacing: -0.005em;
+    }
+    #tweaks-panel .tw-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--crimson);
+      box-shadow: 0 0 0 4px rgba(186,12,47,0.25);
+    }
+    #tweaks-panel .tw-close {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255,250,243,0.08);
+      border: 1px solid rgba(255,250,243,0.16);
+      color: var(--paper);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid; place-items: center;
+      transition: background 160ms ease;
+    }
+    #tweaks-panel .tw-close:hover { background: rgba(255,250,243,0.16); }
+    #tweaks-panel .tw-section {
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,250,243,0.08);
+    }
+    #tweaks-panel .tw-section:first-of-type { border-top: none; padding-top: 0; }
+    #tweaks-panel .tw-label {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    #tweaks-panel .tw-help {
+      font-size: 12px;
+      color: rgba(255,250,243,0.6);
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+    #tweaks-panel .tw-segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 4px;
+      background: rgba(255,250,243,0.05);
+      border: 1px solid rgba(255,250,243,0.08);
+      border-radius: 12px;
+    }
+    #tweaks-panel .tw-segmented button {
+      padding: 10px 8px;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      color: rgba(255,250,243,0.72);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 160ms ease, color 160ms ease;
+    }
+    #tweaks-panel .tw-segmented button:hover { color: var(--paper); }
+    #tweaks-panel .tw-segmented button.active {
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-deep));
+      color: var(--paper);
+      box-shadow: 0 4px 12px -4px rgba(186,12,47,0.6);
+    }
+    @media (max-width: 540px) {
+      #tweaks-panel { right: 12px; bottom: 12px; width: calc(100vw - 24px); max-width: 360px; }
+    }
+  </style>
+
+  <script>
+    // ───── Tweaks state (host-rewritable) ─────
+    const TWEAKS = /*EDITMODE-BEGIN*/{
+      "noun": "trip"
+    }/*EDITMODE-END*/;
+
+    // Noun forms
+    const NOUN_FORMS = {
+      "trip":        { singular: "trip",        plural: "trips"        },
+      "global trip": { singular: "global trip", plural: "global trips" },
+      "program":     { singular: "program",     plural: "programs"     }
+    };
+
+    function applyNoun(key) {
+      const forms = NOUN_FORMS[key] || NOUN_FORMS.trip;
+      document.querySelectorAll('[data-noun="singular"]').forEach(el => { el.textContent = forms.singular; });
+      document.querySelectorAll('[data-noun="plural"]').forEach(el => { el.textContent = forms.plural; });
+      // sync segmented state
+      document.querySelectorAll('#tweaks-panel [data-noun-choice]').forEach(b => {
+        b.classList.toggle('active', b.dataset.nounChoice === key);
+      });
+    }
+    applyNoun(TWEAKS.noun);
+
+    // ───── Tweaks panel host protocol ─────
+    const tweaksPanel = document.getElementById('tweaks-panel');
+    let tweaksAnnounced = false;
+
+    function showTweaks() { tweaksPanel.classList.add('open'); tweaksPanel.setAttribute('aria-hidden', 'false'); }
+    function hideTweaks() {
+      tweaksPanel.classList.remove('open');
+      tweaksPanel.setAttribute('aria-hidden', 'true');
+      try { window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*'); } catch (e) {}
+    }
+
+    window.addEventListener('message', (e) => {
+      const data = e.data || {};
+      if (data.type === '__activate_edit_mode') showTweaks();
+      else if (data.type === '__deactivate_edit_mode') hideTweaks();
+    });
+
+    // Announce availability AFTER listener is registered
+    try { window.parent.postMessage({ type: '__edit_mode_available' }, '*'); tweaksAnnounced = true; } catch (e) {}
+
+    // Close button
+    tweaksPanel.querySelector('.tw-close').addEventListener('click', hideTweaks);
+
+    // Segmented control
+    tweaksPanel.querySelectorAll('[data-noun-choice]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = btn.dataset.nounChoice;
+        TWEAKS.noun = choice;
+        applyNoun(choice);
+        try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { noun: choice } }, '*'); } catch (e) {}
+      });
+    });
+  </script>
+
+  <script>
+    // sticky topbar bg flip
+    const tb = document.getElementById('topbar');
+    const onScroll = () => {
+      if (window.scrollY > 60) tb.classList.add('scrolled');
+      else tb.classList.remove('scrolled');
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // reveal-on-scroll
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  </script>
+</body>
+</html>
