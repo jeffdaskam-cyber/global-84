@@ -24,8 +24,8 @@ function pickRandom(arr) {
 // Pick once at module load time so the same pair is used for the
 // entire splash sequence even if the component re-renders.
 const PHOTOS = [
-  { src: pickRandom(SINGAPORE_PHOTOS), label: "Singapore", flag: "SG" },
-  { src: pickRandom(HCMC_PHOTOS),      label: "Ho Chi Minh City", flag: "VN" },
+  { src: pickRandom(SINGAPORE_PHOTOS), label: "Singapore", flag: "🇸🇬" },
+  { src: pickRandom(HCMC_PHOTOS),      label: "Ho Chi Minh City", flag: "🇻🇳" },
 ];
 
 const PHOTO_HOLD_MS = 2500;
