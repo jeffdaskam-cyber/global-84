@@ -1673,9 +1673,29 @@
       margin: 0 auto;
       padding: 0 32px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 64px;
+      align-items: stretch;
+    }
+    .access-photo {
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow-xl);
+      min-height: 560px;
+    }
+    .access-photo img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .access-content {
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+    }
+    @media (max-width: 880px) {
+      .access-photo { min-height: 360px; }
     }
     .access-card {
       background: var(--paper);
@@ -2749,18 +2769,23 @@
   <!-- ───── ACCESS ───── -->
   <section class="access" id="access">
     <div class="access-inner">
-      <div class="access-card reveal">
-        <span class="ek">Cohort access</span>
-        <h3>Sign in is one email link.</h3>
-        <p>Restricted to <b style="font-family:'JetBrains Mono', monospace; font-size: 0.92rem;">@du.edu</b>. No passwords, no app stores, no friction. Open the link, you're in.</p>
-        <div class="access-input">
-          <input type="email" placeholder="firstname.lastname@du.edu" />
-          <button type="button">Send link</button>
-        </div>
-        <div class="note">After install: open the link → tap <b>Share</b> → <b>Add to Home Screen</b>. Global 84 then lives next to your favorite apps.</div>
+      <div class="access-photo reveal">
+        <img src="splash-hcmc-2.webp" alt="Riverboat at sunset, Ho Chi Minh City" />
       </div>
 
-      <div class="access-steps reveal">
+      <div class="access-content">
+        <div class="access-card reveal">
+          <span class="ek">Cohort access</span>
+          <h3>Sign in is one email link.</h3>
+          <p>Restricted to <b style="font-family:'JetBrains Mono', monospace; font-size: 0.92rem;">@du.edu</b>. No passwords, no app stores, no friction. Open the link, you're in.</p>
+          <div class="access-input">
+            <input type="email" placeholder="firstname.lastname@du.edu" />
+            <button type="button">Send link</button>
+          </div>
+          <div class="note">After install: open the link → tap <b>Share</b> → <b>Add to Home Screen</b>. Global 84 then lives next to your favorite apps.</div>
+        </div>
+
+        <div class="access-steps reveal">
         <div class="access-step">
           <div class="n">1.</div>
           <div>
@@ -2781,6 +2806,7 @@
             <strong>You're live, with the cohort.</strong>
             <span>The first run prompts for a display name. After that, every screen reflects your role and your team in real time.</span>
           </div>
+        </div>
         </div>
       </div>
     </div>
