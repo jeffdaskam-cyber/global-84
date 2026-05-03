@@ -1586,6 +1586,37 @@
       background: var(--bg);
       padding: 110px 0;
     }
+    .access-contact {
+      max-width: var(--max);
+      margin: 56px auto 0;
+      padding: 0 32px;
+      display: flex;
+      justify-content: center;
+    }
+    .access-contact .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 26px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--crimson) 0%, var(--crimson-deep) 100%);
+      color: #fffaf5;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.005em;
+      text-decoration: none;
+      box-shadow: 0 10px 24px rgba(130, 16, 38, 0.28);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+    .access-contact .pill:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(130, 16, 38, 0.34);
+    }
+    .access-contact .pill a {
+      color: #ffe8b3;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
     .access-inner {
       max-width: var(--max);
       margin: 0 auto;
@@ -2693,6 +2724,9 @@
           </div>
         </div>
       </div>
+    </div>
+    <div class="access-contact reveal">
+      <span class="pill">For a link to download the app, contact Jeff Daskam at: <a href="mailto:jeff.daskam@du.edu">jeff.daskam@du.edu</a></span>
     </div>
   </section>
 
