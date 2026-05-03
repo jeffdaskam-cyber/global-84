@@ -445,6 +445,39 @@
       gap: 28px;
       margin-top: 60px;
     }
+
+    /* Experience 2-column layout: stacked pillars left, photo right */
+    .experience-grid {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 64px;
+      align-items: stretch;
+    }
+    .experience-text { display: flex; flex-direction: column; }
+    .experience-grid .pillars {
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .experience-photo {
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow-xl);
+      min-height: 560px;
+    }
+    .experience-photo img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    @media (max-width: 880px) {
+      .experience-grid { grid-template-columns: 1fr; gap: 40px; }
+      .experience-photo { min-height: 360px; }
+    }
     .pillar {
       background: var(--paper);
       border-radius: 22px;
@@ -2078,26 +2111,34 @@
 
   <!-- ───── PILLARS ───── -->
   <section class="section" id="experience">
-    <div class="reveal">
-      <div class="section-eyebrow">Why Global 84 exists</div>
-      <h2 class="section-title">A <span data-noun="singular">trip</span> this complex deserves <em>one home base.</em></h2>
-      <p class="section-lede">
-        International <span data-noun="plural">trips</span> live across multiple WhatsApp threads, shared documents, and frantic group emails at 6:14 AM in a hotel lobby. Global 84 collapses all of that into a single, polished mobile experience, designed for the way our cohort actually moves through Singapore and Vietnam.
-      </p>
-    </div>
+    <div class="experience-grid">
+      <div class="experience-text">
+        <div class="reveal">
+          <div class="section-eyebrow">Why Global 84 exists</div>
+          <h2 class="section-title">A <span data-noun="singular">trip</span> this complex deserves <em>one home base.</em></h2>
+          <p class="section-lede">
+            International <span data-noun="plural">trips</span> live across multiple WhatsApp threads, shared documents, and frantic group emails at 6:14 AM in a hotel lobby. Global 84 collapses all of that into a single, polished mobile experience, designed for the way our cohort actually moves through Singapore and Vietnam.
+          </p>
+        </div>
 
-    <div class="pillars">
-      <div class="pillar reveal">
-        <h3>Stays close to the moment.</h3>
-        <p>Built phone-first. Whether you're queuing at customs or settling into a company visit, the next thing you need is one tap from the home screen.</p>
+        <div class="pillars">
+          <div class="pillar reveal">
+            <h3>Stays close to the moment.</h3>
+            <p>Built phone-first. Whether you're queuing at customs or settling into a company visit, the next thing you need is one tap from the home screen.</p>
+          </div>
+          <div class="pillar reveal">
+            <h3>Holds the cohort together.</h3>
+            <p>One feed, one chat, one calendar, shared by all 22 classmates and program staff. Side-channels finally optional, not mandatory.</p>
+          </div>
+          <div class="pillar reveal">
+            <h3>Made for two cities at once.</h3>
+            <p>Singapore and Vietnam each get their own rhythm: weather, currency, hawker stalls, hidden cafés, and a feed of cohort favorites that grows in real time.</p>
+          </div>
+        </div>
       </div>
-      <div class="pillar reveal">
-        <h3>Holds the cohort together.</h3>
-        <p>One feed, one chat, one calendar, shared by all 22 classmates and program staff. Side-channels finally optional, not mandatory.</p>
-      </div>
-      <div class="pillar reveal">
-        <h3>Made for two cities at once.</h3>
-        <p>Singapore and Vietnam each get their own rhythm: weather, currency, hawker stalls, hidden cafés, and a feed of cohort favorites that grows in real time.</p>
+
+      <div class="experience-photo reveal">
+        <img src="splash-singapore-4.webp" alt="Singapore" />
       </div>
     </div>
   </section>
