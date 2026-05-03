@@ -1476,6 +1476,57 @@
       margin: 0;
     }
 
+    /* Journey 2-column layout: stacked timeline left, photo right */
+    .journey-grid {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 64px;
+      align-items: stretch;
+    }
+    .journey-text { display: flex; flex-direction: column; }
+    .journey-grid .timeline {
+      max-width: none;
+      margin: 48px 0 0;
+      padding: 0;
+      grid-template-columns: 1fr;
+      gap: 36px;
+    }
+    .journey-grid .tl {
+      padding-top: 0;
+      padding-left: 28px;
+    }
+    .journey-grid .tl::before {
+      top: 14px; left: 3px; right: auto; bottom: -36px;
+      width: 1px; height: auto;
+      background: linear-gradient(180deg, var(--crimson), var(--gold), transparent);
+    }
+    .journey-grid .tl:last-child::before {
+      bottom: 0;
+      background: linear-gradient(180deg, var(--crimson), var(--gold));
+    }
+    .journey-grid .tl::after {
+      top: 6px; left: 0;
+    }
+    .journey-photo {
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow-xl);
+      min-height: 560px;
+    }
+    .journey-photo img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    @media (max-width: 880px) {
+      .journey-grid { grid-template-columns: 1fr; gap: 40px; }
+      .journey-photo { min-height: 360px; }
+    }
+
     /* ─────────────────────────  HANDOFF (future cohorts)  ───────────────────────── */
     .handoff {
       background: var(--ink);
@@ -2584,34 +2635,42 @@
 
   <!-- ───── JOURNEY (timeline) ───── -->
   <section class="section" id="journey">
-    <div style="max-width: 760px;" class="reveal">
-      <div class="section-eyebrow">Across the <span data-noun="singular">trip</span></div>
-      <h2 class="section-title">A companion that <em>changes role</em> across the journey.</h2>
-      <p class="section-lede">
-        Global 84 isn't a single screen. It's a tool that moves from anticipation, to coordination, to memory.
-      </p>
-    </div>
+    <div class="journey-grid">
+      <div class="journey-text">
+        <div class="reveal">
+          <div class="section-eyebrow">Across the <span data-noun="singular">trip</span></div>
+          <h2 class="section-title">A companion that <em>changes role</em> across the journey.</h2>
+          <p class="section-lede">
+            Global 84 isn't a single screen. It's a tool that moves from anticipation, to coordination, to memory.
+          </p>
+        </div>
 
-    <div class="timeline">
-      <div class="tl reveal">
-        <div class="ord">Phase i.</div>
-        <h4>Before departure</h4>
-        <p>Welcome announcements, destination videos, and pre-loaded Explore listings build momentum and shared anticipation across the cohort.</p>
+        <div class="timeline">
+          <div class="tl reveal">
+            <div class="ord">Phase i.</div>
+            <h4>Before departure</h4>
+            <p>Welcome announcements, destination videos, and pre-loaded Explore listings build momentum and shared anticipation across the cohort.</p>
+          </div>
+          <div class="tl reveal">
+            <div class="ord">Phase ii.</div>
+            <h4>In Singapore</h4>
+            <p>Live weather, hawker stall recs, real-time chat, RSVPs to company visits, and currency conversion. The daily loop.</p>
+          </div>
+          <div class="tl reveal">
+            <div class="ord">Phase iii.</div>
+            <h4>In Vietnam</h4>
+            <p>Photo translator earns its keep on every menu. Team rooms facilitate project work. The gallery fills with the trip's best moments.</p>
+          </div>
+          <div class="tl reveal">
+            <div class="ord">Phase iv.</div>
+            <h4>After the trip</h4>
+            <p>The shared chat, gallery, and event archive become the cohort's living memory, long after we're back in Denver.</p>
+          </div>
+        </div>
       </div>
-      <div class="tl reveal">
-        <div class="ord">Phase ii.</div>
-        <h4>In Singapore</h4>
-        <p>Live weather, hawker stall recs, real-time chat, RSVPs to company visits, and currency conversion. The daily loop.</p>
-      </div>
-      <div class="tl reveal">
-        <div class="ord">Phase iii.</div>
-        <h4>In Vietnam</h4>
-        <p>Photo translator earns its keep on every menu. Team rooms facilitate project work. The gallery fills with the trip's best moments.</p>
-      </div>
-      <div class="tl reveal">
-        <div class="ord">Phase iv.</div>
-        <h4>After the trip</h4>
-        <p>The shared chat, gallery, and event archive become the cohort's living memory, long after we're back in Denver.</p>
+
+      <div class="journey-photo reveal">
+        <img src="splash-singapore-3.webp" alt="Haji Lane, Singapore" />
       </div>
     </div>
   </section>
