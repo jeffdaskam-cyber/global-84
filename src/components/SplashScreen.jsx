@@ -1,8 +1,31 @@
 import { useEffect, useRef, useState } from "react";
 
+// All available splash photos per city.
+// Add or remove entries here as your photo library grows.
+const SINGAPORE_PHOTOS = [
+  "/splash-singapore-1.webp",
+  "/splash-singapore-2.webp",
+  "/splash-singapore-3.webp",
+  "/splash-singapore-4.webp",
+  "/splash-singapore-5.webp",
+];
+
+const HCMC_PHOTOS = [
+  "/splash-hcmc-1.webp",
+  "/splash-hcmc-2.webp",
+  "/splash-hcmc-3.webp",
+  "/splash-hcmc-4.webp",
+];
+
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// Pick once at module load time so the same pair is used for the
+// entire splash sequence even if the component re-renders.
 const PHOTOS = [
-  { src: "/splash-singapore.webp", srcLandscape: "/splash-singapore-landscape.webp", label: "Singapore", flag: "SG" },
-  { src: "/splash-hcmc.webp", srcLandscape: "/splash-hcmc-landscape.webp", label: "Ho Chi Minh City", flag: "VN" },
+  { src: pickRandom(SINGAPORE_PHOTOS), label: "Singapore", flag: "SG" },
+  { src: pickRandom(HCMC_PHOTOS),      label: "Ho Chi Minh City", flag: "VN" },
 ];
 
 const PHOTO_HOLD_MS = 2500;
@@ -97,19 +120,17 @@ export default function SplashScreen({ onComplete }) {
       >
         {!showSplash && (
           <>
-            <picture
+            <img
               key={zoomKey}
+              src={photo.src}
+              alt={photo.label}
               className="absolute inset-0 w-full h-full"
-              style={{ animation: `kenBurnsOut ${PHOTO_HOLD_MS + FADE_MS}ms ease-out forwards` }}
-            >
-              <source media="(min-width: 768px)" srcSet={photo.srcLandscape} />
-              <img
-                src={photo.src}
-                alt={photo.label}
-                className="absolute inset-0 w-full h-full"
-                style={{ objectFit: "cover", objectPosition: "center" }}
-              />
-            </picture>
+              style={{
+                objectFit: "cover",
+                objectPosition: "center",
+                animation: `kenBurnsOut ${PHOTO_HOLD_MS + FADE_MS}ms ease-out forwards`,
+              }}
+            />
 
             <div
               className="absolute inset-0"
