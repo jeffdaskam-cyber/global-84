@@ -21,12 +21,22 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+const isDesktop =
+  typeof window !== "undefined" &&
+  window.matchMedia &&
+  window.matchMedia("(min-width: 768px)").matches;
+
 // Pick once at module load time so the same pair is used for the
 // entire splash sequence even if the component re-renders.
-const PHOTOS = [
-  { src: pickRandom(SINGAPORE_PHOTOS), label: "Singapore", flag: "🇸🇬" },
-  { src: pickRandom(HCMC_PHOTOS),      label: "Ho Chi Minh City", flag: "🇻🇳" },
-];
+const PHOTOS = isDesktop
+  ? [
+      { src: "/Singapore.jpg", label: "Singapore", flag: "🇸🇬" },
+      { src: "/HCMC.jpg",      label: "Ho Chi Minh City", flag: "🇻🇳" },
+    ]
+  : [
+      { src: pickRandom(SINGAPORE_PHOTOS), label: "Singapore", flag: "🇸🇬" },
+      { src: pickRandom(HCMC_PHOTOS),      label: "Ho Chi Minh City", flag: "🇻🇳" },
+    ];
 
 const PHOTO_HOLD_MS = 2500;
 const FADE_MS = 600;
