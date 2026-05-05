@@ -144,6 +144,23 @@ export default function AuthGate({ children }) {
     })();
   }, []);
 
+  // Handoff from launch page: /?email=<du-email> auto-sends the sign-in link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const handoff = (params.get("email") || "").trim().toLowerCase();
+    if (!handoff) return;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setEmail(handoff);
+    (async () => {
+      try {
+        await sendDuSignInLink(handoff);
+        setStatus("Check your inbox. Click the link to finish signing in.");
+      } catch (e) {
+        setError(e?.message || "Could not send sign-in link.");
+      }
+    })();
+  }, []);
+
   // Listen for auth state changes
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {

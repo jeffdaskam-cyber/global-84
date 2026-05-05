@@ -2840,9 +2840,10 @@
           <h3>Sign in is one email link.</h3>
           <p>Restricted to <b style="font-family:'JetBrains Mono', monospace; font-size: 0.92rem;">@du.edu</b>. No passwords, no app stores, no friction. Open the link, you're in.</p>
           <div class="access-input">
-            <input type="email" placeholder="firstname.lastname@du.edu" />
-            <button type="button">Send link</button>
+            <input id="access-email" type="email" placeholder="firstname.lastname@du.edu" autocomplete="email" />
+            <button id="access-send" type="button">Send link</button>
           </div>
+          <div id="access-msg" class="note" role="status" aria-live="polite"></div>
           <div class="note">After install: open the link → tap <b>Share</b> → <b>Add to Home Screen</b>. Global 84 then lives next to your favorite apps.</div>
         </div>
 
@@ -3102,6 +3103,40 @@
       });
     }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // Cohort access: validate @du.edu, then hand off to the app to send the link
+    (function () {
+      const input = document.getElementById('access-email');
+      const button = document.getElementById('access-send');
+      const msg = document.getElementById('access-msg');
+      if (!input || !button) return;
+
+      function showError(text) {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.style.color = '#ff8a8a';
+      }
+
+      function submit() {
+        const raw = (input.value || '').trim().toLowerCase();
+        if (!raw) { showError('Enter your DU email.'); input.focus(); return; }
+        if (!/^[^\s@]+@du\.edu$/.test(raw)) {
+          showError('Use your @du.edu address.');
+          input.focus();
+          return;
+        }
+        if (msg) { msg.textContent = 'Opening sign-in…'; msg.style.color = ''; }
+        window.location.assign('/?email=' + encodeURIComponent(raw));
+      }
+
+      button.addEventListener('click', submit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); submit(); }
+      });
+      input.addEventListener('input', () => {
+        if (msg && msg.textContent) { msg.textContent = ''; }
+      });
+    })();
   </script>
 </body>
 </html>
