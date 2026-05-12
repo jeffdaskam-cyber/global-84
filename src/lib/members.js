@@ -6,7 +6,8 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { db, COHORT_ID } from "./firebase";
+import { updateProfile } from "firebase/auth";
+import { auth, db, COHORT_ID } from "./firebase";
 
 /**
  * Returns ref to cohorts/{cohortId}/members/{uid}
@@ -74,4 +75,16 @@ export async function updateMyProfile(uid, { displayName, defaultCity }) {
   if (Object.keys(patch).length === 0) return;
 
   await updateDoc(ref, patch);
+
+  // Keep Firebase Auth displayName in sync with the member profile so that
+  // code paths reading auth.currentUser.displayName (RSVPs, event creation,
+  // chat messages) get the user's real name instead of falling back to
+  // "Member".
+  if (typeof patch.displayName === "string" && auth.currentUser?.uid === uid) {
+    try {
+      await updateProfile(auth.currentUser, { displayName: patch.displayName });
+    } catch {
+      // Non-fatal: the member doc is still the source of truth.
+    }
+  }
 }
