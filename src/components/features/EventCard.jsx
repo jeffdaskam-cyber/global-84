@@ -4,6 +4,14 @@ import { fmtDateTime } from "../../lib/format";
 import { setRsvp, subscribeRsvps } from "../../lib/events";
 import { subscribeEventChat, sendEventMessage, deleteEventMessage } from "../../lib/eventChat";
 
+function formatNames(names) {
+  const MAX = 5;
+  if (names.length <= MAX) return names.join(", ");
+  const shown = names.slice(0, MAX).join(", ");
+  const remaining = names.length - MAX;
+  return `${shown} …and ${remaining} more`;
+}
+
 export default function EventCard({ event, onEdit, isAdmin }) {
   const me = auth.currentUser;
 
@@ -36,13 +44,22 @@ export default function EventCard({ event, onEdit, isAdmin }) {
   }, [messages, showChat]);
 
   const counts = useMemo(() => {
-    let going = 0;
-    let interested = 0;
+    const goingNames = [];
+    const interestedNames = [];
     for (const r of rsvps) {
-      if (r.status === "going") going++;
-      if (r.status === "interested") interested++;
+      const name = r.name || "Member";
+      if (r.status === "going") goingNames.push(name);
+      else if (r.status === "interested") interestedNames.push(name);
     }
-    return { going, interested };
+    const byName = (a, b) => a.localeCompare(b);
+    goingNames.sort(byName);
+    interestedNames.sort(byName);
+    return {
+      going: goingNames.length,
+      interested: interestedNames.length,
+      goingNames,
+      interestedNames,
+    };
   }, [rsvps]);
 
   const myStatus = useMemo(() => {
@@ -137,6 +154,24 @@ export default function EventCard({ event, onEdit, isAdmin }) {
             {event.description}
           </div>
         ) : null}
+
+        {/* Attendee names */}
+        {(counts.goingNames.length > 0 || counts.interestedNames.length > 0) && (
+          <div className="space-y-0.5">
+            {counts.goingNames.length > 0 && (
+              <p className="text-xs text-ink-sub dark:text-ink-subOnDark">
+                <span className="text-du-crimson font-medium">Going: </span>
+                {formatNames(counts.goingNames)}
+              </p>
+            )}
+            {counts.interestedNames.length > 0 && (
+              <p className="text-xs text-ink-sub dark:text-ink-subOnDark">
+                <span className="text-yellow-400 font-medium">Interested: </span>
+                {formatNames(counts.interestedNames)}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* RSVP chips */}
         <div className="flex flex-wrap items-center gap-2">
