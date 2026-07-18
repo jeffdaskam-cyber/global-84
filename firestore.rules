@@ -4,11 +4,23 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
+    // A cohort member is a signed-in user with a *verified* email in the
+    // allowed domain. The @du.edu restriction is enforced here (not only in
+    // client JS) because the Firebase web API key is public and anyone can
+    // obtain a session for an arbitrary email via the Auth REST API.
+    // Email-link sign-in produces verified emails, so this holds for all
+    // legitimate members. NOTE: the domain is hardcoded to match
+    // VITE_ALLOWED_EMAIL_DOMAIN (default "du.edu"); update both if you fork.
+    function isMember() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.matches('.*@du[.]edu$');
+    }
     function isSelf(uid) {
-      return signedIn() && request.auth.uid == uid;
+      return isMember() && request.auth.uid == uid;
     }
     function isAdmin(cohortId) {
-      return signedIn()
+      return isMember()
         && get(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid)).data.enabled == true;
     }
 
@@ -44,29 +56,29 @@ service cloud.firestore {
         }
       }
 
-      // Announcements (admins manage; all signed-in users can read)
+      // Announcements (admins manage; all members can read)
       match /announcements/{id} {
-        allow read: if signedIn();
+        allow read: if isMember();
         allow create, update, delete: if isAdmin(cohortId);
       }
 
-      // Explore items (admins manage; all signed-in users can read)
+      // Explore items (admins manage; all members can read)
       match /explore/{id} {
-        allow read: if signedIn();
+        allow read: if isMember();
         allow create: if isAdmin(cohortId);
         allow update, delete: if isAdmin(cohortId);
       }
 
-      // Events (signed-in users can read/create; creator or admins can mutate)
+      // Events (members can read/create; creator or admins can mutate)
       match /events/{eventId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
+        allow read: if isMember();
+        allow create: if isMember()
           && request.resource.data.createdByUid == request.auth.uid;
         allow update, delete: if isAdmin(cohortId)
-          || (signedIn() && resource.data.createdByUid == request.auth.uid);
+          || (isMember() && resource.data.createdByUid == request.auth.uid);
 
         match /rsvps/{uid} {
-          allow read: if signedIn();
+          allow read: if isMember();
           allow create, update: if isSelf(uid);
           allow delete: if isSelf(uid) || isAdmin(cohortId);
         }
@@ -75,8 +87,8 @@ service cloud.firestore {
         // post only if the user has a going/interested RSVP for this event;
         // admin can delete; update never allowed.
         match /messages/{messageId} {
-          allow read: if signedIn();
-          allow create: if signedIn()
+          allow read: if isMember();
+          allow create: if isMember()
             && request.resource.data.createdByUid == request.auth.uid
             && request.resource.data.text.size() >= 1
             && request.resource.data.text.size() <= 1000
@@ -88,8 +100,8 @@ service cloud.firestore {
 
       // Group chat
       match /messages/{messageId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
+        allow read: if isMember();
+        allow create: if isMember()
           && request.resource.data.createdByUid == request.auth.uid
           && request.resource.data.text.size() >= 1
           && request.resource.data.text.size() <= 1000;
@@ -100,12 +112,12 @@ service cloud.firestore {
       // Photos (any signed-in user can read; uploader can create; admin can delete)
       // Any signed-in user can update the likes array only; uploader can update their own photo fields.
       match /photos/{photoId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
+        allow read: if isMember();
+        allow create: if isMember()
           && request.resource.data.uploaderUid == request.auth.uid;
-        allow update: if signedIn()
+        allow update: if isMember()
           && resource.data.uploaderUid == request.auth.uid;
-        allow update: if signedIn()
+        allow update: if isMember()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
         allow delete: if isAdmin(cohortId);
       }
@@ -117,7 +129,7 @@ service cloud.firestore {
 
       // Media — videos and articles (admin-managed)
       match /media/{mediaId} {
-        allow read: if signedIn();
+        allow read: if isMember();
         allow create, update, delete: if isAdmin(cohortId);
       }
 
@@ -136,7 +148,7 @@ service cloud.firestore {
         match /messages/{messageId} {
           allow read: if isAdmin(cohortId)
             || exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
-          allow create: if signedIn()
+          allow create: if isMember()
             && exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid))
             && request.resource.data.createdByUid == request.auth.uid
             && request.resource.data.text.size() >= 1

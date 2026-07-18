@@ -13,11 +13,48 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
+import { initializeApp, getApps } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import corsLib from "cors";
+
+// Initialize the Admin SDK once (used to verify caller ID tokens).
+if (getApps().length === 0) {
+  initializeApp();
+}
+
+// Only verified emails in this domain may call the translator. Keep in sync
+// with VITE_ALLOWED_EMAIL_DOMAIN and the Firestore/Storage rules.
+const ALLOWED_EMAIL_DOMAIN = "du.edu";
 
 // Reference the secret stored in Firebase Secret Manager.
 // Set it once with: firebase functions:secrets:set ANTHROPIC_API_KEY
 const anthropicApiKey = defineSecret("ANTHROPIC_API_KEY");
+
+/**
+ * Verify the Firebase ID token in the Authorization header and confirm the
+ * caller is a verified member of the allowed domain. Returns the decoded uid
+ * on success, or null if the request is unauthenticated / not a member.
+ *
+ * This is the real access boundary: `invoker: "public"` only means the
+ * platform won't reject the request, and the CORS check constrains browsers
+ * only. Without this, anyone could call the endpoint directly (e.g. curl) and
+ * spend the Anthropic API budget.
+ */
+async function verifyMember(authHeader: string | undefined): Promise<string | null> {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const idToken = authHeader.slice("Bearer ".length).trim();
+  if (!idToken) return null;
+
+  try {
+    const decoded = await getAuth().verifyIdToken(idToken);
+    const email = (decoded.email || "").toLowerCase();
+    if (!decoded.email_verified) return null;
+    if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return null;
+    return decoded.uid;
+  } catch {
+    return null;
+  }
+}
 
 // cors middleware — allows requests from the Vercel production domain,
 // any *.vercel.app preview URL, and localhost:5173 (local Vite dev).
@@ -34,7 +71,7 @@ const cors = corsLib({
     }
   },
   methods: ["POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 });
 
 /**
@@ -73,6 +110,14 @@ export const translateImage = onRequest(
       // Only accept POST after CORS is handled
       if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed. Use POST." });
+        return;
+      }
+
+      // Authenticate: require a verified Firebase ID token in the allowed
+      // domain before doing any work that spends the API key.
+      const uid = await verifyMember(req.headers.authorization);
+      if (!uid) {
+        res.status(401).json({ error: "Unauthorized. Sign in to use this feature." });
         return;
       }
 

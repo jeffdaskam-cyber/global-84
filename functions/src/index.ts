@@ -18,3 +18,7 @@ setGlobalOptions({ maxInstances: 10 });
 
 // Translator: image → Anthropic API proxy (API key never in browser bundle)
 export { translateImage } from "./translateImage.js";
+
+// Admin-only gallery photo deletion (runs with Admin SDK privileges so it can
+// delete other members' Storage objects, which security rules forbid clients).
+export { deletePhoto } from "./deletePhoto.js";
