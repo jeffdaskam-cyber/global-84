@@ -2,33 +2,45 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Photos: cohort members can upload their own; anyone signed-in can read;
-    // only admins can delete (via Admin SDK / callable function, or from Console)
+    // A cohort member is a signed-in user with a *verified* email in the
+    // allowed domain. Enforced here (not only in client JS) because the
+    // Firebase web API key is public. Keep in sync with firestore.rules and
+    // VITE_ALLOWED_EMAIL_DOMAIN (default "du.edu") if you fork.
+    function isMember() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.matches('.*@du[.]edu$');
+    }
+
+    // Photos: cohort members can upload their own and view all; only the
+    // owner may delete via the client. Admin cleanup is done with the Admin
+    // SDK / Console, which bypasses these rules.
     match /photos/{cohortId}/{uid}/{filename} {
 
-      // Anyone signed-in can view photos
-      allow read: if request.auth != null;
+      // Any member can view photos
+      allow read: if isMember();
 
       // Members can only upload to their own uid folder
-      allow write: if request.auth != null
+      allow write: if isMember()
         && request.auth.uid == uid
         && request.resource.size < 10 * 1024 * 1024       // 10 MB max
         && request.resource.contentType.matches("image/.*"); // images only
 
-      // Deletion is allowed by the file owner OR by any signed-in user
-      // (Gallery.jsx deletePhoto() is only rendered for isAdmin — this is
-      // belt-and-suspenders; tighten if you add callable Cloud Functions later)
-      allow delete: if request.auth != null;
+      // Deletion is restricted to the file owner. Any-signed-in-user delete
+      // was a data-integrity hole: the client only renders the delete button
+      // for admins, but Storage rules are the real boundary and the UI is not.
+      allow delete: if isMember()
+        && request.auth.uid == uid;
     }
 
     // User private files: each user can only read/write/delete their own folder.
     // No other user, including admins, can access another user's files.
     match /userFiles/{uid}/{fileName} {
       // Read and delete: owner only, no resource conditions needed
-      allow read, delete: if request.auth != null
+      allow read, delete: if isMember()
         && request.auth.uid == uid;
       // Upload (write): owner only + size and content type validation
-      allow write: if request.auth != null
+      allow write: if isMember()
         && request.auth.uid == uid
         && request.resource.size < 10 * 1024 * 1024
         && (request.resource.contentType == 'application/pdf'

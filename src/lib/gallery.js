@@ -5,7 +5,6 @@
 import {
   collection,
   addDoc,
-  deleteDoc,
   doc,
   onSnapshot,
   orderBy,
@@ -20,9 +19,9 @@ import {
   ref,
   uploadBytesResumable,
   getDownloadURL,
-  deleteObject,
 } from "firebase/storage";
-import { db, storage, COHORT_ID } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, storage, functions, COHORT_ID } from "./firebase";
 
 // ─── Firestore path ────────────────────────────────────────────────────────────
 // cohorts/{cohortId}/photos/{photoId}
@@ -124,15 +123,16 @@ export async function toggleLike(photoId, uid, liked) {
 // ─── Delete ────────────────────────────────────────────────────────────────────
 /**
  * Admin-only: delete a photo from both Storage and Firestore.
- * Firestore rules enforce that only admins can delete.
  *
- * @param {object} photo - Full photo doc including { id, storagePath }
+ * Storage security rules restrict object deletes to the file's owner, so an
+ * admin cannot delete another member's photo directly from the client. This
+ * calls the `deletePhoto` Cloud Function, which verifies the caller is an
+ * admin and removes both the Storage object and the Firestore metadata doc
+ * with Admin SDK privileges.
+ *
+ * @param {object} photo - Full photo doc including { id }
  */
 export async function deletePhoto(photo) {
-  // Delete from Storage first
-  const storageRef = ref(storage, photo.storagePath);
-  await deleteObject(storageRef);
-
-  // Then delete Firestore metadata doc
-  await deleteDoc(doc(db, "cohorts", COHORT_ID, "photos", photo.id));
+  const call = httpsCallable(functions, "deletePhoto");
+  await call({ cohortId: COHORT_ID, photoId: photo.id });
 }

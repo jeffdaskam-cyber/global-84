@@ -10,6 +10,8 @@
  *   const { original, translated } = await translateImage(file);
  */
 
+import { auth } from "./firebase";
+
 // Accepted media types (must match the file input's accept attribute)
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -67,13 +69,24 @@ export async function translateImage(imageFile) {
     throw new Error("Translator is not configured. VITE_TRANSLATE_FUNCTION_URL is missing.");
   }
 
+  // The Cloud Function requires a verified Firebase ID token — the API key
+  // it holds is only spent for authenticated cohort members.
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("Please sign in to use the translator.");
+  }
+  const idToken = await currentUser.getIdToken();
+
   // Convert image to base64
   const imageBase64 = await fileToBase64(imageFile);
 
   // POST to the Cloud Function
   const response = await fetch(functionUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${idToken}`,
+    },
     body: JSON.stringify({
       imageBase64,
       mediaType: imageFile.type,
