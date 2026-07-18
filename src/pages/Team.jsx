@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { auth, db, COHORT_ID } from "../lib/firebase.js";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, doc, getDoc } from "firebase/firestore";
 import {
   subscribeTeams,
   subscribeMyTeam,
@@ -211,10 +211,8 @@ function TeamChat({ teamId, isAdmin }) {
     if (!trimmed || !user) return;
     setSending(true);
     try {
-      const memberDoc = await import("firebase/firestore").then(({ getDoc, doc }) =>
-        getDoc(doc(db, "cohorts", COHORT_ID, "members", user.uid))
-      );
-      const displayName = memberDoc.exists() ? memberDoc.data().displayName : user.email;
+      const memberSnap = await getDoc(doc(db, "cohorts", COHORT_ID, "members", user.uid));
+      const displayName = memberSnap.exists() ? memberSnap.data().displayName : "Member";
       await sendTeamMessage(teamId, trimmed, user.uid, displayName);
       setText("");
     } finally {
