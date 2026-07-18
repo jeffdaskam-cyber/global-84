@@ -21,7 +21,13 @@ const Team = lazy(() => import("./pages/Team.jsx"));
 const Translate = lazy(() => import("./pages/Translate.jsx"));
 const EventEditorModal = lazy(() => import("./components/features/EventEditorModal.jsx"));
 
-const LS_KEY = "global84_lastViewedEventsAt";
+// Per-user key so visit state doesn't leak between members on a shared
+// browser. Must match lastViewedEventsKey() in pages/Events.jsx (kept local
+// here so the lazy-loaded Events page stays out of the main bundle).
+const LS_KEY_PREFIX = "global84_lastViewedEventsAt";
+function lastViewedEventsKey(uid) {
+  return uid ? `${LS_KEY_PREFIX}_${uid}` : LS_KEY_PREFIX;
+}
 
 const DRAWER_NAV = [
   { to: "/", label: "Home", icon: "🏠" },
@@ -316,11 +322,13 @@ export default function App() {
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
   useEffect(() => {
+    if (!user?.uid) return;
+    const key = lastViewedEventsKey(user.uid);
     const eventsRef = collection(db, "cohorts", COHORT_ID, "events");
     const eventsQuery = query(eventsRef, orderBy("createdAt", "desc"));
 
     return onSnapshot(eventsQuery, (snapshot) => {
-      const lastViewed = parseInt(localStorage.getItem(LS_KEY) || "0", 10);
+      const lastViewed = parseInt(localStorage.getItem(key) || "0", 10);
       const now = Date.now();
       const hasNew = snapshot.docs.some((doc) => {
         const data = doc.data();
@@ -330,7 +338,7 @@ export default function App() {
       });
       setHasNewEvents(hasNew);
     });
-  }, []);
+  }, [user?.uid]);
 
   return (
     <AuthGate>

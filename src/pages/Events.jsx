@@ -6,11 +6,21 @@ import EventCard from "../components/features/EventCard.jsx";
 import EventEditorModal from "../components/features/EventEditorModal.jsx";
 
 const CITIES = ["Singapore", "Ho Chi Minh City"];
-const LS_KEY = "global84_lastViewedEventsAt";
+// Per-user key so visit state doesn't leak between members on a shared browser.
+const LS_KEY_PREFIX = "global84_lastViewedEventsAt";
+function lastViewedEventsKey(uid) {
+  return uid ? `${LS_KEY_PREFIX}_${uid}` : LS_KEY_PREFIX;
+}
 
 export default function Events({ onViewed }) {
   const user = auth.currentUser;
-  const [viewedAt] = useState(() => Date.now());
+  // The threshold for "New for You" is the timestamp of the *previous* visit,
+  // read once on mount before we overwrite it below. On a first-ever visit
+  // there's no stored value, so everything un-RSVP'd counts as new.
+  const [lastViewedAt] = useState(() => {
+    const stored = Number(localStorage.getItem(lastViewedEventsKey(user?.uid)));
+    return Number.isFinite(stored) && stored > 0 ? stored : 0;
+  });
   const [member, setMember] = useState(null);
   const [selectedCity, setSelectedCity] = useState("Singapore");
   const [events, setEvents] = useState([]);
@@ -18,10 +28,11 @@ export default function Events({ onViewed }) {
   const [openEditor, setOpenEditor] = useState(false);
   const [editing, setEditing] = useState(null);
 
+  // Record this visit as the new "last viewed" time for next time.
   useEffect(() => {
-    localStorage.setItem(LS_KEY, String(viewedAt));
+    localStorage.setItem(lastViewedEventsKey(user?.uid), String(Date.now()));
     onViewed?.();
-  }, [onViewed, viewedAt]);
+  }, [onViewed, user?.uid]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -32,17 +43,24 @@ export default function Events({ onViewed }) {
 
   useEffect(() => subscribeEventsByCity(city, setEvents), [city]);
 
-  useEffect(() => {
-    if (events.length === 0) return;
+  // Subscribe to each event's RSVPs. Key the effect on the *set of event ids*
+  // (a stable string) rather than the events array, whose identity changes on
+  // every snapshot — otherwise all RSVP listeners would be torn down and
+  // recreated on each events update.
+  const eventIds = useMemo(() => events.map((e) => e.id).join(","), [events]);
 
-    const unsubscribers = events.map((event) =>
-      subscribeRsvps(event.id, (rsvps) => {
-        setAllRsvps((previous) => ({ ...previous, [event.id]: rsvps }));
+  useEffect(() => {
+    if (!eventIds) return;
+    const ids = eventIds.split(",");
+
+    const unsubscribers = ids.map((id) =>
+      subscribeRsvps(id, (rsvps) => {
+        setAllRsvps((previous) => ({ ...previous, [id]: rsvps }));
       })
     );
 
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
-  }, [events]);
+  }, [eventIds]);
 
   const { newForYou, allEvents } = useMemo(() => {
     const uid = user?.uid;
@@ -52,9 +70,10 @@ export default function Events({ onViewed }) {
     for (const event of events) {
       const rsvps = allRsvps[event.id] ?? [];
       const hasRsvp = rsvps.some((rsvp) => rsvp.uid === uid);
-      const eventDate = event.startTime?.toMillis?.() ?? 0;
+      // "New" = created since the user's previous visit and not yet RSVP'd.
+      const createdAt = event.createdAt?.toMillis?.() ?? 0;
 
-      if (!hasRsvp && eventDate > viewedAt) {
+      if (!hasRsvp && createdAt > lastViewedAt) {
         newItems.push(event);
       } else {
         regularItems.push(event);
@@ -65,7 +84,7 @@ export default function Events({ onViewed }) {
     regularItems.sort((a, b) => (a.startTime?.toMillis?.() ?? 0) - (b.startTime?.toMillis?.() ?? 0));
 
     return { newForYou: newItems, allEvents: regularItems };
-  }, [allRsvps, events, user?.uid, viewedAt]);
+  }, [allRsvps, events, user?.uid, lastViewedAt]);
 
   function openCreate() {
     setEditing(null);
