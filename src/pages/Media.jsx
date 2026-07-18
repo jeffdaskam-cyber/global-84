@@ -78,6 +78,15 @@ export default function Media({ isAdmin }) {
     return unsub;
   }, []);
 
+  async function handleDeleteMedia(id) {
+    try {
+      await deleteMediaItem(id);
+    } catch (err) {
+      console.error("Media delete failed:", err);
+      alert("Delete failed. Please try again.");
+    }
+  }
+
   const filtered = items.filter((item) => {
     const cityMatch = activeCity === "all" || item.city === activeCity;
     const typeMatch = activeType === "all" || item.type === activeType;
@@ -168,7 +177,7 @@ export default function Media({ isAdmin }) {
                       item={item}
                       isAdmin={isAdmin}
                       onPlay={() => setLightboxUrl(item.url)}
-                      onDelete={() => deleteMediaItem(item.id)}
+                      onDelete={() => handleDeleteMedia(item.id)}
                     />
                   ))}
                 </div>
@@ -185,7 +194,7 @@ export default function Media({ isAdmin }) {
                       key={item.id}
                       item={item}
                       isAdmin={isAdmin}
-                      onDelete={() => deleteMediaItem(item.id)}
+                      onDelete={() => handleDeleteMedia(item.id)}
                     />
                   ))}
                 </div>

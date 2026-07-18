@@ -40,7 +40,9 @@ export default function Gallery({ user, isAdmin }) {
 
       try {
         const memberSnap = await getDoc(memberDoc(user.uid));
-        const uploaderName = memberSnap.data()?.displayName || user.email;
+        // Fall back to a generic label rather than the email, which would
+        // otherwise be written into a world-readable photo doc.
+        const uploaderName = memberSnap.data()?.displayName || "Member";
 
         await uploadPhoto(
           file,
