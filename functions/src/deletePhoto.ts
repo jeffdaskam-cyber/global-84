@@ -59,16 +59,45 @@ export const deletePhoto = onCall(async (request) => {
   }
 
   const storagePath = photoSnap.data()?.storagePath;
+  const uploaderUid = photoSnap.data()?.uploaderUid;
 
-  // Delete the Storage object first (best-effort), then the metadata doc.
-  // If the object is already missing we still remove the doc so the gallery
-  // doesn't show a broken entry.
-  if (typeof storagePath === "string" && storagePath) {
+  // Only delete a Storage object whose path matches the canonical layout for
+  // this photo's uploader: photos/{cohortId}/{uploaderUid}/...
+  //
+  // The Firestore `photos` create rule constrains uploaderUid but a client
+  // could still submit an arbitrary storagePath, so this Admin SDK call (which
+  // bypasses Storage security rules) must not trust it blindly — otherwise a
+  // crafted gallery entry could point at another user's private object and an
+  // admin deleting it would destroy that object. If the path is unexpected we
+  // skip the object delete entirely but still remove the (bogus) metadata doc.
+  const expectedPrefix = `photos/${cohortId}/${uploaderUid}/`;
+  const pathIsSafe =
+    typeof storagePath === "string" &&
+    typeof uploaderUid === "string" &&
+    storagePath.startsWith(expectedPrefix);
+
+  if (pathIsSafe) {
     try {
       await getStorage().bucket().file(storagePath).delete();
     } catch (err) {
-      logger.warn("deletePhoto: storage object delete failed", { storagePath, err });
+      // A 404 means the object is already gone — proceed to remove the doc.
+      // Any other error (transient/service failure) must NOT delete the
+      // metadata: that would orphan the object and destroy the only record
+      // the moderation flow could use to retry. Surface it so the client can
+      // retry the whole operation.
+      const code = (err as { code?: number }).code;
+      if (code === 404) {
+        logger.info("deletePhoto: storage object already gone", { storagePath });
+      } else {
+        logger.error("deletePhoto: storage object delete failed", { storagePath, err });
+        throw new HttpsError("internal", "Could not delete the photo file. Please try again.");
+      }
     }
+  } else {
+    logger.warn("deletePhoto: skipping storage delete for unexpected path", {
+      storagePath,
+      expectedPrefix,
+    });
   }
 
   await photoRef.delete();

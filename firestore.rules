@@ -113,8 +113,12 @@ service cloud.firestore {
       // Any signed-in user can update the likes array only; uploader can update their own photo fields.
       match /photos/{photoId} {
         allow read: if isMember();
+        // storagePath must live under this uploader's own folder so it can
+        // never reference another user's object (see deletePhoto function).
         allow create: if isMember()
-          && request.resource.data.uploaderUid == request.auth.uid;
+          && request.resource.data.uploaderUid == request.auth.uid
+          && request.resource.data.storagePath is string
+          && request.resource.data.storagePath.matches('photos/' + cohortId + '/' + request.auth.uid + '/.*');
         allow update: if isMember()
           && resource.data.uploaderUid == request.auth.uid;
         allow update: if isMember()
