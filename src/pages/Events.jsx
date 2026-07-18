@@ -6,7 +6,11 @@ import EventCard from "../components/features/EventCard.jsx";
 import EventEditorModal from "../components/features/EventEditorModal.jsx";
 
 const CITIES = ["Singapore", "Ho Chi Minh City"];
-const LS_KEY = "global84_lastViewedEventsAt";
+// Per-user key so visit state doesn't leak between members on a shared browser.
+const LS_KEY_PREFIX = "global84_lastViewedEventsAt";
+function lastViewedEventsKey(uid) {
+  return uid ? `${LS_KEY_PREFIX}_${uid}` : LS_KEY_PREFIX;
+}
 
 export default function Events({ onViewed }) {
   const user = auth.currentUser;
@@ -14,7 +18,7 @@ export default function Events({ onViewed }) {
   // read once on mount before we overwrite it below. On a first-ever visit
   // there's no stored value, so everything un-RSVP'd counts as new.
   const [lastViewedAt] = useState(() => {
-    const stored = Number(localStorage.getItem(LS_KEY));
+    const stored = Number(localStorage.getItem(lastViewedEventsKey(user?.uid)));
     return Number.isFinite(stored) && stored > 0 ? stored : 0;
   });
   const [member, setMember] = useState(null);
@@ -26,9 +30,9 @@ export default function Events({ onViewed }) {
 
   // Record this visit as the new "last viewed" time for next time.
   useEffect(() => {
-    localStorage.setItem(LS_KEY, String(Date.now()));
+    localStorage.setItem(lastViewedEventsKey(user?.uid), String(Date.now()));
     onViewed?.();
-  }, [onViewed]);
+  }, [onViewed, user?.uid]);
 
   useEffect(() => {
     if (!user?.uid) return;
