@@ -3,6 +3,7 @@ import { subscribeAnnouncements } from "../lib/announcements";
 import AnnouncementCard from "../components/features/AnnouncementCard.jsx";
 import AnnouncementEditorModal from "../components/features/AnnouncementEditorModal.jsx";
 import { subscribeIsAdmin } from "../lib/admins";
+import TripCountdown from "../components/TripCountdown.jsx";
 
 // ── Weather ───────────────────────────────────────────────────────────────────
 const WEATHER_CITIES = [
@@ -225,6 +226,9 @@ export default function Home({ onOpenDrawer }) {
       <div className="bg-surface-light dark:bg-surface-dark">
         <WeatherWidget />
       </div>
+
+      {/* ── Trip countdown ── */}
+      <TripCountdown />
 
       {/* ── Announcements ── */}
       <div className="p-6 space-y-4 bg-surface-light dark:bg-surface-dark" style={{ minHeight: "calc(100vh - 232px - 120px)" }}>
