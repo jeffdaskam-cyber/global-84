@@ -43,7 +43,7 @@ const DRAWER_NAV = [
     ],
   },
   { to: "/events", label: "Events", icon: "📅" },
-  { to: "/media", label: "Media", icon: "🎬" },
+  { to: "/media", label: "Trip Planning", icon: "🎬" },
   {
     group: "utilities",
     label: "Utilities",
