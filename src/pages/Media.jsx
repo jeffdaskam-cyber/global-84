@@ -1,13 +1,17 @@
 // src/pages/Media.jsx
-// Curated media links (YouTube videos + articles) for Singapore & HCMC.
-// Admin-managed: admins can add and delete items. All cohort members can view.
+// Trip Planning page: curated media (YouTube videos + articles, admin-managed)
+// plus a shared Links section any cohort member can contribute to.
 
 import { useState, useEffect } from "react";
 import {
   collection, addDoc, deleteDoc, doc,
   onSnapshot, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
-import { db, COHORT_ID } from "../lib/firebase.js";
+import { auth, db, COHORT_ID } from "../lib/firebase.js";
+import {
+  subscribeLinks, addLink, deleteLink, validateLink,
+  MAX_URL_LENGTH, MAX_DESCRIPTION_LENGTH,
+} from "../lib/links.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CITIES = [
@@ -102,7 +106,7 @@ export default function Media({ isAdmin }) {
       {/* ── Header ── */}
       <div className="sticky top-0 z-10 bg-[#0d0d0d]/95 backdrop-blur border-b border-white/10 px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-white tracking-tight">Media</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">Trip Planning</h1>
           {isAdmin && (
             <button
               onClick={() => setAddOpen(true)}
@@ -203,6 +207,9 @@ export default function Media({ isAdmin }) {
           </>
         )}
       </div>
+
+      {/* ── Links section (cohort-wide) ── */}
+      <LinksSection isAdmin={isAdmin} />
 
       {/* ── YouTube lightbox ── */}
       {lightboxUrl && (
@@ -532,6 +539,214 @@ function AddMediaModal({ onClose, onSave }) {
               />
             </div>
           )}
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 pb-5 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-white/15 text-white/60 text-sm font-semibold hover:bg-white/10 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg, #C4962A 0%, #a07820 100%)", color: "#0d0103" }}
+          >
+            {saving ? "Saving…" : "Add"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Links section (any member can add; creator or admin can delete) ───────────
+function LinksSection({ isAdmin }) {
+  const [links, setLinks]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [addOpen, setAddOpen]   = useState(false);
+  const currentUid = auth.currentUser?.uid;
+
+  useEffect(() => {
+    const unsub = subscribeLinks((data) => {
+      setLinks(data);
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  async function handleDeleteLink(id) {
+    if (!window.confirm("Remove this link?")) return;
+    try {
+      await deleteLink(id);
+    } catch (err) {
+      console.error("Link delete failed:", err);
+      alert("Delete failed. Please try again.");
+    }
+  }
+
+  return (
+    <div className="px-4 pt-2 pb-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-base">🔗</span>
+        <span className="text-white font-semibold text-sm tracking-wide">Links</span>
+        {links.length > 0 && <span className="text-white/30 text-xs">({links.length})</span>}
+        <div className="flex-1 h-px bg-white/10 ml-1" />
+        <button
+          onClick={() => setAddOpen(true)}
+          className="flex items-center gap-1.5 bg-[#BA0C2F] hover:bg-[#9a0a27] text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <span className="text-base leading-none">+</span> Add Link
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="bg-white/5 rounded-xl p-3.5 animate-pulse space-y-2">
+              <div className="h-3 bg-white/10 rounded w-3/5" />
+              <div className="h-2.5 bg-white/10 rounded w-4/5" />
+            </div>
+          ))}
+        </div>
+      ) : links.length === 0 ? (
+        <div className="text-center py-10 text-white/40">
+          <span className="text-4xl block mb-3">🔗</span>
+          <p className="text-sm font-medium text-white/50">No links yet. Add the first one!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {links.map((link) => (
+            <LinkCard
+              key={link.id}
+              link={link}
+              canDelete={isAdmin || link.createdByUid === currentUid}
+              onDelete={() => handleDeleteLink(link.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {addOpen && <AddLinkModal onClose={() => setAddOpen(false)} />}
+    </div>
+  );
+}
+
+// ── Link card ─────────────────────────────────────────────────────────────────
+function LinkCard({ link, canDelete, onDelete }) {
+  const added = link.createdAt?.toDate?.();
+  const addedLabel = added
+    ? added.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "";
+
+  return (
+    <div className="flex gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3.5 transition-all">
+      {/* Icon */}
+      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+        <span className="text-lg">🔗</span>
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#e8b84b] hover:underline text-sm font-semibold leading-snug break-all line-clamp-2"
+        >
+          {link.url}
+        </a>
+        <p className="text-white/60 text-xs mt-1 line-clamp-2">{link.description}</p>
+        <p className="text-white/30 text-xs mt-1.5">
+          Added by {link.createdByName || "Member"}
+          {addedLabel && ` · ${addedLabel}`}
+        </p>
+      </div>
+
+      {/* Delete (creator or admin only) */}
+      {canDelete && (
+        <button
+          onClick={onDelete}
+          className="self-start text-white/20 hover:text-red-400 transition-colors p-0.5"
+          title="Delete"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Add link modal (any member) ───────────────────────────────────────────────
+function AddLinkModal({ onClose }) {
+  const [url, setUrl]           = useState("");
+  const [description, setDesc]  = useState("");
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState("");
+
+  async function handleSave() {
+    const validationError = validateLink({ url, description });
+    if (validationError) { setError(validationError); return; }
+    setError("");
+    setSaving(true);
+    try {
+      await addLink({ url, description });
+      onClose();
+    } catch (err) {
+      console.error("Link add failed:", err);
+      setError("Save failed. Please try again.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-4">
+      <div
+        className="w-full max-w-md rounded-2xl overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #1a0508 0%, #0d0103 100%)", border: "1px solid rgba(196,150,42,0.25)" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: "1px solid rgba(196,150,42,0.15)" }}>
+          <h2 style={{ fontFamily: "Georgia, serif", color: "#fff", fontSize: "18px", fontWeight: 700 }}>
+            Add Link
+          </h2>
+          <button onClick={onClose} className="text-white/40 hover:text-white/80 transition-colors text-xl">✕</button>
+        </div>
+
+        {/* Form */}
+        <div className="px-5 py-4 space-y-4">
+          {/* URL */}
+          <div>
+            <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">URL *</label>
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              maxLength={MAX_URL_LENGTH}
+              placeholder="https://..."
+              className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-[#BA0C2F]"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Description *</label>
+            <input
+              value={description}
+              onChange={(e) => setDesc(e.target.value)}
+              maxLength={MAX_DESCRIPTION_LENGTH}
+              placeholder="What is this link about?"
+              className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-[#BA0C2F]"
+            />
+          </div>
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
         </div>

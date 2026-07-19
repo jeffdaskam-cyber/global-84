@@ -137,6 +137,19 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin(cohortId);
       }
 
+      // Links — shared trip-planning links (any member creates; creator or admin deletes)
+      match /links/{linkId} {
+        allow read: if isMember();
+        allow create: if isMember()
+          && request.resource.data.createdByUid == request.auth.uid
+          && request.resource.data.url is string
+          && request.resource.data.url.size() <= 500
+          && request.resource.data.description is string
+          && request.resource.data.description.size() <= 200;
+        allow update, delete: if isAdmin(cohortId)
+          || (isMember() && resource.data.createdByUid == request.auth.uid);
+      }
+
       // Teams — private small-group hubs
       // Team doc + members subcollection: admin read/write only
       // Messages + meetings: readable/writable only by assigned team members (or admin for meetings/delete)
