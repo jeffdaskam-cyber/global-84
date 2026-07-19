@@ -617,7 +617,7 @@ function LinksSection({ isAdmin }) {
       ) : links.length === 0 ? (
         <div className="text-center py-10 text-white/40">
           <span className="text-4xl block mb-3">🔗</span>
-          <p className="text-sm font-medium text-white/50">No links yet — add the first one!</p>
+          <p className="text-sm font-medium text-white/50">No links yet. Add the first one!</p>
         </div>
       ) : (
         <div className="space-y-3">
