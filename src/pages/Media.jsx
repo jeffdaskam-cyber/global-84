@@ -657,11 +657,11 @@ function LinkCard({ link, canDelete, onDelete }) {
           href={link.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#e8b84b] hover:underline text-sm font-semibold leading-snug break-all line-clamp-2"
+          className="text-[#e8b84b] hover:underline text-sm font-semibold leading-snug line-clamp-2"
         >
-          {link.url}
+          {link.description}
         </a>
-        <p className="text-white/60 text-xs mt-1 line-clamp-2">{link.description}</p>
+        <p className="text-white/40 text-xs mt-1 break-all line-clamp-1">{link.url}</p>
         <p className="text-white/30 text-xs mt-1.5">
           Added by {link.createdByName || "Member"}
           {addedLabel && ` · ${addedLabel}`}
