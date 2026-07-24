@@ -5,6 +5,7 @@ import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 
 import AuthGate from "./components/AuthGate.jsx";
 import SplashScreen from "./components/SplashScreen.jsx";
+import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import { subscribeIsAdmin } from "./lib/admins.js";
 import { auth, db, COHORT_ID } from "./lib/firebase.js";
 
@@ -345,6 +346,8 @@ export default function App() {
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
 
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      <NotificationPrompt user={user} />
 
       <div className="min-h-screen bg-surface-light dark:bg-surface-dark">
         <div className="pb-16">
