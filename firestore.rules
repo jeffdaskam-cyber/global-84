@@ -54,6 +54,16 @@ service cloud.firestore {
           allow read, create, delete: if isSelf(uid);
           allow update: if false;
         }
+
+        // Per-device push notification (FCM) tokens.
+        // Only the owning user can read, create, or delete — admins have no
+        // access. Update is blocked; a changed token is a new doc (keyed by
+        // the token) and stale docs are cleaned up server-side by the
+        // notification Cloud Functions.
+        match /fcmTokens/{token} {
+          allow read, create, delete: if isSelf(uid);
+          allow update: if false;
+        }
       }
 
       // Announcements (admins manage; all members can read)

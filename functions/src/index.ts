@@ -22,3 +22,7 @@ export { translateImage } from "./translateImage.js";
 // Admin-only gallery photo deletion (runs with Admin SDK privileges so it can
 // delete other members' Storage objects, which security rules forbid clients).
 export { deletePhoto } from "./deletePhoto.js";
+
+// Push notifications: Firestore triggers that fan out FCM messages to all
+// cohort members when a new announcement or event is created.
+export { onAnnouncementCreated, onEventCreated } from "./pushNotifications.js";
