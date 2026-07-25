@@ -22,7 +22,8 @@ export default function Events({ onViewed }) {
     return Number.isFinite(stored) && stored > 0 ? stored : 0;
   });
   const [member, setMember] = useState(null);
-  const [selectedCity, setSelectedCity] = useState("Singapore");
+  // null = the user hasn't picked a city yet, so follow their profile default.
+  const [selectedCity, setSelectedCity] = useState(null);
   const [events, setEvents] = useState([]);
   const [allRsvps, setAllRsvps] = useState({});
   const [openEditor, setOpenEditor] = useState(false);
@@ -39,7 +40,8 @@ export default function Events({ onViewed }) {
     return subscribeMember(user.uid, setMember);
   }, [user?.uid]);
 
-  const city = member?.defaultCity || selectedCity;
+  // An explicit click always wins; the profile default only seeds the initial view.
+  const city = selectedCity ?? member?.defaultCity ?? "Singapore";
 
   useEffect(() => subscribeEventsByCity(city, setEvents), [city]);
 
