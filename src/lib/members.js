@@ -19,7 +19,7 @@ export function memberDoc(uid) {
 /**
  * Create the member profile on first login.
  * On subsequent logins, update only non-destructive fields (email, lastLoginAt).
- * DO NOT overwrite displayName/defaultCity that the user set in-app.
+ * DO NOT overwrite displayName that the user set in-app.
  */
 export async function upsertMemberProfile(user) {
   if (!user?.uid) throw new Error("Missing user.");
@@ -36,7 +36,6 @@ export async function upsertMemberProfile(user) {
       email: emailLower,
       displayName: user.displayName || "Member",
       role: "member",
-      defaultCity: "Singapore",
       createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
     });
@@ -65,12 +64,11 @@ export function subscribeMember(uid, cb) {
 /**
  * Update safe profile fields only (must match Firestore rules)
  */
-export async function updateMyProfile(uid, { displayName, defaultCity }) {
+export async function updateMyProfile(uid, { displayName }) {
   const ref = memberDoc(uid);
 
   const patch = {};
   if (typeof displayName === "string") patch.displayName = displayName.trim();
-  if (typeof defaultCity === "string") patch.defaultCity = defaultCity;
 
   if (Object.keys(patch).length === 0) return;
 

@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { auth } from "../lib/firebase";
-import { subscribeMember } from "../lib/members";
 import { subscribeEventsByCity, subscribeRsvps } from "../lib/events";
 import EventCard from "../components/features/EventCard.jsx";
 import EventEditorModal from "../components/features/EventEditorModal.jsx";
 
 const CITIES = ["Singapore", "Ho Chi Minh City"];
-// Per-user key so visit state doesn't leak between members on a shared browser.
+// Per-user keys so visit state doesn't leak between members on a shared browser.
 const LS_KEY_PREFIX = "global84_lastViewedEventsAt";
+const CITY_KEY_PREFIX = "global84_eventsCity";
 function lastViewedEventsKey(uid) {
   return uid ? `${LS_KEY_PREFIX}_${uid}` : LS_KEY_PREFIX;
+}
+function cityKey(uid) {
+  return uid ? `${CITY_KEY_PREFIX}_${uid}` : CITY_KEY_PREFIX;
 }
 
 export default function Events({ onViewed }) {
@@ -21,9 +24,12 @@ export default function Events({ onViewed }) {
     const stored = Number(localStorage.getItem(lastViewedEventsKey(user?.uid)));
     return Number.isFinite(stored) && stored > 0 ? stored : 0;
   });
-  const [member, setMember] = useState(null);
-  // null = the user hasn't picked a city yet, so follow their profile default.
-  const [selectedCity, setSelectedCity] = useState(null);
+  // Opens on whichever city this user last picked. Validated against CITIES so
+  // a stale or hand-edited value can't pin the query to a city that never matches.
+  const [city, setCity] = useState(() => {
+    const stored = localStorage.getItem(cityKey(user?.uid));
+    return CITIES.includes(stored) ? stored : CITIES[0];
+  });
   const [events, setEvents] = useState([]);
   const [allRsvps, setAllRsvps] = useState({});
   const [openEditor, setOpenEditor] = useState(false);
@@ -35,13 +41,10 @@ export default function Events({ onViewed }) {
     onViewed?.();
   }, [onViewed, user?.uid]);
 
-  useEffect(() => {
-    if (!user?.uid) return;
-    return subscribeMember(user.uid, setMember);
-  }, [user?.uid]);
-
-  // An explicit click always wins; the profile default only seeds the initial view.
-  const city = selectedCity ?? member?.defaultCity ?? "Singapore";
+  function selectCity(option) {
+    setCity(option);
+    localStorage.setItem(cityKey(user?.uid), option);
+  }
 
   useEffect(() => subscribeEventsByCity(city, setEvents), [city]);
 
@@ -119,7 +122,7 @@ export default function Events({ onViewed }) {
         {CITIES.map((option) => (
           <button
             key={option}
-            onClick={() => setSelectedCity(option)}
+            onClick={() => selectCity(option)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
               city === option
                 ? "bg-du-crimson text-white"

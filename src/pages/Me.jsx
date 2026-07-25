@@ -14,14 +14,11 @@ import {
   ALLOWED_EXTENSIONS,
 } from "../lib/userFiles";
 
-const CITIES = ["Singapore", "Ho Chi Minh City"];
-
 export default function Me() {
   const [user, setUser] = useState(null);
 
   const [member, setMember] = useState(null);
   const [displayName, setDisplayName] = useState("");
-  const [defaultCity, setDefaultCity] = useState("Singapore");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -46,7 +43,6 @@ export default function Me() {
     const unsub = subscribeMember(user.uid, (m) => {
       setMember(m);
       setDisplayName(m?.displayName || user.displayName || "Member");
-      setDefaultCity(m?.defaultCity || "Singapore");
     });
 
     return () => unsub();
@@ -59,10 +55,7 @@ export default function Me() {
     return subscribeFiles(user.uid, setFiles);
   }, [user?.uid]);
 
-  const canSave = useMemo(() => {
-    const dn = displayName.trim();
-    return dn.length > 0 && CITIES.includes(defaultCity);
-  }, [displayName, defaultCity]);
+  const canSave = useMemo(() => displayName.trim().length > 0, [displayName]);
 
   async function handleSave() {
     setErr("");
@@ -71,7 +64,7 @@ export default function Me() {
 
     setSaving(true);
     try {
-      await updateMyProfile(user.uid, { displayName, defaultCity });
+      await updateMyProfile(user.uid, { displayName });
       setMsg("Saved.");
     } catch (e) {
       setErr(e?.message || "Could not save profile.");
@@ -163,23 +156,6 @@ export default function Me() {
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Your name"
           />
-        </label>
-
-        <label className="block">
-          <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
-            Default city
-          </div>
-          <select
-            className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
-            value={defaultCity}
-            onChange={(e) => setDefaultCity(e.target.value)}
-          >
-            {CITIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
         </label>
 
         {err ? <div className="text-sm text-du-crimson">{err}</div> : null}
