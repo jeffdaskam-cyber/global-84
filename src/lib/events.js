@@ -12,6 +12,7 @@ import {
   where,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
+import { myDisplayName } from "./members";
 
 /**
  * cohorts/{COHORT_ID}/events
@@ -48,6 +49,8 @@ export async function createEvent(data) {
   const u = auth.currentUser;
   if (!u) throw new Error("Not signed in.");
 
+  const name = await myDisplayName();
+
   const payload = {
     title: (data.title || "").trim(),
     city: data.city,
@@ -57,7 +60,7 @@ export async function createEvent(data) {
     status: "active",
     createdAt: serverTimestamp(),
     createdByUid: u.uid,
-    createdByName: u.displayName || "Member",
+    createdByName: name,
   };
 
   if (!payload.title) throw new Error("Title is required.");
@@ -71,7 +74,7 @@ export async function createEvent(data) {
   await setDoc(rsvpDoc(ref.id, u.uid), {
     status: "going",
     updatedAt: serverTimestamp(),
-    name: u.displayName || "Member",
+    name,
   });
 
   return ref.id;
@@ -124,7 +127,7 @@ export async function setRsvp(eventId, status) {
     {
       status,
       updatedAt: serverTimestamp(),
-      name: u.displayName || "Member",
+      name: await myDisplayName(),
     },
     { merge: true }
   );

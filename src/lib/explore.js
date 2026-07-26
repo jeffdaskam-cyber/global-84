@@ -14,6 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
+import { myDisplayName } from "./members";
 
 export function exploreCol() {
   return collection(db, "cohorts", COHORT_ID, "explore");
@@ -233,6 +234,7 @@ export async function importExploreItems(rows, options = {}) {
   const BATCH_SIZE = 10;
   let imported = 0;
   let updated = 0;
+  const createdByName = await myDisplayName("Admin");
 
   for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
     const chunk = upsertRows.slice(i, i + BATCH_SIZE);
@@ -265,7 +267,7 @@ export async function importExploreItems(rows, options = {}) {
           ...(isNew && {
             createdAt: serverTimestamp(),
             createdByUid: user.uid,
-            createdByName: user.displayName || "Admin",
+            createdByName,
           }),
         },
         { merge: true }
