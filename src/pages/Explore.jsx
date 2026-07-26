@@ -11,6 +11,7 @@ import {
 } from "../lib/explore";
 import { fetchSheetData, parseSheetCSV } from "../lib/sheetsSync";
 import { subscribeFavorites, toggleFavorite } from "../lib/favorites";
+import { ACCOMMODATIONS, getMapsUrl } from "../config/accommodations";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CITIES = [
@@ -51,6 +52,13 @@ export default function Explore({ isAdmin, onCreateEvent }) {
       city={nav.city}
       onSelect={(category) => setNav({ ...nav, category })}
       onBack={() => setNav(null)}
+    />
+  );
+  // Step 2b: hardcoded hotel screen — no Firestore, no listing view.
+  if (nav.category === "accommodations") return (
+    <AccommodationDetail
+      city={nav.city}
+      onBack={() => setNav({ city: nav.city })}
     />
   );
   return (
@@ -218,6 +226,79 @@ function CategoryPicker({ city, onSelect, onBack }) {
             </svg>
           </div>
         </button>
+
+        {/* Secondary option — deliberately lighter weight than Dining/Activities */}
+        <button
+          onClick={() => onSelect("accommodations")}
+          className="w-full flex items-center gap-2 rounded-full border border-surface-border dark:border-surface-darkBorder bg-surface-card dark:bg-surface-darkCard px-4 py-2.5 text-sm font-semibold text-ink-sub dark:text-ink-subOnDark hover:border-du-crimson hover:text-du-crimson transition-colors focus:outline-none focus:ring-2 focus:ring-du-crimson"
+        >
+          <span className="text-base leading-none">🏨</span>
+          <span>Accommodations</span>
+          <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Step 2b: Accommodation detail (hardcoded, no Firestore) ───────────────────
+function AccommodationDetail({ city, onBack }) {
+  const cityData = CITIES.find((c) => c.key === city);
+  const hotel = ACCOMMODATIONS[city];
+
+  return (
+    <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
+      <div className="sticky top-0 z-10 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur border-b border-surface-border dark:border-surface-darkBorder px-4 pt-4 pb-3">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="text-ink-sub dark:text-ink-subOnDark hover:text-ink-main dark:hover:text-ink-onDark transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-ink-main dark:text-ink-onDark">
+            Accommodations
+            <span className="ml-2 text-ink-sub dark:text-ink-subOnDark font-normal text-base">
+              · {cityData?.shortLabel || city}
+            </span>
+          </h1>
+        </div>
+      </div>
+
+      <div className="px-4 pt-4">
+        {!hotel ? (
+          <div className="text-center py-16 text-ink-sub dark:text-ink-subOnDark text-sm">
+            Accommodations not yet added for this city.
+          </div>
+        ) : (
+          <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-sm p-4 space-y-4">
+            <div>
+              <h2 className="font-semibold text-ink-main dark:text-ink-onDark text-lg leading-tight">{hotel.name}</h2>
+              <p className="mt-1 text-sm text-ink-sub dark:text-ink-subOnDark">{hotel.address}</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <a
+                href={hotel.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-lg border border-surface-border dark:border-surface-darkBorder px-3 py-2.5 text-sm font-semibold text-du-crimson hover:border-du-crimson transition-colors"
+              >
+                <span>🔗</span>
+                <span>Hotel Website</span>
+              </a>
+              <a
+                href={getMapsUrl(hotel)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-lg border border-surface-border dark:border-surface-darkBorder px-3 py-2.5 text-sm font-semibold text-du-crimson hover:border-du-crimson transition-colors"
+              >
+                <span>📍</span>
+                <span>Map View</span>
+              </a>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
