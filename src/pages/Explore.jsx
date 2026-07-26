@@ -1,7 +1,14 @@
 // src/pages/Explore.jsx
 // Navigation flow: City cards → Dining/Activity → Type filter → List
 import { useState, useEffect, useMemo } from "react";
-import { subscribeExplore, deleteExploreItem, importExploreItems } from "../lib/explore";
+import {
+  subscribeExplore,
+  deleteExploreItem,
+  importExploreItems,
+  isCohortFavorite,
+  getFavoriteCount,
+  COHORT_FAVORITE_THRESHOLD,
+} from "../lib/explore";
 import { fetchSheetData, parseSheetCSV } from "../lib/sheetsSync";
 import { subscribeFavorites, toggleFavorite } from "../lib/favorites";
 
@@ -224,6 +231,7 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
   const [search, setSearch]           = useState("");
   const [deleting, setDeleting]       = useState(null);
   const [showFavOnly, setShowFavOnly] = useState(false);
+  const [showCohortFavOnly, setShowCohortFavOnly] = useState(false);
 
   const cityData = CITIES.find((c) => c.key === city);
   const typeList = category === "dining" ? DINING_TYPES : ACTIVITY_TYPES;
@@ -247,8 +255,18 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
           .join(" ").toLowerCase().includes(q)
       );
     }
+    // The Cohort Favorites chip doubles as a sort: most-favorited first, ties
+    // alphabetical. Done in memory since the full list is already loaded.
+    if (showCohortFavOnly) {
+      result = result
+        .filter((i) => isCohortFavorite(i))
+        .sort((a, b) =>
+          getFavoriteCount(b) - getFavoriteCount(a) ||
+          (a.name || "").localeCompare(b.name || "")
+        );
+    }
     return result;
-  }, [items, activeType, search]);
+  }, [items, activeType, search, showCohortFavOnly]);
 
   // Split into favorited and non-favorited
   const favoritedItems = filtered.filter((i) => favorites.has(i.id));
@@ -314,6 +332,22 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
             <span>{showFavOnly ? "★" : "☆"}</span>
             <span className="hidden sm:inline">Favorites</span>
           </button>
+          <button
+            onClick={() => setShowCohortFavOnly((v) => !v)}
+            title={
+              showCohortFavOnly
+                ? "Show all"
+                : `Show places favorited by more than ${COHORT_FAVORITE_THRESHOLD} cohort members`
+            }
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
+              showCohortFavOnly
+                ? "bg-du-gold border-du-gold text-white"
+                : "border-surface-border dark:border-surface-darkBorder text-ink-sub dark:text-ink-subOnDark hover:border-du-gold hover:text-du-gold"
+            }`}
+          >
+            <span>⭐</span>
+            <span className="hidden sm:inline">Cohort</span>
+          </button>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -343,7 +377,11 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
           ))
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-ink-sub dark:text-ink-subOnDark text-sm">
-            {items.length === 0 ? "No places added yet." : "No results match your search."}
+            {items.length === 0
+              ? "No places added yet."
+              : showCohortFavOnly
+                ? `No cohort favorites yet. Places saved by more than ${COHORT_FAVORITE_THRESHOLD} members show up here.`
+                : "No results match your search."}
           </div>
         ) : (
           <>
@@ -386,6 +424,9 @@ function PlaceCard({ item, isAdmin, isFavorited, deleting, onDelete, onCreateEve
   const [expanded, setExpanded]   = useState(false);
   const [toggling, setToggling]   = useState(false);
 
+  const favoriteCount  = getFavoriteCount(item);
+  const cohortFavorite = isCohortFavorite(item);
+
   async function handleFavorite(e) {
     e.stopPropagation();
     if (toggling) return;
@@ -403,6 +444,14 @@ function PlaceCard({ item, isAdmin, isFavorited, deleting, onDelete, onCreateEve
               <span className="font-semibold text-ink-main dark:text-ink-onDark text-base leading-tight">{item.name}</span>
               {item.price && (
                 <span className="text-xs font-medium text-du-gold bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded">{item.price}</span>
+              )}
+              {cohortFavorite && (
+                <span
+                  title={`Saved by ${favoriteCount} cohort members`}
+                  className="text-xs font-semibold text-du-gold bg-du-goldSoft dark:bg-du-gold/20 border border-du-goldDeep dark:border-du-gold/50 px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                >
+                  ⭐ Cohort Favorite
+                </span>
               )}
             </div>
             <div className="mt-1 flex items-center gap-2 text-xs text-ink-sub dark:text-ink-subOnDark flex-wrap">
@@ -450,6 +499,14 @@ function PlaceCard({ item, isAdmin, isFavorited, deleting, onDelete, onCreateEve
             <p className="text-xs text-ink-sub dark:text-ink-subOnDark">
               Recommended by <span className="font-semibold">{item.recommendedBy}</span>
             </p>
+          )}
+          {/* System-generated tag — styled apart from the admin-entered chips below */}
+          {cohortFavorite && (
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-xs font-semibold text-du-gold bg-du-goldSoft dark:bg-du-gold/20 border border-du-goldDeep dark:border-du-gold/50 px-2 py-0.5 rounded-full">
+                ⭐ Cohort Favorite · saved by {favoriteCount} members
+              </span>
+            </div>
           )}
           {item.tags?.length > 0 && (
             <div className="flex flex-wrap gap-1.5">

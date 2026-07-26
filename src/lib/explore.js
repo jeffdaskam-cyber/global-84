@@ -15,8 +15,25 @@ import {
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
 
+// An item earns the "Cohort Favorite" tag once MORE than this many cohort
+// members have favorited it (so 9+ at a threshold of 8). Tune here, not inline.
+export const COHORT_FAVORITE_THRESHOLD = 8;
+
 export function exploreCol() {
   return collection(db, "cohorts", COHORT_ID, "explore");
+}
+
+/**
+ * favoriteCount is a denormalized counter maintained by the onFavoriteChange
+ * Cloud Function. Items that predate the field (or predate the backfill) read
+ * as undefined, and a decrement race could in theory dip below zero, so clamp.
+ */
+export function getFavoriteCount(item) {
+  return Math.max(0, Number(item?.favoriteCount) || 0);
+}
+
+export function isCohortFavorite(item) {
+  return getFavoriteCount(item) > COHORT_FAVORITE_THRESHOLD;
 }
 
 export function exploreDoc(id) {
@@ -242,6 +259,9 @@ export async function importExploreItems(rows, options = {}) {
       const ref = upsert.existingId ? doc(exploreColRef, upsert.existingId) : doc(exploreColRef);
       const isNew = !upsert.existingId;
 
+      // Sheet-managed fields only. merge:true leaves everything else intact —
+      // notably favoriteCount, which is owned by the onFavoriteChange Cloud
+      // Function and must survive a re-sync.
       batch.set(
         ref,
         {
