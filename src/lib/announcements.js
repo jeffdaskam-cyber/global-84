@@ -11,6 +11,7 @@ import {
   where,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
+import { myDisplayName } from "./members";
 
 export function announcementsCol() {
   return collection(db, "cohorts", COHORT_ID, "announcements");
@@ -31,7 +32,7 @@ export async function createAnnouncement({ title, body, pinned }) {
     status: "active",
     createdAt: serverTimestamp(),
     createdByUid: u.uid,                 // <-- IMPORTANT (spelling)
-    createdByName: u.displayName || "Admin",
+    createdByName: await myDisplayName("Admin"),
   };
 
   if (!payload.title) throw new Error("Title is required.");

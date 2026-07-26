@@ -9,6 +9,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase.js";
+import { myDisplayName } from "./members.js";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export async function addLink({ url, description }) {
     url: url.trim(),
     description: description.trim(),
     createdByUid: u.uid,
-    createdByName: u.displayName || "Member",
+    createdByName: await myDisplayName(),
     createdAt: serverTimestamp(),
   });
   return ref.id;

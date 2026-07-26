@@ -62,6 +62,29 @@ export function subscribeMember(uid, cb) {
 }
 
 /**
+ * Resolve the signed-in user's display name from their member doc, which is the
+ * source of truth. The Auth profile can be stale or unset when a name was set
+ * outside the app (e.g. edited directly in Firestore), which would otherwise
+ * attribute their events and RSVPs to "Member".
+ *
+ * `fallback` is the label used only when no name is available anywhere — pass
+ * "Admin" from admin-authored paths.
+ */
+export async function myDisplayName(fallback = "Member") {
+  const u = auth.currentUser;
+  if (!u) throw new Error("Not signed in.");
+
+  try {
+    const snap = await getDoc(memberDoc(u.uid));
+    if (snap.exists() && snap.data()?.displayName) return snap.data().displayName;
+  } catch {
+    // Fall back to the Auth profile below.
+  }
+
+  return u.displayName || fallback;
+}
+
+/**
  * Update safe profile fields only (must match Firestore rules)
  */
 export async function updateMyProfile(uid, { displayName }) {
