@@ -26,3 +26,7 @@ export { deletePhoto } from "./deletePhoto.js";
 // Push notifications: Firestore triggers that fan out FCM messages to all
 // cohort members when a new announcement or event is created.
 export { onAnnouncementCreated, onEventCreated } from "./pushNotifications.js";
+
+// Keeps explore/{itemId}.favoriteCount in sync with per-member favorite docs,
+// which drives the "Cohort Favorite" tag in the Explore list.
+export { onFavoriteChange } from "./onFavoriteChange.js";

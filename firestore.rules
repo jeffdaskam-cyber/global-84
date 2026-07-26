@@ -73,6 +73,9 @@ service cloud.firestore {
       }
 
       // Explore items (admins manage; all members can read)
+      // The `favoriteCount` field is written only by the onFavoriteChange Cloud
+      // Function via the Admin SDK, which bypasses these rules. Do not open a
+      // client write path for it — members must not be able to inflate it.
       match /explore/{id} {
         allow read: if isMember();
         allow create: if isAdmin(cohortId);
