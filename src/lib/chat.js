@@ -4,13 +4,13 @@ import {
   doc,
   getDoc,
   limitToLast,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   addDoc,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
+import { watch } from "./subscribe";
 
 // ─── Collection refs ──────────────────────────────────────────────────────────
 
@@ -24,11 +24,11 @@ export function cohortMessagesCol() {
  * Real-time listener for the last 100 cohort messages, oldest-first.
  * Returns an unsubscribe function.
  */
-export function subscribeCohortChat(cb) {
+export function subscribeCohortChat(cb, onError) {
   const q = query(cohortMessagesCol(), orderBy("createdAt", "asc"), limitToLast(100));
-  return onSnapshot(q, (snap) => {
+  return watch("chat", q, (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 // ─── Send ─────────────────────────────────────────────────────────────────────

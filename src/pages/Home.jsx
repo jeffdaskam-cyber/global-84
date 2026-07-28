@@ -3,6 +3,8 @@ import { subscribeAnnouncements } from "../lib/announcements";
 import AnnouncementCard from "../components/features/AnnouncementCard.jsx";
 import AnnouncementEditorModal from "../components/features/AnnouncementEditorModal.jsx";
 import { subscribeIsAdmin } from "../lib/admins";
+import { listenerErrorMessage } from "../lib/subscribe";
+import ListenerError from "../components/ListenerError.jsx";
 import TripCountdown from "../components/TripCountdown.jsx";
 
 // ── Weather ───────────────────────────────────────────────────────────────────
@@ -114,6 +116,7 @@ export default function Home({ onOpenDrawer }) {
   const [items, setItems]     = useState([]);
   const [openNew, setOpenNew] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -127,7 +130,9 @@ export default function Home({ onOpenDrawer }) {
   }, []);
 
   useEffect(() => {
-    const unsub = subscribeAnnouncements(setItems);
+    const unsub = subscribeAnnouncements(setItems, (err) =>
+      setLoadError(listenerErrorMessage(err))
+    );
     return () => unsub();
   }, []);
 
@@ -252,7 +257,9 @@ export default function Home({ onOpenDrawer }) {
           )}
         </div>
 
-        {items.length === 0 ? (
+        {loadError ? (
+          <ListenerError message={loadError} />
+        ) : items.length === 0 ? (
           <div className="bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card p-4">
             <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">No announcements yet</div>
             <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">

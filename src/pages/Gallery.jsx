@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getDoc } from "firebase/firestore";
 import { subscribePhotos, uploadPhoto, deletePhoto, toggleLike } from "../lib/gallery";
 import { memberDoc } from "../lib/members";
+import { listenerErrorMessage } from "../lib/subscribe";
+import ListenerError from "../components/ListenerError.jsx";
 
 const CITIES = [
   { key: "all", label: "All Photos" },
@@ -18,15 +20,24 @@ export default function Gallery({ user, isAdmin }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadCity, setUploadCity] = useState("singapore");
   const [error, setError] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
+    setLoadError("");
     const city = activeCity === "all" ? null : activeCity;
-    return subscribePhotos((data) => {
-      setPhotos(data);
-      setLoading(false);
-    }, city);
+    return subscribePhotos(
+      (data) => {
+        setPhotos(data);
+        setLoading(false);
+      },
+      city,
+      (err) => {
+        setLoading(false);
+        setLoadError(listenerErrorMessage(err));
+      }
+    );
   }, [activeCity]);
 
   const handleFileChange = useCallback(
@@ -182,6 +193,8 @@ export default function Gallery({ user, isAdmin }) {
               />
             ))}
           </div>
+        ) : loadError ? (
+          <ListenerError message={loadError} />
         ) : photos.length === 0 ? (
           <div className="text-center py-20 text-white/40">
             <p className="text-sm">No photos yet. Be the first to add one.</p>

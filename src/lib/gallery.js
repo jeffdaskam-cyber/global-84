@@ -6,7 +6,6 @@ import {
   collection,
   addDoc,
   doc,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -22,6 +21,7 @@ import {
 } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 import { db, storage, functions, COHORT_ID } from "./firebase";
+import { watch } from "./subscribe";
 
 // ─── Firestore path ────────────────────────────────────────────────────────────
 // cohorts/{cohortId}/photos/{photoId}
@@ -34,16 +34,16 @@ const photosCol = () =>
  * Returns an unsubscribe function. Calls onData(photos[]) on every change.
  * Optionally filter by city: "singapore" | "vietnam" | null (all)
  */
-export function subscribePhotos(onData, city = null) {
+export function subscribePhotos(onData, city = null, onError) {
   let q = query(photosCol(), orderBy("createdAt", "desc"));
   if (city) {
     q = query(photosCol(), where("city", "==", city), orderBy("createdAt", "desc"));
   }
 
-  return onSnapshot(q, (snap) => {
+  return watch("photos", q, (snap) => {
     const photos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     onData(photos);
-  });
+  }, onError);
 }
 
 // ─── Upload ────────────────────────────────────────────────────────────────────

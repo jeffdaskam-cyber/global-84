@@ -13,6 +13,8 @@ import {
   formatFileSize,
   ALLOWED_EXTENSIONS,
 } from "../lib/userFiles";
+import { listenerErrorMessage } from "../lib/subscribe";
+import ListenerError from "../components/ListenerError.jsx";
 
 export default function Me() {
   const [user, setUser] = useState(null);
@@ -22,6 +24,7 @@ export default function Me() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   // ── My Files state ────────────────────────────────────────────────────────────
   const [files, setFiles] = useState([]);
@@ -40,10 +43,14 @@ export default function Me() {
   useEffect(() => {
     if (!user?.uid) return;
 
-    const unsub = subscribeMember(user.uid, (m) => {
-      setMember(m);
-      setDisplayName(m?.displayName || user.displayName || "Member");
-    });
+    const unsub = subscribeMember(
+      user.uid,
+      (m) => {
+        setMember(m);
+        setDisplayName(m?.displayName || user.displayName || "Member");
+      },
+      (err) => setLoadError(listenerErrorMessage(err))
+    );
 
     return () => unsub();
   }, [user?.displayName, user?.uid]);
@@ -52,7 +59,9 @@ export default function Me() {
   // Subscribe to this user's files
   useEffect(() => {
     if (!user?.uid) return;
-    return subscribeFiles(user.uid, setFiles);
+    return subscribeFiles(user.uid, setFiles, (err) =>
+      setLoadError(listenerErrorMessage(err))
+    );
   }, [user?.uid]);
 
   const canSave = useMemo(() => displayName.trim().length > 0, [displayName]);
@@ -133,6 +142,8 @@ export default function Me() {
         Me <span className="text-du-gold">•</span>
       </div>
       <div className="h-1 w-10 rounded-full bg-du-gold" />
+
+      <ListenerError message={loadError} />
 
       {/* Account */}
       <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">

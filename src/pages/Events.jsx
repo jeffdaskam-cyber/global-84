@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { auth } from "../lib/firebase";
 import { subscribeEventsByCity, subscribeRsvps } from "../lib/events";
+import { listenerErrorMessage } from "../lib/subscribe";
 import EventCard from "../components/features/EventCard.jsx";
 import EventEditorModal from "../components/features/EventEditorModal.jsx";
+import ListenerError from "../components/ListenerError.jsx";
 
 const CITIES = ["Singapore", "Ho Chi Minh City"];
 // Per-user keys so visit state doesn't leak between members on a shared browser.
@@ -31,6 +33,7 @@ export default function Events({ onViewed }) {
     return CITIES.includes(stored) ? stored : CITIES[0];
   });
   const [events, setEvents] = useState([]);
+  const [loadError, setLoadError] = useState("");
   const [allRsvps, setAllRsvps] = useState({});
   const [openEditor, setOpenEditor] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -46,7 +49,12 @@ export default function Events({ onViewed }) {
     localStorage.setItem(cityKey(user?.uid), option);
   }
 
-  useEffect(() => subscribeEventsByCity(city, setEvents), [city]);
+  useEffect(() => {
+    setLoadError("");
+    return subscribeEventsByCity(city, setEvents, (err) =>
+      setLoadError(listenerErrorMessage(err))
+    );
+  }, [city]);
 
   // Subscribe to each event's RSVPs. Key the effect on the *set of event ids*
   // (a stable string) rather than the events array, whose identity changes on
@@ -58,10 +66,22 @@ export default function Events({ onViewed }) {
     if (!eventIds) return;
     const ids = eventIds.split(",");
 
+    // A failed RSVP listener leaves that event's attendee list stale rather than
+    // blocking the page, so it reports to the console via watch() and drops the
+    // entry instead of surfacing 50 separate banners.
     const unsubscribers = ids.map((id) =>
-      subscribeRsvps(id, (rsvps) => {
-        setAllRsvps((previous) => ({ ...previous, [id]: rsvps }));
-      })
+      subscribeRsvps(
+        id,
+        (rsvps) => {
+          setAllRsvps((previous) => ({ ...previous, [id]: rsvps }));
+        },
+        () => {
+          setAllRsvps((previous) => {
+            const { [id]: _dropped, ...rest } = previous;
+            return rest;
+          });
+        }
+      )
     );
 
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
@@ -134,7 +154,12 @@ export default function Events({ onViewed }) {
         ))}
       </div>
 
-      {events.length === 0 ? (
+      <ListenerError message={loadError} />
+
+      {/* An empty list during a listener failure means "we couldn't load", not
+          "nothing is planned" — the banner above says so, so suppress the
+          invitation to create the first event. */}
+      {events.length === 0 && !loadError ? (
         <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">
           <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">No events yet</div>
           <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">

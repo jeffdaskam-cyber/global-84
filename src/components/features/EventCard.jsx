@@ -3,6 +3,7 @@ import { auth } from "../../lib/firebase";
 import { fmtDateTime } from "../../lib/format";
 import { setRsvp, subscribeRsvps } from "../../lib/events";
 import { subscribeEventChat, sendEventMessage, deleteEventMessage } from "../../lib/eventChat";
+import { listenerErrorMessage } from "../../lib/subscribe";
 
 function formatNames(names) {
   const MAX = 5;
@@ -25,14 +26,17 @@ export default function EventCard({ event, onEdit, isAdmin }) {
   const bottomRef                     = useRef(null);
 
   useEffect(() => {
-    const unsub = subscribeRsvps(event.id, setRsvpsState);
+    const unsub = subscribeRsvps(event.id, setRsvpsState, () => setRsvpsState([]));
     return () => unsub();
   }, [event.id]);
 
   // Subscribe to chat only when thread is open
   useEffect(() => {
     if (!showChat) return;
-    const unsub = subscribeEventChat(event.id, setMessages);
+    setChatError("");
+    const unsub = subscribeEventChat(event.id, setMessages, (err) =>
+      setChatError(listenerErrorMessage(err))
+    );
     return () => unsub();
   }, [showChat, event.id]);
 
@@ -126,7 +130,7 @@ export default function EventCard({ event, onEdit, isAdmin }) {
               {event.title}
             </div>
             <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark">
-              {fmtDateTime(event.startTime)}
+              {fmtDateTime(event.startTime, event.city)}
             </div>
             <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark truncate">
               {event.locationName}

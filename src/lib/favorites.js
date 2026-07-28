@@ -7,10 +7,10 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { watch } from "./subscribe";
 
 function favoritesRef(uid) {
   return collection(db, "cohorts", COHORT_ID, "members", uid, "favorites");
@@ -21,15 +21,15 @@ function favoritesRef(uid) {
  * Calls onChange with a Set of exploreId strings.
  * Returns an unsubscribe function.
  */
-export function subscribeFavorites(onChange) {
+export function subscribeFavorites(onChange, onError) {
   const uid = getAuth().currentUser?.uid;
   if (!uid) {
     onChange(new Set());
     return () => {};
   }
-  return onSnapshot(favoritesRef(uid), (snap) => {
+  return watch("favorites", favoritesRef(uid), (snap) => {
     onChange(new Set(snap.docs.map((d) => d.id)));
-  });
+  }, onError);
 }
 
 /**

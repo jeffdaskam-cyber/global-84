@@ -5,7 +5,6 @@ import {
   getDoc,
   getDocs,
   limit,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -15,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
 import { myDisplayName } from "./members";
+import { watch } from "./subscribe";
 
 // An item earns the "Cohort Favorite" tag once MORE than this many cohort
 // members have favorited it (so 9+ at a threshold of 8). Tune here, not inline.
@@ -41,7 +41,7 @@ export function exploreDoc(id) {
   return doc(db, "cohorts", COHORT_ID, "explore", id);
 }
 
-export function subscribeExplore({ city, category }, cb) {
+export function subscribeExplore({ city, category }, cb, onError) {
   // Filter by city and category in Firestore; type filtering is done client-side
   // in the PlaceList component for instant pill-switching without extra queries.
   const constraints = [
@@ -54,9 +54,9 @@ export function subscribeExplore({ city, category }, cb) {
 
   const q = query(exploreCol(), ...constraints);
 
-  return onSnapshot(q, (snap) => {
+  return watch("explore", q, (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 export async function archiveExploreItem(id) {

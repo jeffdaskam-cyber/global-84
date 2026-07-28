@@ -5,13 +5,15 @@
 import { useState, useEffect } from "react";
 import {
   collection, addDoc, deleteDoc, doc,
-  onSnapshot, query, orderBy, serverTimestamp,
+  query, orderBy, serverTimestamp,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "../lib/firebase.js";
 import {
   subscribeLinks, addLink, deleteLink, validateLink,
   MAX_URL_LENGTH, MAX_DESCRIPTION_LENGTH,
 } from "../lib/links.js";
+import { watch, listenerErrorMessage } from "../lib/subscribe.js";
+import ListenerError from "../components/ListenerError.jsx";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CITIES = [
@@ -30,11 +32,11 @@ function mediaCol() {
   return collection(db, "cohorts", COHORT_ID, "media");
 }
 
-function subscribeMedia(callback) {
+function subscribeMedia(callback, onError) {
   const q = query(mediaCol(), orderBy("createdAt", "desc"));
-  return onSnapshot(q, (snap) => {
+  return watch("media", q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 async function addMediaItem(item) {
@@ -69,16 +71,23 @@ function getYouTubeThumbnail(url) {
 export default function Media({ isAdmin }) {
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeCity, setActiveCity] = useState("all");
   const [activeType, setActiveType] = useState("all");
   const [addOpen, setAddOpen]     = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
 
   useEffect(() => {
-    const unsub = subscribeMedia((data) => {
-      setItems(data);
-      setLoading(false);
-    });
+    const unsub = subscribeMedia(
+      (data) => {
+        setItems(data);
+        setLoading(false);
+      },
+      (err) => {
+        setLoading(false);
+        setLoadError(listenerErrorMessage(err));
+      }
+    );
     return unsub;
   }, []);
 
@@ -166,6 +175,8 @@ export default function Media({ isAdmin }) {
       <div className="px-4 py-4 space-y-6">
         {loading ? (
           <LoadingSkeleton />
+        ) : loadError ? (
+          <ListenerError message={loadError} />
         ) : filtered.length === 0 ? (
           <EmptyState isAdmin={isAdmin} onAdd={() => setAddOpen(true)} />
         ) : (
@@ -569,14 +580,21 @@ function AddMediaModal({ onClose, onSave }) {
 function LinksSection({ isAdmin }) {
   const [links, setLinks]       = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [addOpen, setAddOpen]   = useState(false);
   const currentUid = auth.currentUser?.uid;
 
   useEffect(() => {
-    const unsub = subscribeLinks((data) => {
-      setLinks(data);
-      setLoading(false);
-    });
+    const unsub = subscribeLinks(
+      (data) => {
+        setLinks(data);
+        setLoading(false);
+      },
+      (err) => {
+        setLoading(false);
+        setLoadError(listenerErrorMessage(err));
+      }
+    );
     return unsub;
   }, []);
 
@@ -614,6 +632,8 @@ function LinksSection({ isAdmin }) {
             </div>
           ))}
         </div>
+      ) : loadError ? (
+        <ListenerError message={loadError} />
       ) : links.length === 0 ? (
         <div className="text-center py-10 text-white/40">
           <span className="text-4xl block mb-3">🔗</span>
