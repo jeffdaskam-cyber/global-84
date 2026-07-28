@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, limit, orderBy, query, Timestamp, where } from "firebase/firestore";
+import { collection, orderBy, query, Timestamp, where } from "firebase/firestore";
 
 import AuthGate from "./components/AuthGate.jsx";
 import SplashScreen from "./components/SplashScreen.jsx";
@@ -338,12 +338,21 @@ export default function App() {
     // snapshot. Since the captured value is never newer than the stored one,
     // the query returns a superset of what the check needs, so the badge stays
     // exact even after visiting Events updates the timestamp mid-session.
+    //
+    // Deliberately unbounded. A limit here would have to be applied by
+    // createdAt, but the badge also depends on startTime, and the two do not
+    // order together: if the newest N events have all already started while an
+    // older-created one is still upcoming, that event falls outside the cap and
+    // the dot silently stays off. Restricting the query to upcoming events
+    // instead would mean a second inequality on a different field, which drags
+    // in a composite index and pins "now" at query-construction time. The
+    // createdAt filter is what does the real work — it usually matches nothing
+    // at all — so the cap bought very little and cost exactness.
     const seenFloorMs = parseInt(localStorage.getItem(key) || "0", 10);
     const eventsQuery = query(
       eventsRef,
       where("createdAt", ">", Timestamp.fromMillis(seenFloorMs)),
-      orderBy("createdAt", "desc"),
-      limit(20)
+      orderBy("createdAt", "desc")
     );
 
     // A dropped listener here only means the "new events" dot goes stale, so

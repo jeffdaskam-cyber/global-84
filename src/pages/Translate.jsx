@@ -11,7 +11,7 @@
  */
 
 import { useState, useRef } from "react";
-import { translateImage, validateImageFile } from "../lib/translate.js";
+import { translateImage, validateImageType } from "../lib/translate.js";
 
 // ── Styles (matching the crimson/gold design system) ──────────────────────────
 
@@ -104,7 +104,10 @@ export default function Translate() {
     setResult(null);
     setCopied(false);
 
-    const validationError = validateImageFile(file);
+    // Type only. The size check belongs after downscaling, which happens inside
+    // translateImage() — checking it here would reject the large phone photos
+    // the resize step is meant to accept, and they would never reach it.
+    const validationError = validateImageType(file);
     if (validationError) {
       setError(validationError);
       // Reset the input so the same file can be retried after fixing the issue

@@ -28,14 +28,34 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024;
 
 /**
- * Validate a File object before sending.
+ * Type-only validation, for the moment a file is picked.
+ *
+ * Size is deliberately not checked here. A photo straight off a phone is
+ * routinely over the limit before downscaling and comfortably under it after,
+ * so rejecting on size at selection time would refuse exactly the images the
+ * resize step exists to make sendable. Format, by contrast, is worth catching
+ * immediately — no amount of resizing turns a HEIC into a JPEG.
+ *
  * Returns an error string, or null if valid.
  */
-export function validateImageFile(file) {
+export function validateImageType(file) {
   if (!file) return "No file selected.";
   if (!ACCEPTED_TYPES.includes(file.type)) {
     return "Unsupported file type. Please upload a JPG, PNG, or WEBP image.";
   }
+  return null;
+}
+
+/**
+ * Full validation, for the moment a file is actually sent — that is, after
+ * downscaling, when the size being checked is the size going over the wire.
+ *
+ * Returns an error string, or null if valid.
+ */
+export function validateImageFile(file) {
+  const typeError = validateImageType(file);
+  if (typeError) return typeError;
+
   if (file.size > MAX_BYTES) {
     return "File is too large. Please choose an image under 5 MB.";
   }
