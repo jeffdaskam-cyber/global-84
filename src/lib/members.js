@@ -1,13 +1,13 @@
 import {
   doc,
   getDoc,
-  onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { auth, db, COHORT_ID } from "./firebase";
+import { watch } from "./subscribe";
 
 /**
  * Returns ref to cohorts/{cohortId}/members/{uid}
@@ -54,11 +54,11 @@ export async function upsertMemberProfile(user) {
 /**
  * Subscribe to the current member doc in real-time
  */
-export function subscribeMember(uid, cb) {
+export function subscribeMember(uid, cb, onError) {
   const ref = memberDoc(uid);
-  return onSnapshot(ref, (snap) => {
+  return watch("member", ref, (snap) => {
     cb(snap.exists() ? { id: snap.id, ...snap.data() } : null);
-  });
+  }, onError);
 }
 
 /**

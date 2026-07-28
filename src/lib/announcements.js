@@ -3,7 +3,6 @@ import {
   collection,
   doc,
   limit,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -12,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
 import { myDisplayName } from "./members";
+import { watch } from "./subscribe";
 
 export function announcementsCol() {
   return collection(db, "cohorts", COHORT_ID, "announcements");
@@ -50,7 +50,7 @@ export async function archiveAnnouncement(id) {
   await updateDoc(announcementDoc(id), { status: "archived", pinned: false });
 }
 
-export function subscribeAnnouncements(cb) {
+export function subscribeAnnouncements(cb, onError) {
   const q = query(
     announcementsCol(),
     where("status", "==", "active"),
@@ -58,7 +58,7 @@ export function subscribeAnnouncements(cb) {
     orderBy("createdAt", "desc"),
     limit(10)
   );
-  return onSnapshot(q, (snap) => {
+  return watch("announcements", q, (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }

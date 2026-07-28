@@ -3,7 +3,6 @@ import {
   collection,
   doc,
   limit,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -13,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
 import { myDisplayName } from "./members";
+import { watch } from "./subscribe";
 
 /**
  * cohorts/{COHORT_ID}/events
@@ -136,7 +136,7 @@ export async function setRsvp(eventId, status) {
 /**
  * Subscribe (real-time) to active events for a city.
  */
-export function subscribeEventsByCity(city, cb) {
+export function subscribeEventsByCity(city, cb, onError) {
   const q = query(
     eventsCol(),
     where("city", "==", city),
@@ -145,17 +145,17 @@ export function subscribeEventsByCity(city, cb) {
     limit(50)
   );
 
-  return onSnapshot(q, (snap) => {
+  return watch("events", q, (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 /**
  * Subscribe (real-time) to RSVPs for an event.
  */
-export function subscribeRsvps(eventId, cb) {
+export function subscribeRsvps(eventId, cb, onError) {
   const q = query(rsvpsCol(eventId));
-  return onSnapshot(q, (snap) => {
+  return watch("rsvps", q, (snap) => {
     cb(snap.docs.map((d) => ({ uid: d.id, ...d.data() })));
-  });
+  }, onError);
 }

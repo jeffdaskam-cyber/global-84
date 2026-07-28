@@ -1,7 +1,6 @@
 import {
   collection,
   doc,
-  onSnapshot,
   query,
   orderBy,
   addDoc,
@@ -15,6 +14,7 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { db, storage, COHORT_ID } from "./firebase.js";
+import { watch } from "./subscribe.js";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -131,11 +131,11 @@ export function uploadFile(uid, file, onProgress) {
  * Subscribe to a user's file list, newest first.
  * Returns an unsubscribe function.
  */
-export function subscribeFiles(uid, callback) {
+export function subscribeFiles(uid, callback, onError) {
   const q = query(filesColRef(uid), orderBy("createdAt", "desc"));
-  return onSnapshot(q, (snap) => {
+  return watch("user-files", q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 // ── Delete ─────────────────────────────────────────────────────────────────────

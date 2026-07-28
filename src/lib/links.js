@@ -3,13 +3,13 @@ import {
   collection,
   deleteDoc,
   doc,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase.js";
 import { myDisplayName } from "./members.js";
+import { watch } from "./subscribe.js";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -51,11 +51,11 @@ export function validateLink({ url, description }) {
  * Subscribe to the cohort's shared links, newest first.
  * Returns an unsubscribe function.
  */
-export function subscribeLinks(callback) {
+export function subscribeLinks(callback, onError) {
   const q = query(linksCol(), orderBy("createdAt", "desc"));
-  return onSnapshot(q, (snap) => {
+  return watch("links", q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 /**

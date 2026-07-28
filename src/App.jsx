@@ -1,13 +1,14 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query } from "firebase/firestore";
 
 import AuthGate from "./components/AuthGate.jsx";
 import SplashScreen from "./components/SplashScreen.jsx";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import { subscribeIsAdmin } from "./lib/admins.js";
 import { auth, db, COHORT_ID } from "./lib/firebase.js";
+import { watch } from "./lib/subscribe.js";
 
 const Home = lazy(() => import("./pages/Home.jsx"));
 const Explore = lazy(() => import("./pages/Explore.jsx"));
@@ -328,17 +329,24 @@ export default function App() {
     const eventsRef = collection(db, "cohorts", COHORT_ID, "events");
     const eventsQuery = query(eventsRef, orderBy("createdAt", "desc"));
 
-    return onSnapshot(eventsQuery, (snapshot) => {
-      const lastViewed = parseInt(localStorage.getItem(key) || "0", 10);
-      const now = Date.now();
-      const hasNew = snapshot.docs.some((doc) => {
-        const data = doc.data();
-        const createdMs = data.createdAt?.toMillis?.() ?? 0;
-        const eventDate = data.startTime?.toMillis?.() ?? 0;
-        return createdMs > lastViewed && eventDate > now;
-      });
-      setHasNewEvents(hasNew);
-    });
+    // A dropped listener here only means the "new events" dot goes stale, so
+    // clear it rather than leaving a badge the member cannot resolve by looking.
+    return watch(
+      "new-events-badge",
+      eventsQuery,
+      (snapshot) => {
+        const lastViewed = parseInt(localStorage.getItem(key) || "0", 10);
+        const now = Date.now();
+        const hasNew = snapshot.docs.some((doc) => {
+          const data = doc.data();
+          const createdMs = data.createdAt?.toMillis?.() ?? 0;
+          const eventDate = data.startTime?.toMillis?.() ?? 0;
+          return createdMs > lastViewed && eventDate > now;
+        });
+        setHasNewEvents(hasNew);
+      },
+      () => setHasNewEvents(false)
+    );
   }, [user?.uid]);
 
   return (

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { subscribeCohortChat, sendCohortMessage, deleteCohortMessage } from "../lib/chat";
+import { listenerErrorMessage } from "../lib/subscribe";
 
 function formatTime(ts) {
   if (!ts) return "";
@@ -21,6 +22,7 @@ export default function Chat({ isAdmin }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [feedError, setFeedError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
@@ -38,7 +40,13 @@ export default function Chat({ isAdmin }) {
   // Subscribe to real-time messages only once auth is confirmed
   useEffect(() => {
     if (!authReady) return;
-    const unsub = subscribeCohortChat(setMessages);
+    setFeedError("");
+    // Kept separate from `error`, which the composer clears on every send — a
+    // dead feed listener stays dead, so its warning must not be wiped by an
+    // unrelated successful action.
+    const unsub = subscribeCohortChat(setMessages, (err) =>
+      setFeedError(listenerErrorMessage(err))
+    );
     return () => unsub();
   }, [authReady]);
 
@@ -188,6 +196,9 @@ export default function Chat({ isAdmin }) {
 
       {/* Input area */}
       <div className="shrink-0 px-4 py-3 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
+        {feedError ? (
+          <div className="text-xs text-amber-600 dark:text-amber-400 mb-2">{feedError}</div>
+        ) : null}
         {error ? (
           <div className="text-xs text-du-crimson mb-2">{error}</div>
         ) : null}

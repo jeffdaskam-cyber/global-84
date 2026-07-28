@@ -1,7 +1,6 @@
 import {
   collection,
   doc,
-  onSnapshot,
   query,
   orderBy,
   limit,
@@ -13,6 +12,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db, COHORT_ID } from "./firebase.js";
+import { watch } from "./subscribe.js";
 
 // ── Ref helpers ────────────────────────────────────────────────────────────────
 
@@ -47,11 +47,11 @@ function cohortMemberRef(uid) {
 // ── Team subscriptions ─────────────────────────────────────────────────────────
 
 /** Admin: subscribe to all teams */
-export function subscribeTeams(callback) {
+export function subscribeTeams(callback, onError) {
   const q = query(teamsRef(), orderBy("createdAt", "asc"));
-  return onSnapshot(q, (snap) => {
+  return watch("teams", q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 /**
@@ -62,10 +62,10 @@ export function subscribeTeams(callback) {
  * read access to. We watch that doc for teamId changes, then subscribe to
  * the actual team doc. Returns a single unsubscribe function.
  */
-export function subscribeMyTeam(uid, callback) {
+export function subscribeMyTeam(uid, callback, onError) {
   let teamUnsub = null;
 
-  const memberUnsub = onSnapshot(cohortMemberRef(uid), (memberSnap) => {
+  const memberUnsub = watch("my-team-member", cohortMemberRef(uid), (memberSnap) => {
     const teamId = memberSnap.exists() ? memberSnap.data().teamId : null;
 
     // Clean up previous team listener if it exists
@@ -79,15 +79,17 @@ export function subscribeMyTeam(uid, callback) {
       return;
     }
 
-    // Subscribe to the team doc directly
-    teamUnsub = onSnapshot(teamRef(teamId), (teamSnap) => {
+    // Subscribe to the team doc directly. Both listeners report to the same
+    // onError: from the caller's perspective this is one subscription, and
+    // either half dropping means the team view is no longer live.
+    teamUnsub = watch("my-team", teamRef(teamId), (teamSnap) => {
       if (!teamSnap.exists()) {
         callback(null);
       } else {
         callback({ id: teamSnap.id, ...teamSnap.data() });
       }
-    });
-  });
+    }, onError);
+  }, onError);
 
   return () => {
     memberUnsub();
@@ -96,11 +98,11 @@ export function subscribeMyTeam(uid, callback) {
 }
 
 /** Subscribe to members of a specific team */
-export function subscribeTeamMembers(teamId, callback) {
+export function subscribeTeamMembers(teamId, callback, onError) {
   const q = query(membersRef(teamId), orderBy("joinedAt", "asc"));
-  return onSnapshot(q, (snap) => {
+  return watch("team-members", q, (snap) => {
     callback(snap.docs.map((d) => ({ uid: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 // ── Team CRUD (admin only) ─────────────────────────────────────────────────────
@@ -169,11 +171,11 @@ export async function removeMember(teamId, uid) {
 
 // ── Team chat ──────────────────────────────────────────────────────────────────
 
-export function subscribeTeamMessages(teamId, callback) {
+export function subscribeTeamMessages(teamId, callback, onError) {
   const q = query(messagesRef(teamId), orderBy("createdAt", "asc"), limit(100));
-  return onSnapshot(q, (snap) => {
+  return watch("team-messages", q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 export async function sendTeamMessage(teamId, text, uid, displayName) {
@@ -191,11 +193,11 @@ export async function deleteTeamMessage(teamId, messageId) {
 
 // ── Meetings ──────────────────────────────────────────────────────────────────
 
-export function subscribeTeamMeetings(teamId, callback) {
+export function subscribeTeamMeetings(teamId, callback, onError) {
   const q = query(meetingsRef(teamId), orderBy("dateTime", "asc"));
-  return onSnapshot(q, (snap) => {
+  return watch("team-meetings", q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 export async function createMeeting(teamId, { title, dateTime, location, notes }, createdByUid) {

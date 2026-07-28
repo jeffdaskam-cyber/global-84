@@ -1,19 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { createEvent, updateEvent, archiveEvent } from "../../lib/events";
+import {
+  instantToWallClock,
+  wallClockToInstant,
+  zoneForCity,
+} from "../../config/timezones";
 
 const CITIES = ["Singapore", "Ho Chi Minh City"];
 
-function toDateTimeLocal(tsOrDate) {
-  if (!tsOrDate) return "";
-  const d = tsOrDate?.toDate ? tsOrDate.toDate() : new Date(tsOrDate);
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-}
+// New events default to 6pm on the current date in the destination city, not
+// on the organiser's device — planning from Denver should still land at dinner
+// time in Singapore.
+const DEFAULT_START_HOUR = "18:00";
 
 export default function EventEditorModal({ open, onClose, defaultCity, event, prefill }) {
   const isEdit = !!event?.id;
@@ -32,18 +30,20 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
     if (!open) return;
 
     if (isEdit) {
+      const editCity = event.city || defaultCity || "Singapore";
       setTitle(event.title || "");
-      setCity(event.city || defaultCity || "Singapore");
-      setStartTime(toDateTimeLocal(event.startTime));
+      setCity(editCity);
+      setStartTime(instantToWallClock(event.startTime, editCity));
       setLocationName(event.locationName || "");
       setDescription(event.description || "");
     } else {
+      const newCity = prefill?.city || defaultCity || "Singapore";
       setTitle(prefill?.title || "");
-      setCity(prefill?.city || defaultCity || "Singapore");
+      setCity(newCity);
 
-      const d = new Date();
-      d.setHours(18, 0, 0, 0);
-      setStartTime(toDateTimeLocal(d));
+      // Today's date as it reads in the destination city, at the default hour.
+      const todayThere = instantToWallClock(new Date(), newCity).slice(0, 10);
+      setStartTime(`${todayThere}T${DEFAULT_START_HOUR}`);
 
       setLocationName(prefill?.locationName || "");
       setDescription("");
@@ -67,7 +67,7 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
         await updateEvent(event.id, {
           title,
           city,
-          startTime: new Date(startTime),
+          startTime: wallClockToInstant(startTime, city),
           locationName,
           description,
         });
@@ -75,7 +75,7 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
         await createEvent({
           title,
           city,
-          startTime: new Date(startTime),
+          startTime: wallClockToInstant(startTime, city),
           locationName,
           description,
         });
@@ -156,7 +156,10 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
 
           <label className="block overflow-hidden">
             <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
-              Date & time
+              Date &amp; time{" "}
+              <span className="font-normal text-ink-sub/80 dark:text-ink-subOnDark/80">
+                — local time in {city} ({zoneForCity(city).label})
+              </span>
             </div>
             <div className="overflow-hidden rounded-lg">
               <input

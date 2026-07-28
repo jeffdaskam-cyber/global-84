@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { auth, db, COHORT_ID } from "../lib/firebase.js";
-import { collection, onSnapshot, query, orderBy, doc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, doc, getDoc } from "firebase/firestore";
 import {
   subscribeTeams,
   subscribeMyTeam,
@@ -18,6 +18,8 @@ import {
   updateMeeting,
   deleteMeeting,
 } from "../lib/teams.js";
+import { watch, listenerErrorMessage } from "../lib/subscribe.js";
+import ListenerError from "../components/ListenerError.jsx";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -195,11 +197,15 @@ function TeamChat({ teamId, isAdmin }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const bottomRef = useRef(null);
 
   useEffect(() => {
     if (!teamId) return;
-    return subscribeTeamMessages(teamId, setMessages);
+    setLoadError("");
+    return subscribeTeamMessages(teamId, setMessages, (err) =>
+      setLoadError(listenerErrorMessage(err))
+    );
   }, [teamId]);
 
   useEffect(() => {
@@ -241,7 +247,11 @@ function TeamChat({ teamId, isAdmin }) {
         height: 320, overflowY: "auto", padding: "12px",
         display: "flex", flexDirection: "column", gap: 8,
       }}>
-        {messages.length === 0 && (
+        {loadError ? (
+          <p style={{ color: "rgba(232,184,75,0.8)", fontSize: 13, textAlign: "center", marginTop: 40 }}>
+            {loadError}
+          </p>
+        ) : messages.length === 0 && (
           <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", marginTop: 40 }}>
             No messages yet. Say hello!
           </p>
@@ -323,11 +333,15 @@ function MeetingsList({ teamId, isAdmin }) {
   const [editingMeeting, setEditingMeeting] = useState(null);
   const [form, setForm] = useState({ title: "", dateTime: "", location: "", notes: "" });
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const user = auth.currentUser;
 
   useEffect(() => {
     if (!teamId) return;
-    return subscribeTeamMeetings(teamId, setMeetings);
+    setLoadError("");
+    return subscribeTeamMeetings(teamId, setMeetings, (err) =>
+      setLoadError(listenerErrorMessage(err))
+    );
   }, [teamId]);
 
   function openNew() {
@@ -390,7 +404,11 @@ function MeetingsList({ teamId, isAdmin }) {
         action={isAdmin && <GoldButton small onClick={openNew}>+ Meeting</GoldButton>}
       />
 
-      {meetings.length === 0 && (
+      {loadError ? (
+        <p style={{ color: "rgba(232,184,75,0.8)", fontSize: 13, textAlign: "center", padding: "20px 0" }}>
+          {loadError}
+        </p>
+      ) : meetings.length === 0 && (
         <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", padding: "20px 0" }}>
           No meetings scheduled yet.
         </p>
@@ -496,6 +514,7 @@ function AdminPanel({ user }) {
   const [cohortMembers, setCohortMembers] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [error, setError] = useState("");
 
   // Derive selectedTeam from the live teams list so it always stays in sync
   const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
@@ -514,7 +533,7 @@ function AdminPanel({ user }) {
   const [assignUid, setAssignUid] = useState("");
 
   useEffect(() => {
-    return subscribeTeams(setTeams);
+    return subscribeTeams(setTeams, (err) => setError(listenerErrorMessage(err)));
   }, []);
 
   // Load all cohort members for the assign dropdown
@@ -523,15 +542,17 @@ function AdminPanel({ user }) {
       collection(db, "cohorts", COHORT_ID, "members"),
       orderBy("displayName", "asc")
     );
-    return onSnapshot(q, (snap) => {
+    return watch("cohort-members", q, (snap) => {
       setCohortMembers(snap.docs.map((d) => ({ uid: d.id, ...d.data() })));
-    });
+    }, (err) => setError(listenerErrorMessage(err)));
   }, []);
 
   // Subscribe to selected team's members
   useEffect(() => {
     if (!selectedTeamId) { setTeamMembers([]); return; }
-    return subscribeTeamMembers(selectedTeamId, setTeamMembers);
+    return subscribeTeamMembers(selectedTeamId, setTeamMembers, (err) =>
+      setError(listenerErrorMessage(err))
+    );
   }, [selectedTeamId]);
 
   async function handleCreateTeam() {
@@ -581,6 +602,8 @@ function AdminPanel({ user }) {
 
   return (
     <div className="space-y-5">
+      {error && <ListenerError message={error} />}
+
       {/* Team list */}
       <div>
         <SectionHeader
@@ -746,16 +769,30 @@ function AdminPanel({ user }) {
 function MemberView({ user, isAdmin }) {
   const [myTeam, setMyTeam] = useState(undefined); // undefined = loading
   const [teamMembers, setTeamMembers] = useState([]);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    return subscribeMyTeam(user.uid, (team) => setMyTeam(team));
+    return subscribeMyTeam(
+      user.uid,
+      (team) => setMyTeam(team),
+      // Leave myTeam undefined and report the failure instead: falling through
+      // to null would render "Not assigned to a team yet", which is a factual
+      // claim about the cohort we cannot make from a dropped connection.
+      (err) => setLoadError(listenerErrorMessage(err))
+    );
   }, [user]);
 
   useEffect(() => {
     if (!myTeam?.id) return;
-    return subscribeTeamMembers(myTeam.id, setTeamMembers);
+    return subscribeTeamMembers(myTeam.id, setTeamMembers, (err) =>
+      setLoadError(listenerErrorMessage(err))
+    );
   }, [myTeam?.id]);
+
+  if (loadError) {
+    return <ListenerError message={loadError} />;
+  }
 
   if (myTeam === undefined) {
     return (

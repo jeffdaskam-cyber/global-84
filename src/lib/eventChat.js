@@ -4,13 +4,13 @@ import {
   doc,
   getDoc,
   limitToLast,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   addDoc,
 } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "./firebase";
+import { watch } from "./subscribe";
 
 // ─── Collection ref ───────────────────────────────────────────────────────────
 
@@ -24,15 +24,15 @@ export function eventMessagesCol(eventId) {
  * Real-time listener for the last 50 messages on an event, oldest-first.
  * Returns an unsubscribe function.
  */
-export function subscribeEventChat(eventId, cb) {
+export function subscribeEventChat(eventId, cb, onError) {
   const q = query(
     eventMessagesCol(eventId),
     orderBy("createdAt", "asc"),
     limitToLast(50)
   );
-  return onSnapshot(q, (snap) => {
+  return watch("event-chat", q, (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  }, onError);
 }
 
 // ─── Send ─────────────────────────────────────────────────────────────────────

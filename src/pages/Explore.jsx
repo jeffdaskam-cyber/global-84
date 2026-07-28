@@ -11,6 +11,8 @@ import {
 } from "../lib/explore";
 import { fetchSheetData, parseSheetCSV } from "../lib/sheetsSync";
 import { subscribeFavorites, toggleFavorite } from "../lib/favorites";
+import { listenerErrorMessage } from "../lib/subscribe";
+import ListenerError from "../components/ListenerError.jsx";
 import { ACCOMMODATIONS, getMapsUrl } from "../config/accommodations";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -41,8 +43,10 @@ export default function Explore({ isAdmin, onCreateEvent }) {
   const [nav, setNav] = useState(null);
   const [favorites, setFavorites] = useState(new Set());
 
+  // A dropped favorites listener degrades to "nothing favorited" rather than
+  // blocking the page; the place list below reports its own load failure.
   useEffect(() => {
-    const unsub = subscribeFavorites(setFavorites);
+    const unsub = subscribeFavorites(setFavorites, () => setFavorites(new Set()));
     return () => unsub();
   }, []);
 
@@ -308,6 +312,7 @@ function AccommodationDetail({ city, onBack }) {
 function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }) {
   const [items, setItems]             = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [loadError, setLoadError]     = useState("");
   const [activeType, setActiveType]   = useState("All");
   const [search, setSearch]           = useState("");
   const [deleting, setDeleting]       = useState(null);
@@ -319,10 +324,18 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
 
   useEffect(() => {
     setLoading(true);
-    const unsub = subscribeExplore({ city, category }, (data) => {
-      setItems(data);
-      setLoading(false);
-    });
+    setLoadError("");
+    const unsub = subscribeExplore(
+      { city, category },
+      (data) => {
+        setItems(data);
+        setLoading(false);
+      },
+      (err) => {
+        setLoading(false);
+        setLoadError(listenerErrorMessage(err));
+      }
+    );
     return unsub;
   }, [city, category]);
 
@@ -456,6 +469,8 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
               <div className="h-3 bg-surface-border dark:bg-surface-darkBorder rounded w-1/3" />
             </div>
           ))
+        ) : loadError ? (
+          <ListenerError message={loadError} />
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-ink-sub dark:text-ink-subOnDark text-sm">
             {items.length === 0
