@@ -102,6 +102,17 @@ export const translateImage = onRequest(
   {
     secrets: [anthropicApiKey],
     invoker: "public",   // allow unauthenticated requests at the platform level
+
+    // Pinned to Singapore rather than the us-central1 default. This function
+    // touches no Firestore — its cost is the base64 image the caller uploads,
+    // and the trip is spent within a few hundred kilometres of asia-southeast1.
+    // Sending a multi-megabyte body to Iowa instead is the whole latency
+    // problem. The Anthropic call afterwards is the same distance either way.
+    //
+    // The sibling functions deliberately stay in us-central1: the Firestore
+    // triggers must sit next to a nam5 database, and deletePhoto writes to
+    // Firestore and Storage, so moving it would add a hop rather than remove one.
+    region: "asia-southeast1",
   },
   (req, res) => {
     // Wrap everything in the cors middleware so preflight and actual requests

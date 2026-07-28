@@ -14,6 +14,7 @@ import {
   ALLOWED_EXTENSIONS,
 } from "../lib/userFiles";
 import { listenerErrorMessage } from "../lib/subscribe";
+import { downscaleImage } from "../lib/images";
 import ListenerError from "../components/ListenerError.jsx";
 
 export default function Me() {
@@ -91,17 +92,27 @@ export default function Me() {
     // Reset input so same file can be re-selected after an error
     e.target.value = "";
 
-    const validationError = validateFile(file);
-    if (validationError) {
-      setUploadError(validationError);
-      return;
-    }
-
+    // The busy flag goes up before the first await, not after. Decoding and
+    // resizing a large photo takes long enough to notice, and the Add File
+    // button is gated on this flag — leaving it enabled across the resize lets
+    // a second tap start a concurrent handler that races the shared progress
+    // state. The finally clears it on every exit, including validation failure.
     setUploadError("");
     setUploading(true);
     setUploadProgress(0);
     try {
-      await uploadFile(user.uid, file, (pct) => setUploadProgress(pct));
+      // Downscale before validating so an oversized photo is shrunk rather than
+      // refused. PDFs pass through untouched. Validation still runs on whatever
+      // comes back, so a file that could not be shrunk is still rejected.
+      const upload = await downscaleImage(file);
+
+      const validationError = validateFile(upload);
+      if (validationError) {
+        setUploadError(validationError);
+        return;
+      }
+
+      await uploadFile(user.uid, upload, (pct) => setUploadProgress(pct));
     } catch (err) {
       console.error("Upload failed:", err);
       setUploadError("Upload failed. Please try again.");

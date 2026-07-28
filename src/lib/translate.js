@@ -11,6 +11,15 @@
  */
 
 import { auth } from "./firebase";
+import { downscaleImage } from "./images";
+
+// Matches the longest edge the vision API keeps before it downsamples on its
+// own, so nothing legible is lost by resizing to it first.
+const TRANSLATE_MAX_DIMENSION = 1568;
+
+// Slightly above the gallery's setting: this image exists to be read, and text
+// edges are the first thing JPEG compression softens.
+const TRANSLATE_QUALITY = 0.9;
 
 // Accepted media types (must match the file input's accept attribute)
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -19,14 +28,34 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024;
 
 /**
- * Validate a File object before sending.
+ * Type-only validation, for the moment a file is picked.
+ *
+ * Size is deliberately not checked here. A photo straight off a phone is
+ * routinely over the limit before downscaling and comfortably under it after,
+ * so rejecting on size at selection time would refuse exactly the images the
+ * resize step exists to make sendable. Format, by contrast, is worth catching
+ * immediately — no amount of resizing turns a HEIC into a JPEG.
+ *
  * Returns an error string, or null if valid.
  */
-export function validateImageFile(file) {
+export function validateImageType(file) {
   if (!file) return "No file selected.";
   if (!ACCEPTED_TYPES.includes(file.type)) {
     return "Unsupported file type. Please upload a JPG, PNG, or WEBP image.";
   }
+  return null;
+}
+
+/**
+ * Full validation, for the moment a file is actually sent — that is, after
+ * downscaling, when the size being checked is the size going over the wire.
+ *
+ * Returns an error string, or null if valid.
+ */
+export function validateImageFile(file) {
+  const typeError = validateImageType(file);
+  if (typeError) return typeError;
+
   if (file.size > MAX_BYTES) {
     return "File is too large. Please choose an image under 5 MB.";
   }
@@ -59,8 +88,20 @@ function fileToBase64(file) {
  *   Cloud Function returns an error response.
  */
 export async function translateImage(imageFile) {
-  // Validate before doing any async work
-  const validationError = validateImageFile(imageFile);
+  // Shrink before validating, so a full-resolution photo of a menu is resized
+  // rather than refused for being over the 5 MB limit.
+  //
+  // TRANSLATE_MAX_DIMENSION is not arbitrary: the vision API downsamples
+  // anything longer than this on its longest edge, so pixels above it are
+  // uploaded across the Pacific and then discarded. Capping here costs no
+  // legibility and shrinks the base64 body — which is 4/3 the file size — by
+  // roughly an order of magnitude on a modern phone photo.
+  const upload = await downscaleImage(imageFile, {
+    maxDimension: TRANSLATE_MAX_DIMENSION,
+    quality: TRANSLATE_QUALITY,
+  });
+
+  const validationError = validateImageFile(upload);
   if (validationError) throw new Error(validationError);
 
   // Read the Cloud Function URL from the Vite environment
@@ -78,7 +119,7 @@ export async function translateImage(imageFile) {
   const idToken = await currentUser.getIdToken();
 
   // Convert image to base64
-  const imageBase64 = await fileToBase64(imageFile);
+  const imageBase64 = await fileToBase64(upload);
 
   // POST to the Cloud Function
   const response = await fetch(functionUrl, {
@@ -89,7 +130,7 @@ export async function translateImage(imageFile) {
     },
     body: JSON.stringify({
       imageBase64,
-      mediaType: imageFile.type,
+      mediaType: upload.type,
     }),
   });
 

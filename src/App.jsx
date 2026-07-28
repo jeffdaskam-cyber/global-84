@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query, Timestamp, where } from "firebase/firestore";
 
 import AuthGate from "./components/AuthGate.jsx";
 import SplashScreen from "./components/SplashScreen.jsx";
@@ -327,7 +327,33 @@ export default function App() {
     if (!user?.uid) return;
     const key = lastViewedEventsKey(user.uid);
     const eventsRef = collection(db, "cohorts", COHORT_ID, "events");
-    const eventsQuery = query(eventsRef, orderBy("createdAt", "desc"));
+
+    // This listener exists only to decide whether one dot is lit, so it must not
+    // pay for the whole events collection to do it — over a US-hosted database
+    // that was every event doc crossing the Pacific on each app open. Bounding
+    // it by the last visit usually returns nothing at all.
+    //
+    // The threshold is a floor, not the test: it is captured once when the
+    // effect runs, while the comparison below re-reads localStorage on every
+    // snapshot. Since the captured value is never newer than the stored one,
+    // the query returns a superset of what the check needs, so the badge stays
+    // exact even after visiting Events updates the timestamp mid-session.
+    //
+    // Deliberately unbounded. A limit here would have to be applied by
+    // createdAt, but the badge also depends on startTime, and the two do not
+    // order together: if the newest N events have all already started while an
+    // older-created one is still upcoming, that event falls outside the cap and
+    // the dot silently stays off. Restricting the query to upcoming events
+    // instead would mean a second inequality on a different field, which drags
+    // in a composite index and pins "now" at query-construction time. The
+    // createdAt filter is what does the real work — it usually matches nothing
+    // at all — so the cap bought very little and cost exactness.
+    const seenFloorMs = parseInt(localStorage.getItem(key) || "0", 10);
+    const eventsQuery = query(
+      eventsRef,
+      where("createdAt", ">", Timestamp.fromMillis(seenFloorMs)),
+      orderBy("createdAt", "desc")
+    );
 
     // A dropped listener here only means the "new events" dot goes stale, so
     // clear it rather than leaving a badge the member cannot resolve by looking.
@@ -361,7 +387,10 @@ export default function App() {
         <div className="pb-16">
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<Home onOpenDrawer={() => setDrawerOpen(true)} />} />
+              <Route
+                path="/"
+                element={<Home isAdmin={isAdmin} onOpenDrawer={() => setDrawerOpen(true)} />}
+              />
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="/gallery" element={<Gallery user={user} isAdmin={isAdmin} />} />
               <Route
