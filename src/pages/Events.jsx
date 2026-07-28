@@ -181,7 +181,12 @@ export default function Events({ onViewed }) {
                 <div className="flex-1 h-px bg-du-crimson/20" />
               </div>
               {newForYou.map((event) => (
-                <EventCard key={event.id} event={event} onEdit={openEdit} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  rsvps={allRsvps[event.id] ?? []}
+                  onEdit={openEdit}
+                />
               ))}
             </div>
           )}
@@ -195,7 +200,12 @@ export default function Events({ onViewed }) {
                 <div className="flex-1 h-px bg-surface-border dark:bg-surface-darkBorder" />
               </div>
               {allEvents.map((event) => (
-                <EventCard key={event.id} event={event} onEdit={openEdit} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  rsvps={allRsvps[event.id] ?? []}
+                  onEdit={openEdit}
+                />
               ))}
             </div>
           )}

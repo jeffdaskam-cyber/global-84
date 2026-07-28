@@ -14,6 +14,7 @@ import {
   ALLOWED_EXTENSIONS,
 } from "../lib/userFiles";
 import { listenerErrorMessage } from "../lib/subscribe";
+import { downscaleImage } from "../lib/images";
 import ListenerError from "../components/ListenerError.jsx";
 
 export default function Me() {
@@ -91,7 +92,12 @@ export default function Me() {
     // Reset input so same file can be re-selected after an error
     e.target.value = "";
 
-    const validationError = validateFile(file);
+    // Downscale before validating so an oversized photo is shrunk rather than
+    // refused. PDFs pass through untouched. Validation still runs on whatever
+    // comes back, so a file that could not be shrunk is still rejected.
+    const upload = await downscaleImage(file);
+
+    const validationError = validateFile(upload);
     if (validationError) {
       setUploadError(validationError);
       return;
@@ -101,7 +107,7 @@ export default function Me() {
     setUploading(true);
     setUploadProgress(0);
     try {
-      await uploadFile(user.uid, file, (pct) => setUploadProgress(pct));
+      await uploadFile(user.uid, upload, (pct) => setUploadProgress(pct));
     } catch (err) {
       console.error("Upload failed:", err);
       setUploadError("Upload failed. Please try again.");

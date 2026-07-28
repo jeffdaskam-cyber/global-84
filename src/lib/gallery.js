@@ -22,6 +22,7 @@ import {
 import { httpsCallable } from "firebase/functions";
 import { db, storage, functions, COHORT_ID } from "./firebase";
 import { watch } from "./subscribe";
+import { downscaleImage } from "./images";
 
 // ─── Firestore path ────────────────────────────────────────────────────────────
 // cohorts/{cohortId}/photos/{photoId}
@@ -60,20 +61,27 @@ export async function uploadPhoto(file, { city, uploaderUid, uploaderName }, onP
   if (!file.type.startsWith("image/")) {
     throw new Error("Only image files are allowed.");
   }
-  if (file.size > 10 * 1024 * 1024) {
+
+  // Shrink before the size check, not after: a 15 MB photo off a phone is well
+  // under the limit once resized, and rejecting it first would send the member
+  // away to compress it by hand. If downscaling fails it returns the original,
+  // and the check below still catches genuinely oversized files.
+  const upload = await downscaleImage(file);
+
+  if (upload.size > 10 * 1024 * 1024) {
     throw new Error("Photos must be under 10 MB.");
   }
 
   // Build a unique storage path: photos/{cohortId}/{uid}/{timestamp}_{filename}
-  const ext = file.name.split(".").pop();
+  const ext = upload.name.split(".").pop();
   const timestamp = Date.now();
   const storagePath = `photos/${COHORT_ID}/${uploaderUid}/${timestamp}.${ext}`;
   const storageRef = ref(storage, storagePath);
 
   // Upload with progress tracking
   await new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, file, {
-      contentType: file.type,
+    const task = uploadBytesResumable(storageRef, upload, {
+      contentType: upload.type,
     });
 
     task.on(

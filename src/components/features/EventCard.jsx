@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { auth } from "../../lib/firebase";
 import { fmtDateTime } from "../../lib/format";
-import { setRsvp, subscribeRsvps } from "../../lib/events";
+import { setRsvp } from "../../lib/events";
 import { subscribeEventChat, sendEventMessage, deleteEventMessage } from "../../lib/eventChat";
 import { listenerErrorMessage } from "../../lib/subscribe";
 
@@ -13,10 +13,17 @@ function formatNames(names) {
   return `${shown} …and ${remaining} more`;
 }
 
-export default function EventCard({ event, onEdit, isAdmin }) {
+/**
+ * `rsvps` is supplied by the Events page rather than fetched here. Both used to
+ * listen to the same RSVP collection — the page to group events into "New for
+ * You", the card to render attendee names — which meant every event's RSVPs
+ * crossed the wire twice. With the database in a US multi-region that duplicate
+ * is a second trans-Pacific query per event, so the page owns the listener and
+ * passes results down.
+ */
+export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
   const me = auth.currentUser;
 
-  const [rsvps, setRsvpsState]       = useState([]);
   const [saving, setSaving]           = useState(false);
   const [showChat, setShowChat]       = useState(false);
   const [messages, setMessages]       = useState([]);
@@ -24,11 +31,6 @@ export default function EventCard({ event, onEdit, isAdmin }) {
   const [sending, setSending]         = useState(false);
   const [chatError, setChatError]     = useState("");
   const bottomRef                     = useRef(null);
-
-  useEffect(() => {
-    const unsub = subscribeRsvps(event.id, setRsvpsState, () => setRsvpsState([]));
-    return () => unsub();
-  }, [event.id]);
 
   // Subscribe to chat only when thread is open
   useEffect(() => {

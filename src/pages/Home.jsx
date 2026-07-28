@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { subscribeAnnouncements } from "../lib/announcements";
 import AnnouncementCard from "../components/features/AnnouncementCard.jsx";
 import AnnouncementEditorModal from "../components/features/AnnouncementEditorModal.jsx";
-import { subscribeIsAdmin } from "../lib/admins";
 import { listenerErrorMessage } from "../lib/subscribe";
 import ListenerError from "../components/ListenerError.jsx";
 import TripCountdown from "../components/TripCountdown.jsx";
@@ -112,21 +111,17 @@ function WeatherWidget() {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-export default function Home({ onOpenDrawer }) {
+// isAdmin comes from App, which already watches the admin doc for every other
+// route. Subscribing again here meant two listeners on the same document.
+export default function Home({ isAdmin, onOpenDrawer }) {
   const [items, setItems]     = useState([]);
   const [openNew, setOpenNew] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    const unsub = subscribeIsAdmin(setIsAdmin);
-    return () => unsub();
   }, []);
 
   useEffect(() => {
