@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { auth, db, COHORT_ID } from "../lib/firebase";
-import { sendDuSignInLink, completeEmailLinkSignIn } from "../lib/auth";
+import {
+  sendDuSignInLink,
+  completeEmailLinkSignIn,
+  signInWithPastedLink,
+} from "../lib/auth";
 
 // ── Name prompt ────────────────────────────────────────────────────────────────
 // Shown once to any user whose displayName is missing or defaulted to "member".
@@ -129,6 +133,13 @@ export default function AuthGate({ children }) {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
+  // Manual link entry — the escape hatch for an installed iOS app whose sign-in
+  // completed in Safari instead. Collapsed by default so it does not compete
+  // with the normal flow, which works for everyone else.
+  const [showPaste, setShowPaste] = useState(false);
+  const [pastedLink, setPastedLink] = useState("");
+  const [pasting, setPasting] = useState(false);
+
   // Complete email-link sign-in if URL contains Firebase action params
   useEffect(() => {
     (async () => {
@@ -235,6 +246,60 @@ export default function AuthGate({ children }) {
 
           <div className="mt-3 text-xs text-ink-muted dark:text-ink-subOnDark">
             DU email required (@du.edu)
+          </div>
+
+          <div className="mt-5 pt-4 border-t border-surface-border dark:border-surface-darkBorder">
+            <button
+              type="button"
+              className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark underline underline-offset-2"
+              onClick={() => setShowPaste((open) => !open)}
+            >
+              Tapped the link but still not signed in?
+            </button>
+
+            {showPaste ? (
+              <div className="mt-3">
+                <div className="text-xs text-ink-sub dark:text-ink-subOnDark leading-relaxed">
+                  On iPhone, email links open in Safari, which signs you in there
+                  rather than in this app. Press and hold the link in your email,
+                  choose <span className="font-semibold">Copy Link</span>, and
+                  paste it here to finish signing in.
+                </div>
+
+                <textarea
+                  className="mt-2 w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-xs text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
+                  rows={3}
+                  placeholder="https://…"
+                  value={pastedLink}
+                  onChange={(e) => setPastedLink(e.target.value)}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+
+                <button
+                  type="button"
+                  className="mt-2 w-full rounded-lg border border-du-crimson text-du-crimson py-2.5 text-sm font-semibold disabled:opacity-50"
+                  disabled={pasting || !pastedLink.trim()}
+                  onClick={async () => {
+                    setError("");
+                    setStatus("");
+                    setPasting(true);
+                    try {
+                      // onAuthStateChanged takes it from here and swaps the
+                      // screen out, so there is nothing to do on success.
+                      await signInWithPastedLink(pastedLink, email);
+                    } catch (e) {
+                      setError(e?.message || "Could not sign in with that link.");
+                    } finally {
+                      setPasting(false);
+                    }
+                  }}
+                >
+                  {pasting ? "Signing in…" : "Sign in with link"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
