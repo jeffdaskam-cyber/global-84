@@ -92,7 +92,26 @@ export async function signInWithPastedLink(link, emailHint) {
   }
 
   const e = assertDuEmail(candidate);
-  const result = await signInWithEmailLink(auth, e, href);
+
+  let result;
+  try {
+    result = await signInWithEmailLink(auth, e, href);
+  } catch (err) {
+    // The single most likely mistake here, by construction: the member is in
+    // this panel *because* they already tapped a link, and tapping it spends
+    // the one-time code. Firebase reports that as a bare "invalid action code",
+    // which reads like the paste went wrong rather than like the link was
+    // already used — so say what actually happened and what to do about it.
+    if (
+      err?.code === "auth/invalid-action-code" ||
+      err?.code === "auth/expired-action-code"
+    ) {
+      throw new Error(
+        'That link has already been used or has expired. Tap "Send sign-in link" above for a new one, then copy it without tapping it.'
+      );
+    }
+    throw err;
+  }
 
   window.localStorage.removeItem("global84EmailForSignIn");
 

@@ -261,9 +261,25 @@ export default function AuthGate({ children }) {
               <div className="mt-3">
                 <div className="text-xs text-ink-sub dark:text-ink-subOnDark leading-relaxed">
                   On iPhone, email links open in Safari, which signs you in there
-                  rather than in this app. Press and hold the link in your email,
-                  choose <span className="font-semibold">Copy Link</span>, and
-                  paste it here to finish signing in.
+                  instead of in this app. To finish signing in here:
+                </div>
+
+                <ol className="mt-2 space-y-1 text-xs text-ink-sub dark:text-ink-subOnDark leading-relaxed list-decimal list-inside">
+                  <li>
+                    Tap <span className="font-semibold">Send sign-in link</span>{" "}
+                    above to get a new email.
+                  </li>
+                  <li>
+                    In that email, press and hold the link and choose{" "}
+                    <span className="font-semibold">Copy Link</span> —{" "}
+                    <span className="font-semibold">don't tap it</span>.
+                  </li>
+                  <li>Paste it below.</li>
+                </ol>
+
+                <div className="mt-2 text-xs text-ink-muted dark:text-ink-subOnDark leading-relaxed">
+                  A link only works once, so a link you already tapped is used up
+                  and won't sign you in a second time.
                 </div>
 
                 <textarea
