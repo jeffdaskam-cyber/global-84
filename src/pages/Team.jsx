@@ -20,24 +20,22 @@ import {
 } from "../lib/teams.js";
 import { watch, listenerErrorMessage } from "../lib/subscribe.js";
 import ListenerError from "../components/ListenerError.jsx";
+import { fmtDateTime } from "../lib/format.js";
+import {
+  CITY_TIME_ZONES,
+  DEFAULT_TRIP_CITY,
+  instantToWallClock,
+  wallClockToInstant,
+  zoneForCity,
+} from "../config/timezones.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function formatDateTime(ts) {
-  if (!ts) return "";
-  const d = ts?.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleString("en-US", {
-    weekday: "short", month: "short", day: "numeric",
-    hour: "numeric", minute: "2-digit", hour12: true,
-  });
-}
-
-function formatDateTimeInput(ts) {
-  if (!ts) return "";
-  const d = ts?.toDate ? ts.toDate() : new Date(ts);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+// Meeting times are anchored to the trip city's wall clock like events are
+// (see src/config/timezones.js). Meetings created before this field existed
+// carry no city; zoneForCity falls back to the default trip city, never to
+// the device.
+const CITIES = Object.keys(CITY_TIME_ZONES);
 
 function AvatarInitial({ name, size = 32 }) {
   const initial = (name || "?")[0].toUpperCase();
@@ -331,7 +329,7 @@ function MeetingsList({ teamId, isAdmin }) {
   const [meetings, setMeetings] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState(null);
-  const [form, setForm] = useState({ title: "", dateTime: "", location: "", notes: "" });
+  const [form, setForm] = useState({ title: "", dateTime: "", city: DEFAULT_TRIP_CITY, location: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const user = auth.currentUser;
@@ -345,15 +343,17 @@ function MeetingsList({ teamId, isAdmin }) {
   }, [teamId]);
 
   function openNew() {
-    setForm({ title: "", dateTime: "", location: "", notes: "" });
+    setForm({ title: "", dateTime: "", city: DEFAULT_TRIP_CITY, location: "", notes: "" });
     setEditingMeeting(null);
     setShowForm(true);
   }
 
   function openEdit(meeting) {
+    const city = CITIES.includes(meeting.city) ? meeting.city : DEFAULT_TRIP_CITY;
     setForm({
       title: meeting.title || "",
-      dateTime: formatDateTimeInput(meeting.dateTime?.toDate ? meeting.dateTime.toDate() : meeting.dateTime),
+      dateTime: instantToWallClock(meeting.dateTime, city),
+      city,
       location: meeting.location || "",
       notes: meeting.notes || "",
     });
@@ -362,12 +362,13 @@ function MeetingsList({ teamId, isAdmin }) {
   }
 
   async function handleSave() {
-    if (!form.title.trim() || !form.dateTime) return;
+    if (!form.title.trim() || !wallClockToInstant(form.dateTime, form.city)) return;
     setSaving(true);
     try {
       const payload = {
         title: form.title.trim(),
-        dateTime: new Date(form.dateTime),
+        dateTime: wallClockToInstant(form.dateTime, form.city),
+        city: form.city,
         location: form.location.trim(),
         notes: form.notes.trim(),
       };
@@ -447,7 +448,29 @@ function MeetingsList({ teamId, isAdmin }) {
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Meeting title" />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>Date & Time *</label>
+            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>City *</label>
+            <div className="flex gap-2">
+              {CITIES.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setForm({ ...form, city: c })}
+                  style={{
+                    padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                    cursor: "pointer", border: "1px solid",
+                    background: form.city === c ? "rgba(196,150,42,0.18)" : "transparent",
+                    borderColor: form.city === c ? "rgba(196,150,42,0.6)" : "rgba(196,150,42,0.25)",
+                    color: form.city === c ? "#e8b84b" : "rgba(255,255,255,0.5)",
+                  }}
+                >
+                  {c === "Ho Chi Minh City" ? "HCMC" : c}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>
+              Date & Time * — local time in {form.city} ({zoneForCity(form.city).label})
+            </label>
             <Input type="datetime-local" value={form.dateTime} onChange={(e) => setForm({ ...form, dateTime: e.target.value })} />
           </div>
           <div>
@@ -477,7 +500,7 @@ function MeetingCard({ meeting, isAdmin, onEdit, onDelete }) {
         <div style={{ flex: 1 }}>
           <p style={{ fontWeight: 700, color: "#fff", fontSize: 14 }}>{meeting.title}</p>
           <p style={{ fontSize: 12, color: "rgba(196,150,42,0.85)", marginTop: 2 }}>
-            🕐 {formatDateTime(meeting.dateTime)}
+            🕐 {fmtDateTime(meeting.dateTime, meeting.city)}
           </p>
           {meeting.location && (
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>

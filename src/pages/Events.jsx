@@ -17,7 +17,7 @@ function cityKey(uid) {
   return uid ? `${CITY_KEY_PREFIX}_${uid}` : CITY_KEY_PREFIX;
 }
 
-export default function Events({ onViewed }) {
+export default function Events({ onViewed, isAdmin }) {
   const user = auth.currentUser;
   // The threshold for "New for You" is the timestamp of the *previous* visit,
   // read once on mount before we overwrite it below. On a first-ever visit
@@ -186,6 +186,7 @@ export default function Events({ onViewed }) {
                   event={event}
                   rsvps={allRsvps[event.id] ?? []}
                   onEdit={openEdit}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>
@@ -205,6 +206,7 @@ export default function Events({ onViewed }) {
                   event={event}
                   rsvps={allRsvps[event.id] ?? []}
                   onEdit={openEdit}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>
