@@ -40,7 +40,13 @@ function ArcadeModalContent({ onClose }) {
     if (!focusables?.length) return;
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
+    // The dialog container itself holds focus on open, so treat it as the
+    // reverse-tab boundary too — otherwise Shift+Tab escapes to the page.
+    if (
+      e.shiftKey &&
+      (document.activeElement === first ||
+        document.activeElement === modalRef.current)
+    ) {
       e.preventDefault();
       last.focus();
     } else if (!e.shiftKey && document.activeElement === last) {
@@ -112,6 +118,17 @@ function ArcadeModalContent({ onClose }) {
             onPointerDown={(e) => {
               e.preventDefault();
               gameRef.current?.[c.method]?.();
+            }}
+            onKeyDown={(e) => {
+              // Keyboard activation (Enter/Space) for non-pointer users.
+              // preventDefault stops the native click (avoiding a double
+              // fire) and stopPropagation keeps Space from reaching the
+              // game's window listener, which would hard-drop instead.
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                gameRef.current?.[c.method]?.();
+              }
             }}
           >
             {c.label}
