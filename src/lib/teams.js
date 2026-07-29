@@ -200,10 +200,13 @@ export function subscribeTeamMeetings(teamId, callback, onError) {
   }, onError);
 }
 
-export async function createMeeting(teamId, { title, dateTime, location, notes }, createdByUid) {
+export async function createMeeting(teamId, { title, dateTime, city, location, notes }, createdByUid) {
   await addDoc(meetingsRef(teamId), {
     title,
     dateTime,
+    // Trip city whose wall clock the meeting time was entered in; readers fall
+    // back to the default trip city when absent (pre-existing meetings).
+    city: city || "",
     location: location || "",
     notes: notes || "",
     createdAt: serverTimestamp(),

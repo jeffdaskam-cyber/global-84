@@ -404,7 +404,7 @@ export default function App() {
               <Route path="/chat" element={<Chat isAdmin={isAdmin} />} />
               <Route
                 path="/events"
-                element={<Events onViewed={() => setHasNewEvents(false)} onCreateEvent={openEventEditor} />}
+                element={<Events isAdmin={isAdmin} onViewed={() => setHasNewEvents(false)} onCreateEvent={openEventEditor} />}
               />
               <Route path="/me" element={<Me />} />
               <Route path="/team" element={<Team isAdmin={isAdmin} />} />
