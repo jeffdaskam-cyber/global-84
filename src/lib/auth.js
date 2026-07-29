@@ -51,6 +51,73 @@ export async function completeEmailLinkSignIn() {
   return { didSignIn: true, user: result.user };
 }
 
+/**
+ * Complete sign-in from a link the member pasted in by hand.
+ *
+ * This exists because of a quirk with no in-app workaround on iOS. A home
+ * screen web app and Safari keep separate storage, and Mail always opens links
+ * in Safari — so a member who gets signed out mid-trip requests a link from the
+ * installed app, taps it in Mail, signs in successfully in Safari, and finds
+ * the installed app still signed out. Repeating the flow repeats the outcome.
+ *
+ * Pasting works because the link is not bound to the device or browser that
+ * requested it: signInWithEmailLink takes the URL as an argument and the
+ * backend validates the code against the email. The existing prompt fallback in
+ * completeEmailLinkSignIn already relies on this. What is new is the entry
+ * point — a text field rather than the address bar the manifest's standalone
+ * display mode does not give us.
+ *
+ * @param {string} link - The full URL copied out of the sign-in email.
+ * @param {string} [emailHint] - Address from the form, used when the stored one
+ *   is missing (the usual case, since it was stored in the other context).
+ */
+export async function signInWithPastedLink(link, emailHint) {
+  const href = (link || "").trim();
+
+  if (!href) {
+    throw new Error("Paste the sign-in link from your email first.");
+  }
+
+  if (!isSignInWithEmailLink(auth, href)) {
+    throw new Error(
+      "That doesn't look like a sign-in link. Copy the whole link from the email, including the https:// part."
+    );
+  }
+
+  const stored = window.localStorage.getItem("global84EmailForSignIn") || "";
+  const candidate = (emailHint || "").trim() || stored;
+
+  if (!candidate) {
+    throw new Error("Enter the email address you requested the link with.");
+  }
+
+  const e = assertDuEmail(candidate);
+
+  let result;
+  try {
+    result = await signInWithEmailLink(auth, e, href);
+  } catch (err) {
+    // The single most likely mistake here, by construction: the member is in
+    // this panel *because* they already tapped a link, and tapping it spends
+    // the one-time code. Firebase reports that as a bare "invalid action code",
+    // which reads like the paste went wrong rather than like the link was
+    // already used — so say what actually happened and what to do about it.
+    if (
+      err?.code === "auth/invalid-action-code" ||
+      err?.code === "auth/expired-action-code"
+    ) {
+      throw new Error(
+        'That link has already been used or has expired. Tap "Send sign-in link" above for a new one, then copy it without tapping it.'
+      );
+    }
+    throw err;
+  }
+
+  window.localStorage.removeItem("global84EmailForSignIn");
+
+  return { didSignIn: true, user: result.user };
+}
+
 export function signOutUser() {
   return signOut(auth);
 }
