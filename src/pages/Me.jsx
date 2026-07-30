@@ -310,7 +310,7 @@ export default function Me() {
         <button
           onClick={() => setArcadeOpen(true)}
           aria-label="?"
-          className="h-10 w-10 rounded-full border border-surface-border dark:border-surface-darkBorder text-ink-muted dark:text-ink-subOnDark/40 text-sm opacity-40 hover:opacity-70 transition"
+          className="h-10 w-10 rounded-full border border-du-crimson bg-transparent text-du-crimson text-sm opacity-85 hover:opacity-100 transition"
         >
           ?
         </button>

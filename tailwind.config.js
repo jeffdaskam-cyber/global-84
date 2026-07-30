@@ -12,6 +12,7 @@ export default {
           gold: "#A89968",
           goldSoft: "#F4F1E6",
           goldDeep: "#C6B98A",
+          goldBright: "#C4962A", // brighter digital gold, used on dark surfaces
         },
         surface: {
           light: "#FAF9F7",

@@ -6,6 +6,11 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  drawFlashCell,
+  drawGlossyCell,
+  fillBoardBackground,
+} from "../../lib/arcadeRender";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Original falling-blocks puzzle — 100% client-side, drawn on canvas.
@@ -32,6 +37,10 @@ const PIECES = [
 // Points awarded for clearing 1/2/3/4 rows at once.
 const LINE_POINTS = [0, 100, 300, 500, 800];
 
+// Full rows blink this many times before they drop away.
+const FLASH_BLINKS = 4;
+const FLASH_INTERVAL = 90;
+
 const emptyGrid = () =>
   Array.from({ length: ROWS }, () => Array(COLS).fill(null));
 
@@ -40,13 +49,15 @@ function rotateMatrix(m) {
   return m[0].map((_, c) => m.map((row) => row[c]).reverse());
 }
 
-function randomPiece() {
-  const p = PIECES[Math.floor(Math.random() * PIECES.length)];
+const randomShape = () => PIECES[Math.floor(Math.random() * PIECES.length)];
+
+// Place a shape at the top of the board, horizontally centered.
+function shapeToPiece(shape) {
   return {
-    cells: p.cells,
-    color: p.color,
+    cells: shape.cells,
+    color: shape.color,
     row: 0,
-    col: Math.floor((COLS - p.cells[0].length) / 2),
+    col: Math.floor((COLS - shape.cells[0].length) / 2),
   };
 }
 
@@ -64,71 +75,88 @@ function collides(grid, piece, row, col, cells) {
   return false;
 }
 
+// `onScoreChange` and `onNextChange` are called on every move, so callers must
+// pass stable functions (a useState setter, or a memoized callback).
 const ArcadeGame = forwardRef(function ArcadeGame(
-  { onScoreChange, onGameOver },
+  { onScoreChange, onNextChange, onGameOver },
   ref
 ) {
   const canvasRef = useRef(null);
 
   // Mutable game state, read/written by the tick loop and controls.
   const gridRef = useRef(emptyGrid());
-  const pieceRef = useRef(randomPiece());
+  const pieceRef = useRef(shapeToPiece(randomShape()));
+  const nextShapeRef = useRef(randomShape());
   const scoreRef = useRef(0);
   const linesRef = useRef(0);
   const overRef = useRef(false);
-  const timerRef = useRef(null);
+
+  // Line-clear animation: which rows are blinking, and whether they are
+  // currently lit. Gravity is suspended for the duration.
+  const flashRowsRef = useRef([]);
+  const flashLitRef = useRef(false);
+  const flashTimerRef = useRef(null);
 
   // Display-only mirrors.
   const [score, setScore] = useState(0);
   const [lines, setLines] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [flashing, setFlashing] = useState(false);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
+    const W = COLS * CELL;
+    const H = ROWS * CELL;
 
-    // Board background
-    ctx.fillStyle = "#fffaf3";
-    ctx.fillRect(0, 0, COLS * CELL, ROWS * CELL);
+    fillBoardBackground(ctx, W, H);
 
-    const drawCell = (r, c, color) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
-    };
-
-    // Locked blocks
-    const grid = gridRef.current;
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (grid[r][c]) drawCell(r, c, grid[r][c]);
-      }
-    }
-
-    // Falling piece
-    const p = pieceRef.current;
-    if (p && !overRef.current) {
-      p.cells.forEach((row, r) =>
-        row.forEach((on, c) => {
-          if (on && p.row + r >= 0) drawCell(p.row + r, p.col + c, p.color);
-        })
-      );
-    }
-
-    // Faint grid lines
-    ctx.strokeStyle = "rgba(0,0,0,0.06)";
+    // Faint gold grid lines.
+    ctx.strokeStyle = "rgba(196,150,42,0.08)";
     ctx.lineWidth = 1;
     for (let c = 1; c < COLS; c++) {
       ctx.beginPath();
       ctx.moveTo(c * CELL, 0);
-      ctx.lineTo(c * CELL, ROWS * CELL);
+      ctx.lineTo(c * CELL, H);
       ctx.stroke();
     }
     for (let r = 1; r < ROWS; r++) {
       ctx.beginPath();
       ctx.moveTo(0, r * CELL);
-      ctx.lineTo(COLS * CELL, r * CELL);
+      ctx.lineTo(W, r * CELL);
       ctx.stroke();
+    }
+
+    // Locked blocks — rows mid-clear render lit instead of glossy.
+    const grid = gridRef.current;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (!grid[r][c]) continue;
+        if (flashLitRef.current && flashRowsRef.current.includes(r)) {
+          drawFlashCell(ctx, c * CELL, r * CELL, CELL);
+        } else {
+          drawGlossyCell(ctx, c * CELL, r * CELL, CELL, grid[r][c]);
+        }
+      }
+    }
+
+    // Falling piece (absent while a line clear plays out).
+    const p = pieceRef.current;
+    if (p && !overRef.current) {
+      p.cells.forEach((row, r) =>
+        row.forEach((on, c) => {
+          if (on && p.row + r >= 0) {
+            drawGlossyCell(
+              ctx,
+              (p.col + c) * CELL,
+              (p.row + r) * CELL,
+              CELL,
+              p.color
+            );
+          }
+        })
+      );
     }
   }, []);
 
@@ -141,41 +169,86 @@ const ArcadeGame = forwardRef(function ArcadeGame(
     [onScoreChange]
   );
 
-  // Lock the falling piece into the grid, clear full rows, spawn the next
-  // piece. Ends the game if the new piece can't fit at the top.
+  // Promote the queued shape to the falling piece and queue a fresh one.
+  // Ends the game if the new piece can't fit at the top.
+  const spawnNext = useCallback(() => {
+    const piece = shapeToPiece(nextShapeRef.current);
+    pieceRef.current = piece;
+    nextShapeRef.current = randomShape();
+    onNextChange?.(nextShapeRef.current);
+
+    if (collides(gridRef.current, piece, piece.row, piece.col, piece.cells)) {
+      overRef.current = true;
+      setGameOver(true);
+      onGameOver?.(scoreRef.current);
+    }
+    draw();
+  }, [draw, onNextChange, onGameOver]);
+
+  // Drop everything above the cleared rows, then score and resume gravity.
+  const finishClear = useCallback(
+    (fullRows) => {
+      const kept = gridRef.current.filter((_, i) => !fullRows.includes(i));
+      while (kept.length < ROWS) kept.unshift(Array(COLS).fill(null));
+      gridRef.current = kept;
+      flashRowsRef.current = [];
+      flashLitRef.current = false;
+
+      linesRef.current += fullRows.length;
+      setLines(linesRef.current);
+      addScore(LINE_POINTS[fullRows.length]);
+      setFlashing(false);
+      spawnNext();
+    },
+    [addScore, spawnNext]
+  );
+
+  // Lock the falling piece into the grid. Full rows blink first; otherwise the
+  // next piece spawns immediately.
   const lockPiece = useCallback(() => {
     const grid = gridRef.current;
     const p = pieceRef.current;
+    if (!p) return;
     p.cells.forEach((row, r) =>
       row.forEach((on, c) => {
         if (on && p.row + r >= 0) grid[p.row + r][p.col + c] = p.color;
       })
     );
 
-    // Line clear: keep rows with any empty cell, refill the top.
-    const kept = grid.filter((row) => row.some((cell) => !cell));
-    const cleared = ROWS - kept.length;
-    if (cleared > 0) {
-      while (kept.length < ROWS) kept.unshift(Array(COLS).fill(null));
-      gridRef.current = kept;
-      linesRef.current += cleared;
-      setLines(linesRef.current);
-      addScore(LINE_POINTS[cleared]);
+    const fullRows = [];
+    grid.forEach((row, i) => {
+      if (row.every((cell) => cell)) fullRows.push(i);
+    });
+    if (fullRows.length === 0) {
+      spawnNext();
+      return;
     }
 
-    const next = randomPiece();
-    pieceRef.current = next;
-    if (collides(gridRef.current, next, next.row, next.col, next.cells)) {
-      overRef.current = true;
-      setGameOver(true);
-      onGameOver?.(scoreRef.current);
-    }
-  }, [addScore, onGameOver]);
+    // Hide the piece and hand the canvas over to the blink timer.
+    flashRowsRef.current = fullRows;
+    flashLitRef.current = true;
+    pieceRef.current = null;
+    setFlashing(true);
+    draw();
+
+    let blinks = 0;
+    flashTimerRef.current = setInterval(() => {
+      blinks += 1;
+      flashLitRef.current = !flashLitRef.current;
+      draw();
+      if (blinks >= FLASH_BLINKS) {
+        clearInterval(flashTimerRef.current);
+        flashTimerRef.current = null;
+        finishClear(fullRows);
+      }
+    }, FLASH_INTERVAL);
+  }, [draw, spawnNext, finishClear]);
 
   // One gravity step: move the piece down, or lock it if it can't move.
   const tick = useCallback(() => {
     if (overRef.current) return;
     const p = pieceRef.current;
+    if (!p) return;
     if (collides(gridRef.current, p, p.row + 1, p.col, p.cells)) {
       lockPiece();
     } else {
@@ -188,16 +261,17 @@ const ArcadeGame = forwardRef(function ArcadeGame(
   const dropDelay = Math.max(100, 700 - Math.floor(lines / 10) * 60);
 
   useEffect(() => {
-    if (gameOver) return;
-    timerRef.current = setInterval(tick, dropDelay);
-    return () => clearInterval(timerRef.current);
-  }, [tick, dropDelay, gameOver]);
+    if (gameOver || flashing) return;
+    const id = setInterval(tick, dropDelay);
+    return () => clearInterval(id);
+  }, [tick, dropDelay, gameOver, flashing]);
 
   // ── Controls ───────────────────────────────────────────────────────────────
   const tryMove = useCallback(
     (dRow, dCol) => {
       if (overRef.current) return false;
       const p = pieceRef.current;
+      if (!p) return false;
       if (collides(gridRef.current, p, p.row + dRow, p.col + dCol, p.cells)) {
         return false;
       }
@@ -215,6 +289,7 @@ const ArcadeGame = forwardRef(function ArcadeGame(
   const rotate = useCallback(() => {
     if (overRef.current) return;
     const p = pieceRef.current;
+    if (!p) return;
     const turned = rotateMatrix(p.cells);
     // Try in place, then nudge one cell left/right so wall rotations work.
     for (const kick of [0, -1, 1]) {
@@ -233,7 +308,7 @@ const ArcadeGame = forwardRef(function ArcadeGame(
   }, [tryMove, addScore]);
 
   const hardDrop = useCallback(() => {
-    if (overRef.current) return;
+    if (overRef.current || !pieceRef.current) return;
     let fell = 0;
     while (tryMove(1, 0)) fell += 1;
     if (fell > 0) addScore(fell * 2);
@@ -242,17 +317,26 @@ const ArcadeGame = forwardRef(function ArcadeGame(
   }, [tryMove, addScore, lockPiece, draw]);
 
   const restart = useCallback(() => {
+    clearInterval(flashTimerRef.current);
+    flashTimerRef.current = null;
+    flashRowsRef.current = [];
+    flashLitRef.current = false;
+
     gridRef.current = emptyGrid();
-    pieceRef.current = randomPiece();
+    pieceRef.current = shapeToPiece(randomShape());
+    nextShapeRef.current = randomShape();
     scoreRef.current = 0;
     linesRef.current = 0;
     overRef.current = false;
+
     setScore(0);
     setLines(0);
     setGameOver(false);
+    setFlashing(false);
     onScoreChange?.(0);
+    onNextChange?.(nextShapeRef.current);
     draw();
-  }, [draw, onScoreChange]);
+  }, [draw, onScoreChange, onNextChange]);
 
   // Expose control functions to the modal's on-screen touch buttons.
   useImperativeHandle(
@@ -281,32 +365,62 @@ const ArcadeGame = forwardRef(function ArcadeGame(
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [moveLeft, moveRight, rotate, softDrop, hardDrop]);
 
-  // First paint.
+  // First paint, plus publish the opening "Next" piece to the HUD.
   useEffect(() => {
+    onNextChange?.(nextShapeRef.current);
     draw();
-  }, [draw]);
+  }, [draw, onNextChange]);
+
+  // Stop the blink timer if the modal closes mid-clear.
+  useEffect(() => () => clearInterval(flashTimerRef.current), []);
 
   return (
-    <div className="relative inline-block">
-      <canvas
-        ref={canvasRef}
-        width={COLS * CELL}
-        height={ROWS * CELL}
-        className="block rounded-lg border-2 border-du-gold max-h-[55vh] w-auto"
-        style={{ aspectRatio: `${COLS} / ${ROWS}` }}
-      />
-      {gameOver && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg bg-black/70">
-          <div className="text-lg font-semibold text-white">Game Over</div>
-          <div className="text-sm text-white/80">Score: {score}</div>
-          <button
-            onClick={restart}
-            className="rounded-lg bg-du-crimson px-4 py-2 text-sm font-semibold text-white hover:bg-du-crimsonDark transition"
+    <div
+      className="relative rounded-[20px] border p-3"
+      style={{
+        background: "linear-gradient(160deg,#28242a,#100d10)",
+        borderColor: "rgba(196,150,42,0.2)",
+        boxShadow:
+          "0 18px 40px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.06), inset 0 -6px 14px rgba(0,0,0,.5)",
+      }}
+    >
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          width={COLS * CELL}
+          height={ROWS * CELL}
+          className="block max-h-[48vh] w-auto rounded-[10px]"
+          style={{
+            aspectRatio: `${COLS} / ${ROWS}`,
+            boxShadow: "inset 0 2px 10px rgba(0,0,0,.7)",
+          }}
+        />
+        {gameOver && (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[10px]"
+            style={{
+              background: "rgba(5,3,4,0.82)",
+              backdropFilter: "blur(2px)",
+            }}
           >
-            Play Again
-          </button>
-        </div>
-      )}
+            <div className="font-serif text-xl italic text-white">
+              Game Over
+            </div>
+            <div className="text-[13px] text-white/75">Score: {score}</div>
+            <button
+              onClick={restart}
+              className="rounded-lg px-[22px] py-[10px] text-[13px] font-bold text-white transition hover:brightness-110 active:scale-95"
+              style={{
+                background: "linear-gradient(160deg,#d3143a,#8E0A24)",
+                boxShadow:
+                  "0 4px 10px rgba(186,12,47,.4), inset 0 1px 0 rgba(255,255,255,.25)",
+              }}
+            >
+              Play again
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 });
