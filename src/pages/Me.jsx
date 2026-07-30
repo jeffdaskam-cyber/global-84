@@ -16,6 +16,7 @@ import {
 import { listenerErrorMessage } from "../lib/subscribe";
 import { downscaleImage } from "../lib/images";
 import ListenerError from "../components/ListenerError.jsx";
+import ArcadeModal from "../components/features/ArcadeModal.jsx";
 
 export default function Me() {
   const [user, setUser] = useState(null);
@@ -33,6 +34,9 @@ export default function Me() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
+
+  // Hidden arcade easter egg
+  const [arcadeOpen, setArcadeOpen] = useState(false);
 
   // React to auth state (fixes refresh timing issue)
   useEffect(() => {
@@ -300,6 +304,19 @@ export default function Me() {
           </div>
         )}
       </div>
+
+      {/* Unlabeled easter-egg tile — opens the hidden arcade game */}
+      <div className="flex justify-center pt-2 pb-4">
+        <button
+          onClick={() => setArcadeOpen(true)}
+          aria-label="?"
+          className="h-10 w-10 rounded-full border border-surface-border dark:border-surface-darkBorder text-ink-muted dark:text-ink-subOnDark/40 text-sm opacity-40 hover:opacity-70 transition"
+        >
+          ?
+        </button>
+      </div>
+
+      <ArcadeModal isOpen={arcadeOpen} onClose={() => setArcadeOpen(false)} />
     </div>
   );
 }
