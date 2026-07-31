@@ -124,9 +124,18 @@ function NamePrompt({ user, onComplete }) {
 
 // ── AuthGate ───────────────────────────────────────────────────────────────────
 
+// How long to wait for onAuthStateChanged before we stop rendering nothing and
+// show a reconnecting indicator instead. The splash animation runs ~6s over the
+// top of this, so on a normal resume auth resolves well before anything shows.
+const AUTH_TIMEOUT_MS = 7000;
+
 export default function AuthGate({ children }) {
   const [user, setUser] = useState(null);
-  const [checking, setChecking] = useState(true);
+  // authResolved flips true the first time onAuthStateChanged fires — at which
+  // point we know the real signed-in/out state. timedOut covers the case where
+  // it has not fired at all (dead/roaming connection) so we never hang forever.
+  const [authResolved, setAuthResolved] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const [needsName, setNeedsName] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -172,11 +181,20 @@ export default function AuthGate({ children }) {
     })();
   }, []);
 
-  // Listen for auth state changes
+  // Listen for auth state changes.
+  //
+  // Rendering is gated only on auth resolving, never on the Firestore profile
+  // round-trip. The upsert + displayName check run in the background after the
+  // app is already showing, so a slow database link delays only the name prompt
+  // (for the rare user who needs it), not the whole app.
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      try {
-        if (u) {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u || null);
+      setAuthResolved(true);
+
+      if (!u) return;
+      (async () => {
+        try {
           await upsertMemberProfile(u);
           // Read the member doc directly after upsert to check displayName.
           // If absent or still the placeholder "member", show the name prompt.
@@ -187,20 +205,37 @@ export default function AuthGate({ children }) {
           if (!dn || dn === "member") {
             setNeedsName(true);
           }
+        } catch (e) {
+          console.error("Member upsert failed:", e);
+          setError(e?.message || "Signed in, but profile setup failed.");
         }
-        setUser(u || null);
-      } catch (e) {
-        console.error("Member upsert failed:", e);
-        setError(e?.message || "Signed in, but profile setup failed.");
-        setUser(u || null);
-      } finally {
-        setChecking(false);
-      }
+      })();
     });
     return () => unsub();
   }, []);
 
-  if (checking) return null;
+  // Fallback so a stalled auth re-hydration (dead/roaming connection on resume)
+  // never leaves the app rendering nothing indefinitely.
+  useEffect(() => {
+    if (authResolved) return;
+    const t = setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [authResolved]);
+
+  // Auth has not resolved yet. Within the grace window render nothing (the
+  // splash overlay is covering the screen anyway); once it times out, show a
+  // lightweight reconnecting indicator rather than hanging or falsely flashing
+  // the sign-in screen for a user whose session simply has not re-hydrated yet.
+  if (!authResolved) {
+    if (!timedOut) return null;
+    return (
+      <div className="min-h-screen bg-surface-light dark:bg-surface-dark flex items-center justify-center p-6">
+        <div className="text-sm text-ink-sub dark:text-ink-subOnDark">
+          Reconnecting…
+        </div>
+      </div>
+    );
+  }
 
   // ── Sign-in screen ───────────────────────────────────────────────────────────
   if (!user) {

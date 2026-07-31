@@ -376,9 +376,13 @@ export default function App() {
   }, [user?.uid]);
 
   return (
-    <AuthGate>
+    <>
+      {/* Splash is rendered outside AuthGate so it paints immediately on load,
+          independent of Firebase Auth/Firestore resolving. Its own animation
+          runs ~6s while auth resolves in parallel behind this fixed overlay. */}
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
 
+      <AuthGate>
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       <NotificationPrompt user={user} />
@@ -435,6 +439,7 @@ export default function App() {
           prefill={eventEditorPrefill}
         />
       </Suspense>
-    </AuthGate>
+      </AuthGate>
+    </>
   );
 }

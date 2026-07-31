@@ -1,5 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+} from "firebase/auth";
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -19,7 +23,20 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+/**
+ * Auth with IndexedDB persistence preferred over the localStorage fallback.
+ *
+ * On a PWA cold resume the page is reloaded and the session has to be
+ * re-hydrated from disk before onAuthStateChanged fires. IndexedDB survives
+ * suspend/resume more reliably than localStorage on mobile Safari, so the
+ * signed-in state comes back faster and the app is not left waiting on a token
+ * refresh. Falls back to browserLocalPersistence where IndexedDB is unavailable
+ * (Safari private browsing). Only email-link sign-in is used, so no popup or
+ * redirect resolver is needed.
+ */
+export const auth = initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+});
 
 /**
  * Firestore with an IndexedDB-backed cache instead of the default in-memory one.
