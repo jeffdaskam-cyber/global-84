@@ -38,6 +38,25 @@ const CITIES = [
 const DINING_TYPES   = ["Restaurant", "Coffee", "Bar", "Rooftop Bar", "Hawker Stall"];
 const ACTIVITY_TYPES = ["Museum", "Temple", "Market", "Shopping", "Spa", "Nightlife", "Nature", "Tour", "Adventure"];
 
+// The "Denver night" hero gradient used for the category footer bars and the
+// accommodation overlays. Kept inline (matching the SideDrawer treatment in
+// App.jsx) rather than as a Tailwind utility so the exact PMS 200 stops carry.
+const HERO_GRADIENT = "linear-gradient(150deg,#0d0103 0%,#1c0408 35%,#BA0C2F 72%,#8a0a22 100%)";
+
+// Category cards on the picker. The gradient + emoji is the fallback shown
+// until a per-city photo (see CATEGORY_IMAGES) loads, so the card always works.
+const CATEGORY_CARDS = [
+  { key: "dining",   label: "Dining",     emoji: "🍽️", types: DINING_TYPES,   gradient: "from-du-crimson to-red-800" },
+  { key: "activity", label: "Activities", emoji: "🗺️", types: ACTIVITY_TYPES, gradient: "from-amber-700 to-yellow-600" },
+];
+
+// Per-city background photos for the Dining / Activities cards. Files live in
+// public/. A missing file falls back to the card's branded gradient (onError).
+const CATEGORY_IMAGES = {
+  "Singapore":       { dining: "/dining-singapore.jpg", activity: "/activities-singapore.jpg" },
+  "Ho Chi Minh City": { dining: "/dining-hcmc.jpg",      activity: "/activities-hcmc.jpg" },
+};
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function Explore({ isAdmin, onCreateEvent }) {
   const [nav, setNav] = useState(null);
@@ -196,40 +215,46 @@ function CategoryPicker({ city, onSelect, onBack }) {
         </div>
       </div>
       <div className="px-4 space-y-4 mt-2">
-        <button
-          onClick={() => onSelect("dining")}
-          className="w-full relative overflow-hidden rounded-2xl h-40 shadow-lg group focus:outline-none focus:ring-2 focus:ring-du-crimson"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-du-crimson to-red-800 transition-transform duration-500 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-          <div className="absolute inset-0 flex flex-col justify-end p-5 text-left">
-            <div className="text-3xl mb-1">🍽️</div>
-            <div className="text-white font-bold text-2xl drop-shadow">Dining</div>
-            <div className="text-white/70 text-xs mt-1">{DINING_TYPES.join("  ·  ")}</div>
-          </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 group-hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </button>
-        <button
-          onClick={() => onSelect("activity")}
-          className="w-full relative overflow-hidden rounded-2xl h-40 shadow-lg group focus:outline-none focus:ring-2 focus:ring-du-crimson"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-700 to-yellow-600 transition-transform duration-500 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-          <div className="absolute inset-0 flex flex-col justify-end p-5 text-left">
-            <div className="text-3xl mb-1">🗺️</div>
-            <div className="text-white font-bold text-2xl drop-shadow">Activities</div>
-            <div className="text-white/70 text-xs mt-1">{ACTIVITY_TYPES.join("  ·  ")}</div>
-          </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 group-hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </button>
+        {CATEGORY_CARDS.map((card) => {
+          const image = CATEGORY_IMAGES[city]?.[card.key];
+          return (
+          <button
+            key={card.key}
+            onClick={() => onSelect(card.key)}
+            className="w-full flex flex-col text-left relative overflow-hidden rounded-2xl h-56 shadow-lg group focus:outline-none focus:ring-2 focus:ring-du-crimson"
+          >
+            {/* Photo area — the branded gradient is an underlay so a missing or
+                slow photo still reads; the emoji only shows without a photo. */}
+            <div className="relative flex-1 min-h-0">
+              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} transition-transform duration-500 group-hover:scale-105`} />
+              {image && (
+                <img
+                  src={image}
+                  alt={card.label}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              )}
+              <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
+              {!image && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-5xl drop-shadow-lg">{card.emoji}</span>
+                </div>
+              )}
+            </div>
+            {/* Footer bar — hero gradient with label, type list, chevron */}
+            <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3" style={{ background: HERO_GRADIENT }}>
+              <div className="min-w-0">
+                <div className="text-white font-bold text-lg leading-tight">{card.label}</div>
+                <div className="text-white/60 text-[10px] mt-0.5 truncate">{card.types.join(" · ")}</div>
+              </div>
+              <svg className="ml-auto flex-shrink-0 w-[18px] h-[18px] text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+          );
+        })}
 
         {/* Secondary option — deliberately lighter weight than Dining/Activities */}
         <button
@@ -251,11 +276,13 @@ function CategoryPicker({ city, onSelect, onBack }) {
 function AccommodationDetail({ city, onBack }) {
   const cityData = CITIES.find((c) => c.key === city);
   const hotel = ACCOMMODATIONS[city];
+  const cityLabel = cityData?.shortLabel || cityData?.label || city;
 
-  return (
-    <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
-      <div className="sticky top-0 z-10 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur border-b border-surface-border dark:border-surface-darkBorder px-4 pt-4 pb-3">
-        <div className="flex items-center gap-3">
+  // Empty state keeps a plain back header — no hero to show without a hotel.
+  if (!hotel) {
+    return (
+      <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
+        <div className="px-4 pt-6 pb-4 flex items-center gap-3">
           <button onClick={onBack} className="text-ink-sub dark:text-ink-subOnDark hover:text-ink-main dark:hover:text-ink-onDark transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -263,46 +290,86 @@ function AccommodationDetail({ city, onBack }) {
           </button>
           <h1 className="text-xl font-bold text-ink-main dark:text-ink-onDark">
             Accommodations
-            <span className="ml-2 text-ink-sub dark:text-ink-subOnDark font-normal text-base">
-              · {cityData?.shortLabel || city}
-            </span>
+            <span className="ml-2 text-ink-sub dark:text-ink-subOnDark font-normal text-base">· {cityLabel}</span>
           </h1>
+        </div>
+        <div className="text-center py-16 text-ink-sub dark:text-ink-subOnDark text-sm">
+          Accommodations not yet added for this city.
+        </div>
+      </div>
+    );
+  }
+
+  // Prefer the hotel photo; fall back to the city photo if it fails to load.
+  const heroSrc = hotel.photo || cityData?.bgImage;
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-black">
+      {/* Full-bleed hero */}
+      {heroSrc && (
+        <img
+          src={heroSrc}
+          alt={hotel.name}
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => {
+            if (cityData?.bgImage && !e.currentTarget.src.endsWith(cityData.bgImage)) {
+              e.currentTarget.src = cityData.bgImage;
+            }
+          }}
+        />
+      )}
+      {/* Bottom scrim for the floating card + top scrim for the controls */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(10,2,4,0.85) 0%, rgba(10,2,4,0.15) 42%, rgba(0,0,0,0) 60%)" }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(10,2,4,0.45) 0%, rgba(0,0,0,0) 20%)" }} />
+
+      {/* Back button */}
+      <button
+        onClick={onBack}
+        aria-label="Back"
+        className="absolute top-5 left-4 w-9 h-9 rounded-full flex items-center justify-center text-white focus:outline-none focus:ring-2 focus:ring-white/70"
+        style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      {/* Eyebrow */}
+      <div className="absolute top-5 left-16 right-4">
+        <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/75 leading-9">
+          Accommodations · {cityLabel}
         </div>
       </div>
 
-      <div className="px-4 pt-4">
-        {!hotel ? (
-          <div className="text-center py-16 text-ink-sub dark:text-ink-subOnDark text-sm">
-            Accommodations not yet added for this city.
-          </div>
-        ) : (
-          <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-sm p-4 space-y-4">
-            <div>
-              <h2 className="font-semibold text-ink-main dark:text-ink-onDark text-lg leading-tight">{hotel.name}</h2>
-              <p className="mt-1 text-sm text-ink-sub dark:text-ink-subOnDark">{hotel.address}</p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <a
-                href={hotel.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-surface-border dark:border-surface-darkBorder px-3 py-2.5 text-sm font-semibold text-du-crimson hover:border-du-crimson transition-colors"
-              >
-                <span>🔗</span>
-                <span>Hotel Website</span>
-              </a>
-              <a
-                href={getMapsUrl(hotel)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-surface-border dark:border-surface-darkBorder px-3 py-2.5 text-sm font-semibold text-du-crimson hover:border-du-crimson transition-colors"
-              >
-                <span>📍</span>
-                <span>Map View</span>
-              </a>
-            </div>
-          </div>
-        )}
+      {/* Floating info card — sits above the app's bottom nav */}
+      <div
+        className="absolute left-4 right-4 bottom-24 rounded-2xl bg-surface-card dark:bg-surface-darkCard p-5 flex flex-col gap-3.5"
+        style={{ boxShadow: "0 20px 48px rgba(0,0,0,0.28)" }}
+      >
+        <div>
+          <div className="text-lg font-bold text-ink-main dark:text-ink-onDark leading-snug">{hotel.name}</div>
+          <div className="text-sm text-ink-sub dark:text-ink-subOnDark mt-1 leading-normal">{hotel.address}</div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <a
+            href={hotel.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-xl border border-surface-border dark:border-surface-darkBorder px-3.5 py-2.5 text-sm font-semibold text-du-crimson hover:border-du-crimson transition-colors"
+          >
+            <span>🔗</span>
+            <span>Hotel Website</span>
+          </a>
+          <a
+            href={getMapsUrl(hotel)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-xl border border-surface-border dark:border-surface-darkBorder px-3.5 py-2.5 text-sm font-semibold text-du-crimson hover:border-du-crimson transition-colors"
+          >
+            <span>📍</span>
+            <span>Map View</span>
+          </a>
+        </div>
       </div>
     </div>
   );
