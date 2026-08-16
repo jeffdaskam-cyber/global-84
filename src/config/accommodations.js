@@ -9,11 +9,15 @@ export const ACCOMMODATIONS = {
     name: "Hotel Mondrian Singapore",
     address: "16A Duxton Hill, Singapore 089970",
     websiteUrl: "https://mondrianhotels.com/singapore-duxton/",
+    // Full-bleed hero on the Accommodations screen. Falls back to the city
+    // photo (see CITIES in Explore.jsx) if the file is missing.
+    photo: "/hotel-mondrian-singapore.jpg",
   },
   "Ho Chi Minh City": {
     name: "Rex Hotel",
     address: "141 Nguyễn Huệ, Bến Nghé, Quận 1, Hồ Chí Minh 700000, Vietnam",
     websiteUrl: "https://www.rexhotelsaigon.com/",
+    photo: "/hotel-rex-saigon.jpg",
   },
 };
 
