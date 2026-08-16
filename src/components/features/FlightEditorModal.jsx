@@ -45,7 +45,9 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
+  // Field errors stay hidden until the first save attempt, so a fresh form
+  // isn't lit up red before the member has typed anything.
+  const [attempted, setAttempted] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -86,7 +88,7 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
       setNotes("");
     }
     setError("");
-    setFieldErrors({});
+    setAttempted(false);
   }, [open, isEdit, flight]);
 
   // Assemble the payload with absolute instants, the shape validateFlight and
@@ -128,19 +130,19 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
     ]
   );
 
-  const canSave = useMemo(() => validateFlight(payload).valid, [payload]);
+  const validation = useMemo(() => validateFlight(payload), [payload]);
+  // Only surface field errors once the member has tried to save.
+  const fieldErrors = attempted ? validation.errors : {};
 
   if (!open) return null;
 
   async function submit() {
     setError("");
-    const { valid, errors } = validateFlight(payload);
-    if (!valid) {
-      setFieldErrors(errors);
+    setAttempted(true);
+    if (!validation.valid) {
       setError("Please fix the highlighted fields.");
       return;
     }
-    setFieldErrors({});
     setSaving(true);
     try {
       if (isEdit) {
@@ -150,7 +152,6 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
       }
       onClose();
     } catch (e) {
-      if (e?.fieldErrors) setFieldErrors(e.fieldErrors);
       setError(
         e?.message || (isEdit ? "Could not update flight." : "Could not add flight.")
       );
@@ -351,7 +352,7 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
 
           <button
             onClick={submit}
-            disabled={!canSave || saving}
+            disabled={saving}
             className="w-full rounded-lg bg-du-crimson text-white py-3 text-sm font-semibold hover:bg-du-crimsonDark transition disabled:opacity-40"
           >
             {saving ? "Saving…" : isEdit ? "Save changes" : "Add flight"}

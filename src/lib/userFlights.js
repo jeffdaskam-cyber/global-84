@@ -112,7 +112,10 @@ function offsetMs(date, timeZone) {
 export function wallClockToInstant(wallClock, timeZone) {
   if (!wallClock || !timeZone) return null;
 
-  const naive = new Date(`${wallClock}:00Z`);
+  // Some engines add seconds to a datetime-local value ("...T19:00:30"); keep
+  // only YYYY-MM-DDTHH:mm so the ":00Z" suffix always yields a valid instant.
+  const trimmed = wallClock.slice(0, 16);
+  const naive = new Date(`${trimmed}:00Z`);
   if (Number.isNaN(naive.getTime())) return null;
 
   // Sample the offset at the target instant, not at `naive`, so a DST edge
@@ -300,7 +303,8 @@ export function validateFlight(data) {
   const dep = toDate(d.departureDateTime);
   const arr = toDate(d.arrivalDateTime);
   if (dep && arr && arr.getTime() < dep.getTime()) {
-    errors.arrivalDateTime = "Arrival cannot be before departure.";
+    errors.arrivalDateTime =
+      "Arrival is before departure. Check the arrival date and time zone — a long flight often lands a day or two later.";
   }
 
   return { valid: Object.keys(errors).length === 0, errors };
