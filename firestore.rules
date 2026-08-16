@@ -55,6 +55,15 @@ service cloud.firestore {
           allow update: if false;
         }
 
+        // Per-user private flight itinerary segments (My Flight Info feature).
+        // Owner-only: only the owning user can read, create, update, or delete —
+        // admins have no access to another member's flights. Updates are allowed
+        // (unlike files) because segment fields and segmentOrder are edited in
+        // place. Bumped to force a fresh rules deploy.
+        match /flights/{flightId} {
+          allow read, create, update, delete: if isSelf(uid);
+        }
+
         // Per-device push notification (FCM) tokens.
         // Only the owning user can read, create, or delete — admins have no
         // access. Update is blocked; a changed token is a new doc (keyed by
