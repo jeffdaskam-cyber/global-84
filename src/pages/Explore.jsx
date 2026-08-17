@@ -5,12 +5,10 @@ import { useNavigate } from "react-router-dom";
 import {
   subscribeExplore,
   deleteExploreItem,
-  importExploreItems,
   isCohortFavorite,
   getFavoriteCount,
   COHORT_FAVORITE_THRESHOLD,
 } from "../lib/explore";
-import { fetchSheetData, parseSheetCSV } from "../lib/sheetsSync";
 import { subscribeFavorites, toggleFavorite } from "../lib/favorites";
 import { listenerErrorMessage } from "../lib/subscribe";
 import ListenerError from "../components/ListenerError.jsx";
@@ -70,7 +68,7 @@ export default function Explore({ isAdmin, onCreateEvent }) {
     return () => unsub();
   }, []);
 
-  if (!nav) return <CityPicker isAdmin={isAdmin} onSelect={(city) => setNav({ city })} />;
+  if (!nav) return <CityPicker onSelect={(city) => setNav({ city })} />;
   if (!nav.category) return (
     <CategoryPicker
       city={nav.city}
@@ -117,33 +115,8 @@ const ON_THE_GROUND = [
 ];
 
 // ── Step 1: City cards ────────────────────────────────────────────────────────
-function CityPicker({ isAdmin, onSelect }) {
+function CityPicker({ onSelect }) {
   const navigate = useNavigate();
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState("");
-
-  async function handleSheetSync() {
-    setIsSyncing(true);
-    setSyncStatus("Fetching from Google Sheets...");
-    try {
-      const csvText = await fetchSheetData();
-      const rows = parseSheetCSV(csvText);
-      setSyncStatus(`Syncing ${rows.length} items to Firestore...`);
-      const result = await importExploreItems(rows, { fileName: "Google Sheets sync" });
-      setSyncStatus(
-        `Sync complete. ${result.imported} added, ${result.updated} updated, ${result.skipped} skipped.` +
-        (result.removedDuplicates ? ` Removed ${result.removedDuplicates} duplicates.` : "")
-      );
-    } catch (err) {
-      console.error("[sheets sync] error:", err);
-      setSyncStatus(`Sync failed: ${err.message}`);
-    } finally {
-      setIsSyncing(false);
-    }
-  }
-
-  const isError = syncStatus.startsWith("Sync failed");
-  const isSuccess = syncStatus.startsWith("Sync complete");
 
   return (
     <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
@@ -239,33 +212,6 @@ function CityPicker({ isAdmin, onSelect }) {
             ))}
           </div>
         </div>
-
-        {/* Admin: Google Sheets sync — only visible to admins */}
-        {isAdmin && (
-          <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder p-4 space-y-3">
-            <button
-              onClick={handleSheetSync}
-              disabled={isSyncing}
-              className="w-full rounded-lg bg-du-crimson text-white py-3 text-sm font-semibold hover:bg-du-crimsonDark transition disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSyncing && (
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
-              {isSyncing ? "Syncing..." : "Sync from Google Sheets"}
-            </button>
-            <p className="text-xs text-ink-sub dark:text-ink-subOnDark">
-              Pulls the latest data from the shared Google Sheet. New items are added; existing items (matched by name + city) are not overwritten.
-            </p>
-            {syncStatus && (
-              <p className={`text-sm font-medium ${isError ? "text-du-crimson" : isSuccess ? "text-green-600 dark:text-green-400" : "text-ink-sub dark:text-ink-subOnDark"}`}>
-                {syncStatus}
-              </p>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

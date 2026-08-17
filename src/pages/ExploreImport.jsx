@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { cleanupExploreDuplicates, getExploreImportPreview, importExploreItems } from "../lib/explore";
+import { fetchSheetData, parseSheetCSV } from "../lib/sheetsSync";
 
 const REQUIRED_HEADERS = ["city", "type", "name"];
 
@@ -89,6 +90,8 @@ export default function ExploreImport({ isAdmin }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState("");
 
   const hasRequiredHeaders = useMemo(
     () => REQUIRED_HEADERS.every((header) => headers.includes(header)),
@@ -149,6 +152,33 @@ export default function ExploreImport({ isAdmin }) {
     }
   }
 
+  async function handleSheetSync() {
+    setError("");
+    setResult(null);
+    if (!isAdmin) return setError("Admin access required.");
+
+    setIsSyncing(true);
+    setSyncStatus("Fetching from Google Sheets...");
+    try {
+      const csvText = await fetchSheetData();
+      const parsed = parseSheetCSV(csvText);
+      setSyncStatus(`Syncing ${parsed.length} items to Firestore...`);
+      const r = await importExploreItems(parsed, { fileName: "Google Sheets sync" });
+      setSyncStatus(
+        `Sync complete. ${r.imported} added, ${r.updated} updated, ${r.skipped} skipped.` +
+        (r.removedDuplicates ? ` Removed ${r.removedDuplicates} duplicates.` : "")
+      );
+    } catch (err) {
+      console.error("[sheets sync] error:", err);
+      setSyncStatus(`Sync failed: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  }
+
+  const isSyncError = syncStatus.startsWith("Sync failed");
+  const isSyncSuccess = syncStatus.startsWith("Sync complete");
+
   if (!isAdmin) {
     return (
       <div className="p-5">
@@ -164,11 +194,36 @@ export default function ExploreImport({ isAdmin }) {
     <div className="p-5 space-y-4">
       <div>
         <div className="text-xl font-semibold text-ink-main dark:text-ink-onDark">Explore Import <span className="text-du-gold">•</span></div>
-        <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">Upload a CSV exported from your Google Sheet.</div>
+        <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">Sync directly from the shared Google Sheet, or upload a CSV export.</div>
       </div>
 
       <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5 space-y-3">
-        <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">CSV format</div>
+        <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Sync from Google Sheets</div>
+        <p className="text-sm text-ink-sub dark:text-ink-subOnDark">
+          Pulls the latest data from the shared Google Sheet. New items are added; existing items (matched by name + city) are not overwritten.
+        </p>
+        <button
+          onClick={handleSheetSync}
+          disabled={isSyncing || busy}
+          className="w-full rounded-lg bg-du-crimson text-white py-3 text-sm font-semibold hover:bg-du-crimsonDark transition disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isSyncing && (
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          )}
+          {isSyncing ? "Syncing…" : "Sync from Google Sheets"}
+        </button>
+        {syncStatus && (
+          <p className={`text-sm font-medium ${isSyncError ? "text-du-crimson" : isSyncSuccess ? "text-green-600 dark:text-green-400" : "text-ink-sub dark:text-ink-subOnDark"}`}>
+            {syncStatus}
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5 space-y-3">
+        <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Or upload a CSV</div>
         <div className="text-sm text-ink-sub dark:text-ink-subOnDark whitespace-pre-wrap">
           Required headers: city,type,name{"\n"}
           Recommended: neighborhood,hours,price,tags,googlemapsurl,reservationurl,notes,recommendedby
