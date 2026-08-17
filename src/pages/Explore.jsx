@@ -1,6 +1,7 @@
 // src/pages/Explore.jsx
 // Navigation flow: City cards → Dining/Activity → Type filter → List
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   subscribeExplore,
   deleteExploreItem,
@@ -96,8 +97,28 @@ export default function Explore({ isAdmin, onCreateEvent }) {
   );
 }
 
+// "On the ground" entry cards. Currency + Translate are the tools a member
+// reaches for in the same real-world moment as the map, so they live at the
+// foot of Explore rather than buried in the drawer. Each pushes into that
+// tool's existing full-screen route — only the entry point moved.
+const ON_THE_GROUND = [
+  {
+    to: "/currency",
+    icon: "💰",
+    title: "Currency Converter",
+    subtitle: "Live USD ↔ SGD, VND rates",
+  },
+  {
+    to: "/translate",
+    icon: "📷",
+    title: "Photo Translator",
+    subtitle: "Signage, menus & documents to English",
+  },
+];
+
 // ── Step 1: City cards ────────────────────────────────────────────────────────
 function CityPicker({ isAdmin, onSelect }) {
+  const navigate = useNavigate();
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
 
@@ -164,6 +185,60 @@ function CityPicker({ isAdmin, onSelect }) {
             </div>
           </button>
         ))}
+
+        {/* ── On the ground: currency + translate entry points ── */}
+        <div className="pt-2">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-sub">
+              On the ground
+            </span>
+            <div className="flex-1 h-px bg-surface-border" />
+          </div>
+          <div className="space-y-3">
+            {ON_THE_GROUND.map((tool) => (
+              <button
+                key={tool.to}
+                onClick={() => navigate(tool.to)}
+                className="w-full flex items-center gap-3.5 rounded-2xl transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-du-crimson text-left"
+                style={{
+                  background: "linear-gradient(160deg, #1c0408, #2a0a10)",
+                  border: "1px solid rgba(196,150,42,0.2)",
+                  padding: "14px 16px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                }}
+              >
+                <span
+                  className="flex-shrink-0 flex items-center justify-center"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(196,150,42,0.14)",
+                    fontSize: 18,
+                  }}
+                >
+                  {tool.icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block text-white"
+                    style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700 }}
+                  >
+                    {tool.title}
+                  </span>
+                  <span className="block" style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+                    {tool.subtitle}
+                  </span>
+                </span>
+                <span className="flex-shrink-0" style={{ color: "rgba(196,150,42,0.7)" }}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Admin: Google Sheets sync — only visible to admins */}
         {isAdmin && (

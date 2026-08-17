@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import { TRIP_START } from "../lib/trip";
 
-// First day together in Singapore: Nov 3, 2026, 8:00 AM SGT (UTC+8).
-// Hardcoded with an explicit offset so the remaining time is identical for
-// every viewer regardless of their device timezone.
-const TARGET = new Date("2026-11-03T08:00:00+08:00");
+// Shared with Home's weather strip via lib/trip.js so the countdown and the
+// strip flip to their "trip started" state at the very same instant.
+const TARGET = TRIP_START;
 
 const TICK_MS = 30 * 1000;
 

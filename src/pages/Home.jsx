@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { subscribeAnnouncements } from "../lib/announcements";
 import AnnouncementCard from "../components/features/AnnouncementCard.jsx";
 import AnnouncementEditorModal from "../components/features/AnnouncementEditorModal.jsx";
 import { listenerErrorMessage } from "../lib/subscribe";
 import ListenerError from "../components/ListenerError.jsx";
 import TripCountdown from "../components/TripCountdown.jsx";
+import UpNextCard from "../components/features/UpNextCard.jsx";
+import { isTripStarted } from "../lib/trip";
 
 // ── Weather ───────────────────────────────────────────────────────────────────
 const WEATHER_CITIES = [
@@ -42,10 +45,14 @@ function localTime(tz) {
   }).format(new Date());
 }
 
-function WeatherWidget() {
+// Compact single-line weather strip with two states gated by tripStarted:
+//  • pre-trip  — soft-gold band, just the two destination temps.
+//  • on-trip   — full-bleed crimson gradient, white text, plus a "Denver" home
+//                clock so members can gut-check the time back home at a glance.
+function WeatherStrip() {
   const [weather, setWeather] = useState([null, null]);
-  const [loading, setLoading] = useState(true);
   const [, setNow] = useState(new Date());
+  const started = isTripStarted();
 
   useEffect(() => {
     let cancelled = false;
@@ -54,9 +61,9 @@ function WeatherWidget() {
         const results = await Promise.all(
           WEATHER_CITIES.map(c => fetchWeather(c.lat, c.lon))
         );
-        if (!cancelled) { setWeather(results); setLoading(false); }
+        if (!cancelled) setWeather(results);
       } catch {
-        if (!cancelled) setLoading(false);
+        /* leave the last-known values in place on a failed refresh */
       }
     }
     load();
@@ -65,47 +72,32 @@ function WeatherWidget() {
     return () => { cancelled = true; clearInterval(weatherInterval); clearInterval(clockInterval); };
   }, []);
 
-  return (
-    <div className="px-6 pt-4 pb-2">
-      <div className="flex gap-3">
-        {WEATHER_CITIES.map((city, i) => {
-          const w    = weather[i];
-          const desc = w ? describeCode(w.code) : null;
-          return (
-            <div
-              key={city.label}
-              className="flex-1 bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card px-3 py-2.5"
-            >
-              {loading || !w ? (
-                <div className="space-y-1.5">
-                  <div className="h-3 w-16 rounded bg-surface-border dark:bg-surface-darkBorder animate-pulse" />
-                  <div className="h-5 w-12 rounded bg-surface-border dark:bg-surface-darkBorder animate-pulse" />
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark">
-                      {city.label}
-                    </span>
-                    <span className="text-xs text-ink-sub dark:text-ink-subOnDark opacity-60">
-                      {localTime(city.tz)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-lg leading-none">{desc.emoji}</span>
-                    <span className="text-base font-bold text-ink-main dark:text-ink-onDark">
-                      {w.tempF}°F
-                    </span>
-                  </div>
-                  <div className="text-xs text-ink-sub dark:text-ink-subOnDark mt-0.5">
-                    {desc.condition}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
+  const segments = WEATHER_CITIES.map((city, i) => {
+    const w = weather[i];
+    const desc = w ? describeCode(w.code) : null;
+    return w ? `${city.label} ${desc.emoji} ${w.tempF}°F` : `${city.label} …`;
+  });
+  if (started) segments.push(`Denver ${localTime("America/Denver")}`);
+
+  const text = segments.join("  ·  ");
+
+  if (started) {
+    return (
+      <div
+        className="w-full text-center py-2.5 px-4 text-sm font-medium text-white"
+        style={{ background: "linear-gradient(135deg, #1c0408 0%, #BA0C2F 100%)" }}
+      >
+        {text}
       </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full text-center py-2.5 px-4 text-sm font-medium text-ink-main"
+      style={{ background: "#F4F1E6", borderTop: "1px solid #E8E6E1", borderBottom: "1px solid #E8E6E1" }}
+    >
+      {text}
     </div>
   );
 }
@@ -118,11 +110,26 @@ export default function Home({ isAdmin, onOpenDrawer }) {
   const [openNew, setOpenNew] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [mounted, setMounted] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
   }, []);
+
+  // The drawer's admin "Post Announcement" routes here with this flag, since the
+  // announcement editor lives on Home. Open it once, then clear the flag from
+  // history so a back/forward or refresh doesn't reopen the editor.
+  useEffect(() => {
+    if (!(isAdmin && location.state?.openAnnounce)) return;
+    // Defer the open so we're not calling setState synchronously in the effect
+    // body (same reason the mounted flag above uses a timeout). Clear the flag
+    // from history immediately so a refresh or back/forward won't reopen it.
+    const t = setTimeout(() => setOpenNew(true), 0);
+    navigate(location.pathname, { replace: true, state: null });
+    return () => clearTimeout(t);
+  }, [isAdmin, location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const unsub = subscribeAnnouncements(setItems, (err) =>
@@ -133,105 +140,66 @@ export default function Home({ isAdmin, onOpenDrawer }) {
 
   return (
     <div>
-      {/* ── Hero Banner ── */}
-      <div className="relative overflow-hidden" style={{ minHeight: "210px" }}>
+      {/* ── Compact header (~90px) ── */}
+      <div className="relative overflow-hidden" style={{ minHeight: "90px" }}>
         <div className="absolute inset-0" style={{
-          background: "linear-gradient(150deg, #0d0103 0%, #1c0408 35%, #BA0C2F 72%, #8a0a22 100%)",
+          background: "linear-gradient(150deg, #0d0103 0%, #1c0408 40%, #BA0C2F 100%)",
         }} />
-        {[320, 230, 150].map((size, i) => (
-          <div key={size} className="absolute rounded-full" style={{
-            width: size, height: size,
-            top: -size / 2.5, right: -size / 2.5,
-            border: `1px solid rgba(196,150,42,${0.08 + i * 0.05})`,
-          }} />
-        ))}
-        <div className="absolute" style={{
-          width: "1px", height: "120px", right: "36px", bottom: "20px",
-          background: "linear-gradient(to bottom, transparent, rgba(196,150,42,0.5), transparent)",
-          transform: "rotate(12deg)",
-        }} />
-        <div className="absolute bottom-0 left-0 right-0" style={{
-          height: "40px",
-          background: "linear-gradient(to bottom, transparent, rgba(13,1,3,0.15))",
+        <div className="absolute rounded-full" style={{
+          width: 180, height: 180, top: -90, right: -60,
+          border: "1px solid rgba(196,150,42,0.12)",
         }} />
 
-        <div className="relative pl-2 pr-6 pt-2 pb-6">
-          {/* Hamburger menu button */}
+        <div className="relative flex items-center justify-between px-5 py-4">
+          <div className="transition-all duration-700 ease-out" style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(10px)",
+          }}>
+            <div className="flex items-baseline gap-2">
+              <span style={{
+                fontFamily: "Georgia, serif", fontSize: "28px", fontWeight: 700,
+                lineHeight: 1, color: "#ffffff", letterSpacing: "-0.4px",
+              }}>Global</span>
+              <span style={{
+                fontFamily: "Georgia, serif", fontSize: "30px", fontWeight: 700,
+                lineHeight: 1, letterSpacing: "-0.4px",
+                background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              }}>84</span>
+            </div>
+            <div className="flex items-center gap-2 mt-1" style={{
+              fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "13px", color: "rgba(255,255,255,0.9)",
+            }}>
+              <span>Singapore</span>
+              <span style={{ fontSize: "8px" }}>◆</span>
+              <span>Vietnam</span>
+            </div>
+          </div>
+
+          {/* Hamburger menu button — the only entry point to the drawer */}
           <button
             onClick={onOpenDrawer}
-            className="absolute top-3 right-2 flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all active:scale-95"
+            className="flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all active:scale-95"
             aria-label="Open menu"
           >
             {[0,1,2].map(i => (
               <span key={i} style={{ display: "block", width: "18px", height: "2px", borderRadius: "2px", background: "#ffffff" }} />
             ))}
           </button>
-          
-          {/* Line 1: Global 84 */}
-          <div className="flex items-baseline gap-3 mt-2 transition-all duration-700 ease-out" style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(14px)",
-            transitionDelay: "80ms",
-          }}>
-            <span style={{
-              fontFamily: "Georgia, serif", fontSize: "52px", fontWeight: 700,
-              lineHeight: 1, color: "#ffffff", letterSpacing: "-0.5px",
-            }}>Global</span>
-            <span style={{
-              fontFamily: "Georgia, serif", fontSize: "56px", fontWeight: 700,
-              lineHeight: 1, letterSpacing: "-0.5px",
-              background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-            }}>84</span>
-          </div>
-
-          {/* Line 2: Creating Global Leaders */}
-          <p className="mt-12 transition-all duration-700 ease-out" style={{
-            fontFamily: "Georgia, serif", fontSize: "18px",
-            fontStyle: "italic", color: "#ffffff",
-            marginLeft: "8px", 
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(8px)",
-            transitionDelay: "160ms",
-          }}>Creating Global Leaders</p>
-
-          {/* Line 4: Gold accent line */}
-          <div className="mt-1 transition-all duration-700 ease-out" style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "scaleX(1)" : "scaleX(0)",
-            transformOrigin: "left center", transitionDelay: "240ms",
-            marginLeft: "8px", 
-          }}>
-            <div style={{
-              height: "2px", width: "110px", borderRadius: "2px",
-              background: "linear-gradient(to right, #C4962A, rgba(196,150,42,0.25))",
-            }} />
-          </div>
-
-          {/* Line 5: Singapore ◆ Vietnam */}
-          <div className="flex items-center gap-2 mt-1 transition-all duration-700 ease-out" style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(10px)",
-            transitionDelay: "320ms",
-            marginLeft: "8px", 
-          }}>
-            <span style={{ fontSize: "16px", color: "#ffffff" }}>Singapore</span>
-            <span style={{ color: "#ffffff", fontSize: "9px" }}>◆</span>
-            <span style={{ fontSize: "16px", color: "#ffffff" }}>Vietnam</span>
-          </div>
         </div>
       </div>
 
-      {/* ── Weather widget ── */}
-      <div className="bg-surface-light dark:bg-surface-dark">
-        <WeatherWidget />
-      </div>
+      {/* ── Up Next ── */}
+      <UpNextCard />
 
-      {/* ── Trip countdown ── */}
+      {/* ── Trip countdown (hides once the trip starts) ── */}
       <TripCountdown />
 
+      {/* ── Weather strip ── */}
+      <WeatherStrip />
+
       {/* ── Announcements ── */}
-      <div className="p-6 space-y-4 bg-surface-light dark:bg-surface-dark" style={{ minHeight: "calc(100vh - 232px - 120px)" }}>
+      <div className="p-6 space-y-4 bg-surface-light dark:bg-surface-dark" style={{ minHeight: "40vh" }}>
         <div className="flex items-start justify-between">
           <div>
             <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Announcements</div>
