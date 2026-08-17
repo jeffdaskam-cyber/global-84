@@ -13,6 +13,7 @@ import { watch } from "./lib/subscribe.js";
 const Home = lazy(() => import("./pages/Home.jsx"));
 const Explore = lazy(() => import("./pages/Explore.jsx"));
 const ExploreImport = lazy(() => import("./pages/ExploreImport.jsx"));
+const ItineraryAdmin = lazy(() => import("./pages/ItineraryAdmin.jsx"));
 const Chat = lazy(() => import("./pages/Chat.jsx"));
 const Events = lazy(() => import("./pages/Events.jsx"));
 const Me = lazy(() => import("./pages/Me.jsx"));
@@ -31,32 +32,42 @@ function lastViewedEventsKey(uid) {
   return uid ? `${LS_KEY_PREFIX}_${uid}` : LS_KEY_PREFIX;
 }
 
-const DRAWER_NAV = [
-  { to: "/", label: "Home", icon: "🏠" },
-  { to: "/explore", label: "Explore", icon: "🗺️" },
-  { to: "/gallery", label: "Gallery", icon: "📷" },
+// Flattened drawer: plain, non-collapsing sections grouped by moment-of-use.
+// Home / Explore / Events / Chat / Me all live in the bottom nav now, so the
+// drawer carries the destinations that don't earn a permanent tab slot.
+const DRAWER_SECTIONS = [
   {
-    group: "connect",
-    label: "Connect",
-    icon: "💬",
-    children: [
-      { to: "/chat", label: "Chat", icon: "💬" },
-      { to: "/team", label: "Teams", icon: "👥" },
+    label: "Plan",
+    items: [
+      { to: "/media", label: "Trip Planning", icon: "🎬" },
+      { to: "/gallery", label: "Gallery", icon: "📷" },
     ],
   },
-  { to: "/events", label: "Events", icon: "📅" },
-  { to: "/media", label: "Trip Planning", icon: "🎬" },
   {
-    group: "utilities",
-    label: "Utilities",
-    icon: "🔧",
-    children: [
+    label: "Connect",
+    items: [{ to: "/team", label: "Teams", icon: "👥" }],
+  },
+  {
+    label: "Tools",
+    items: [
       { to: "/currency", label: "Currency Exchange", icon: "💱" },
       { to: "/translate", label: "Translator", icon: "🌐" },
     ],
   },
-  { to: "/me", label: "Me", icon: "👤" },
 ];
+
+// Admin-only actions, rendered below a hairline with a crimson section label.
+// "Post Announcement" routes Home and asks it to open the announcement editor,
+// since that modal lives on the Home page.
+const ADMIN_SECTION = {
+  label: "Admin",
+  items: [
+    { to: "/", state: { openAnnounce: true }, label: "Post Announcement", icon: "📣" },
+    { to: "/events", label: "Manage Events", icon: "📅" },
+    { to: "/itinerary-admin", label: "Manage Itinerary", icon: "🗓️" },
+    { to: "/explore-import", label: "Import Explore Content", icon: "📥" },
+  ],
+};
 
 function PageLoader() {
   return (
@@ -68,14 +79,49 @@ function PageLoader() {
   );
 }
 
-function SideDrawer({ open, onClose }) {
+// One flattened, non-collapsing drawer section: a small caps label over a
+// column of single-tap nav rows. The Admin variant is fenced off by a top
+// hairline and takes a crimson label instead of the gold used elsewhere.
+function DrawerSection({ section, onNav, hoverHandlers, admin = false }) {
+  return (
+    <div
+      style={
+        admin
+          ? { marginTop: "12px", paddingTop: "14px", borderTop: "1px solid rgba(196,150,42,0.2)" }
+          : { marginTop: "6px" }
+      }
+    >
+      <div
+        style={{
+          padding: "0 16px 6px",
+          fontSize: "10px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.14em",
+          color: admin ? "rgba(186,12,47,0.75)" : "rgba(196,150,42,0.6)",
+        }}
+      >
+        {section.label}
+      </div>
+      {section.items.map((item) => (
+        <button
+          key={item.label}
+          onClick={() => onNav(item.to, item.state)}
+          className="w-full flex items-center gap-3 rounded-[10px] transition-all text-left"
+          style={{ padding: "10px 16px", color: "rgba(255,255,255,0.85)" }}
+          {...hoverHandlers}
+        >
+          <span style={{ fontSize: "17px", width: "22px", textAlign: "center" }}>{item.icon}</span>
+          <span style={{ fontFamily: "Georgia, serif", fontSize: "14px", fontWeight: 600 }}>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SideDrawer({ open, onClose, isAdmin }) {
   const navigate = useNavigate();
   const drawerRef = useRef(null);
-  const [openGroups, setOpenGroups] = useState({ connect: false, utilities: false });
-
-  function toggleGroup(key) {
-    setOpenGroups((previous) => ({ ...previous, [key]: !previous[key] }));
-  }
 
   useEffect(() => {
     if (!open) return;
@@ -97,8 +143,8 @@ function SideDrawer({ open, onClose }) {
     };
   }, [open]);
 
-  function handleNav(to) {
-    navigate(to);
+  function handleNav(to, state) {
+    navigate(to, state ? { state } : undefined);
     onClose();
   }
 
@@ -174,63 +220,18 @@ function SideDrawer({ open, onClose }) {
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          {DRAWER_NAV.map((item) => {
-            if (item.group) {
-              const isOpen = openGroups[item.group];
-              return (
-                <div key={item.group}>
-                  <button
-                    onClick={() => toggleGroup(item.group)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-left"
-                    style={{ color: "rgba(255,255,255,0.85)" }}
-                    {...hoverHandlers}
-                  >
-                    <div className="flex items-center gap-4">
-                      <span style={{ fontSize: "20px" }}>{item.icon}</span>
-                      <span style={{ fontFamily: "Georgia, serif", fontSize: "16px", fontWeight: 600 }}>{item.label}</span>
-                    </div>
-                    <span style={{ color: "rgba(196,150,42,0.75)" }}>{isOpen ? "−" : "+"}</span>
-                  </button>
+          {DRAWER_SECTIONS.map((section) => (
+            <DrawerSection key={section.label} section={section} onNav={handleNav} hoverHandlers={hoverHandlers} />
+          ))}
 
-                  {isOpen && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "1px", marginTop: "1px" }}>
-                      {item.children.map((child) => (
-                        <button
-                          key={child.to}
-                          onClick={() => handleNav(child.to)}
-                          className="w-full flex items-center gap-3 rounded-xl transition-all text-left"
-                          style={{
-                            paddingLeft: "52px",
-                            paddingTop: "10px",
-                            paddingBottom: "10px",
-                            paddingRight: "16px",
-                            color: "rgba(255,255,255,0.75)",
-                          }}
-                          {...hoverHandlers}
-                        >
-                          <span style={{ fontSize: "18px" }}>{child.icon}</span>
-                          <span style={{ fontFamily: "Georgia, serif", fontSize: "14px", fontWeight: 500 }}>{child.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            return (
-              <button
-                key={item.to}
-                onClick={() => handleNav(item.to)}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left"
-                style={{ color: "rgba(255,255,255,0.85)" }}
-                {...hoverHandlers}
-              >
-                <span style={{ fontSize: "20px" }}>{item.icon}</span>
-                <span style={{ fontFamily: "Georgia, serif", fontSize: "16px", fontWeight: 600 }}>{item.label}</span>
-              </button>
-            );
-          })}
+          {isAdmin && (
+            <DrawerSection
+              section={ADMIN_SECTION}
+              onNav={handleNav}
+              hoverHandlers={hoverHandlers}
+              admin
+            />
+          )}
         </nav>
 
         <div className="px-5 py-5" style={{ borderTop: "1px solid rgba(196,150,42,0.15)" }}>
@@ -383,7 +384,7 @@ export default function App() {
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
 
       <AuthGate>
-      <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} isAdmin={isAdmin} />
 
       <NotificationPrompt user={user} />
 
@@ -405,6 +406,10 @@ export default function App() {
                 path="/explore-import"
                 element={isAdmin ? <ExploreImport isAdmin /> : <Navigate to="/explore" replace />}
               />
+              <Route
+                path="/itinerary-admin"
+                element={isAdmin ? <ItineraryAdmin /> : <Navigate to="/" replace />}
+              />
               <Route path="/chat" element={<Chat isAdmin={isAdmin} />} />
               <Route
                 path="/events"
@@ -424,9 +429,9 @@ export default function App() {
           <div className="max-w-l mx-auto flex">
             <TabLink to="/" label="Home" icon="🏠" />
             <TabLink to="/explore" label="Explore" icon="🗺️" />
-            <TabLink to="/chat" label="Chat" icon="💬" />
             <EventsTabLink hasNewEvents={hasNewEvents} />
-            <TabLink to="/team" label="Teams" icon="👥" />
+            <TabLink to="/chat" label="Chat" icon="💬" />
+            <TabLink to="/me" label="Me" icon="👤" />
           </div>
         </div>
       </div>

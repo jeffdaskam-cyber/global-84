@@ -81,6 +81,13 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin(cohortId);
       }
 
+      // Cohort itinerary (admin-managed; all members read). The trip leader's
+      // dated plan; feeds the Home "Up Next" module.
+      match /itinerary/{id} {
+        allow read: if isMember();
+        allow create, update, delete: if isAdmin(cohortId);
+      }
+
       // Explore items (admins manage; all members can read)
       // The `favoriteCount` field is written only by the onFavoriteChange Cloud
       // Function via the Admin SDK, which bypasses these rules. Do not open a
@@ -202,6 +209,15 @@ service cloud.firestore {
           allow create, update, delete: if isAdmin(cohortId);
         }
       }
+    }
+
+    // Collection-group read for RSVPs so a member can query their own RSVPs
+    // across every event (Home "Up Next"). Writes stay governed by the nested
+    // events/{eventId}/rsvps/{uid} rule above; this only authorizes the
+    // collection-group *read*. RSVPs are already member-readable per-event, so
+    // this widens nothing beyond what a member could already see.
+    match /{path=**}/rsvps/{rsvpId} {
+      allow read: if isMember();
     }
   }
 }

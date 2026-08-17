@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  collectionGroup,
   doc,
   limit,
   orderBy,
@@ -70,8 +71,11 @@ export async function createEvent(data) {
 
   const ref = await addDoc(eventsCol(), payload);
 
-  // Auto-RSVP creator
+  // Auto-RSVP creator. `uid` is stored on the doc (in addition to being the
+  // doc id) so a collection-group query can filter "my RSVPs" across every
+  // event — see subscribeMyRsvps.
   await setDoc(rsvpDoc(ref.id, u.uid), {
+    uid: u.uid,
     status: "going",
     updatedAt: serverTimestamp(),
     name,
@@ -125,12 +129,39 @@ export async function setRsvp(eventId, status) {
   await setDoc(
     rsvpDoc(eventId, u.uid),
     {
+      uid: u.uid,
       status,
       updatedAt: serverTimestamp(),
       name: await myDisplayName(),
     },
     { merge: true }
   );
+}
+
+/**
+ * Subscribe (real-time) to the current user's RSVPs across every event via a
+ * collection-group query. Returns rsvp docs carrying { eventId, status }, so a
+ * caller can join them against the event list without one listener per event.
+ * Filtered to going/interested since those are the RSVPs Up Next surfaces.
+ *
+ * Note: only RSVPs written after the `uid` field was added (see setRsvp /
+ * createEvent) are matched. Pre-existing RSVPs gain the field the next time the
+ * member changes their RSVP.
+ */
+export function subscribeMyRsvps(uid, cb, onError) {
+  const q = query(
+    collectionGroup(db, "rsvps"),
+    where("uid", "==", uid),
+    where("status", "in", ["going", "interested"])
+  );
+  return watch("my-rsvps", q, (snap) => {
+    cb(
+      snap.docs.map((d) => ({
+        eventId: d.ref.parent.parent?.id,
+        status: d.data().status,
+      }))
+    );
+  }, onError);
 }
 
 /**

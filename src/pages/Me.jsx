@@ -29,6 +29,20 @@ import ListenerError from "../components/ListenerError.jsx";
 import ArcadeModal from "../components/features/ArcadeModal.jsx";
 import FlightEditorModal from "../components/features/FlightEditorModal.jsx";
 
+// Small caps section label. "My Trip" leads (crimson) since members check trip
+// logistics far more often than account settings (grey), which sit below it.
+function SectionEyebrow({ tone, children }) {
+  return (
+    <div
+      className={`text-[10px] font-bold uppercase tracking-[0.1em] pt-1 ${
+        tone === "crimson" ? "text-du-crimson" : "text-ink-sub dark:text-ink-subOnDark"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function Me() {
   const [user, setUser] = useState(null);
 
@@ -234,58 +248,83 @@ export default function Me() {
 
       <ListenerError message={loadError} />
 
-      {/* Account */}
-      <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">
-        <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Account</div>
-        <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">
-          <div>{member?.email || user?.email || "—"}</div>
-        </div>
-      </div>
+      {/* ══ My Trip ══ Checked most often on the ground, so it leads. */}
+      <SectionEyebrow tone="crimson">My Trip</SectionEyebrow>
 
-      {/* Profile */}
+      {/* Flight Info */}
       <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5 space-y-4">
-        <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Profile</div>
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Flight Info</div>
+          <button
+            onClick={openAddFlight}
+            className="rounded-lg bg-du-crimson text-white px-3 py-1.5 text-xs font-bold hover:bg-du-crimsonDark transition active:scale-[0.97]"
+          >
+            + Add Flight
+          </button>
+        </div>
 
-        <label className="block">
-          <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
-            Display name
+        <p className="text-xs text-ink-sub dark:text-ink-subOnDark">
+          Next flight also shows on Home · Up Next.
+        </p>
+
+        {tripConfirmation ? (
+          <div className="text-xs text-ink-sub dark:text-ink-subOnDark">
+            Confirmation:{" "}
+            <span className="font-semibold text-ink-main dark:text-ink-onDark">
+              {tripConfirmation}
+            </span>
           </div>
-          <input
-            className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your name"
-          />
-        </label>
+        ) : null}
 
-        {err ? <div className="text-sm text-du-crimson">{err}</div> : null}
-        {msg ? <div className="text-sm text-ink-sub dark:text-ink-subOnDark">{msg}</div> : null}
+        {flightError && <div className="text-sm text-du-crimson">{flightError}</div>}
 
-        <div className="flex gap-3">
-          <button
-            className="w-full rounded-lg bg-du-crimson text-white py-3 text-sm font-semibold hover:bg-du-crimsonDark transition disabled:opacity-40"
-            onClick={handleSave}
-            disabled={!canSave || saving}
-          >
-            Save
-          </button>
-
-          <button
-            className="w-full rounded-lg border border-du-crimson text-du-crimson py-3 text-sm font-semibold hover:bg-du-crimsonSoft transition disabled:opacity-40"
-            onClick={signOutUser}
-            disabled={saving}
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-
-      {/* Role */}
-      <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">
-        <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Role</div>
-        <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">
-          {member?.role || "member"}
-        </div>
+        {flights.length === 0 ? (
+          <div className="rounded-lg bg-du-gold/5 border border-du-gold/30 text-center py-8 px-4">
+            <div className="text-sm text-ink-sub dark:text-ink-subOnDark">
+              No flights added yet.
+            </div>
+            <button
+              onClick={openAddFlight}
+              className="mt-3 rounded-lg bg-du-crimson text-white px-4 py-2 text-xs font-semibold hover:bg-du-crimsonDark transition"
+            >
+              Add Flight
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-0">
+            {flights.map((f, i) => {
+              const layover =
+                i < flights.length - 1
+                  ? computeLayover(f, flights[i + 1])
+                  : null;
+              return (
+                <div key={f.id}>
+                  <FlightSegmentCard
+                    flight={f}
+                    index={i}
+                    total={flights.length}
+                    perSegmentConfirmation={!tripConfirmation}
+                    reordering={reordering}
+                    onEdit={() => openEditFlight(f)}
+                    onDelete={() => handleDeleteFlight(f)}
+                    onMoveUp={() => moveFlight(i, -1)}
+                    onMoveDown={() => moveFlight(i, 1)}
+                  />
+                  {layover ? (
+                    <div className="flex items-center gap-2 py-2 pl-3">
+                      <span className="text-du-gold">⋮</span>
+                      <span className="rounded-full bg-du-gold/15 text-du-gold text-xs font-semibold px-3 py-1">
+                        Layover {layover} · {f.arrivalAirport}
+                      </span>
+                    </div>
+                  ) : (
+                    i < flights.length - 1 && <div className="h-2" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* My Files */}
@@ -379,80 +418,52 @@ export default function Me() {
         )}
       </div>
 
-      {/* My Flight Info */}
+      {/* ══ Account ══ Identity + settings, below My Trip. */}
+      <SectionEyebrow tone="grey">Account</SectionEyebrow>
+
+      {/* Consolidated account card: email → display name → role + save → sign out */}
       <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold text-du-crimson">My Flight Info</div>
+        <div className="text-xs text-ink-sub dark:text-ink-subOnDark">
+          {member?.email || user?.email || "—"}
+        </div>
+
+        <div className="border-t border-surface-border dark:border-surface-darkBorder" />
+
+        <label className="block">
+          <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
+            Display name
+          </div>
+          <input
+            className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Your name"
+          />
+        </label>
+
+        {err ? <div className="text-sm text-du-crimson">{err}</div> : null}
+        {msg ? <div className="text-sm text-ink-sub dark:text-ink-subOnDark">{msg}</div> : null}
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm text-ink-sub dark:text-ink-subOnDark">
+            Role: <span className="font-semibold text-ink-main dark:text-ink-onDark">{member?.role || "member"}</span>
+          </div>
           <button
-            onClick={openAddFlight}
-            className="rounded-lg bg-du-crimson text-white px-3 py-1.5 text-xs font-semibold hover:bg-du-crimsonDark transition"
+            className="rounded-lg bg-du-crimson text-white px-5 py-2 text-sm font-semibold hover:bg-du-crimsonDark transition disabled:opacity-40 active:scale-[0.97]"
+            onClick={handleSave}
+            disabled={!canSave || saving}
           >
-            + Add Flight
+            Save
           </button>
         </div>
 
-        <p className="text-xs text-ink-sub dark:text-ink-subOnDark">
-          Private to you only. Your itinerary for the Singapore and Vietnam trip.
-        </p>
-
-        {tripConfirmation ? (
-          <div className="text-xs text-ink-sub dark:text-ink-subOnDark">
-            Confirmation:{" "}
-            <span className="font-semibold text-ink-main dark:text-ink-onDark">
-              {tripConfirmation}
-            </span>
-          </div>
-        ) : null}
-
-        {flightError && <div className="text-sm text-du-crimson">{flightError}</div>}
-
-        {flights.length === 0 ? (
-          <div className="rounded-lg bg-du-gold/5 border border-du-gold/30 text-center py-8 px-4">
-            <div className="text-sm text-ink-sub dark:text-ink-subOnDark">
-              No flights added yet.
-            </div>
-            <button
-              onClick={openAddFlight}
-              className="mt-3 rounded-lg bg-du-crimson text-white px-4 py-2 text-xs font-semibold hover:bg-du-crimsonDark transition"
-            >
-              Add Flight
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-0">
-            {flights.map((f, i) => {
-              const layover =
-                i < flights.length - 1
-                  ? computeLayover(f, flights[i + 1])
-                  : null;
-              return (
-                <div key={f.id}>
-                  <FlightSegmentCard
-                    flight={f}
-                    index={i}
-                    total={flights.length}
-                    perSegmentConfirmation={!tripConfirmation}
-                    reordering={reordering}
-                    onEdit={() => openEditFlight(f)}
-                    onDelete={() => handleDeleteFlight(f)}
-                    onMoveUp={() => moveFlight(i, -1)}
-                    onMoveDown={() => moveFlight(i, 1)}
-                  />
-                  {layover ? (
-                    <div className="flex items-center gap-2 py-2 pl-3">
-                      <span className="text-du-gold">⋮</span>
-                      <span className="rounded-full bg-du-gold/15 text-du-gold text-xs font-semibold px-3 py-1">
-                        Layover {layover} · {f.arrivalAirport}
-                      </span>
-                    </div>
-                  ) : (
-                    i < flights.length - 1 && <div className="h-2" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <button
+          className="w-full rounded-lg border border-du-crimson text-du-crimson py-3 text-sm font-semibold hover:bg-du-crimsonSoft transition disabled:opacity-40"
+          onClick={signOutUser}
+          disabled={saving}
+        >
+          Sign out
+        </button>
       </div>
 
       {/* Unlabeled easter-egg tile — opens the hidden arcade game */}
