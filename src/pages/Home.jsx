@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { subscribeAnnouncements } from "../lib/announcements";
 import AnnouncementCard from "../components/features/AnnouncementCard.jsx";
@@ -75,29 +75,37 @@ function WeatherStrip() {
   const segments = WEATHER_CITIES.map((city, i) => {
     const w = weather[i];
     const desc = w ? describeCode(w.code) : null;
-    return w ? `${city.label} ${desc.emoji} ${w.tempF}°F` : `${city.label} …`;
+    return { label: city.label, detail: w ? `${desc.emoji} ${w.tempF}°F` : "…" };
   });
-  if (started) segments.push(`Denver ${localTime("America/Denver")}`);
+  if (started) segments.push({ label: "Denver", detail: localTime("America/Denver") });
 
-  const text = segments.join("  ·  ");
+  const cityColor = started ? "#fff" : "#1C1C1C";
+  const dotColor  = started ? "#e8b84b" : "#C4962A";
 
-  if (started) {
-    return (
-      <div
-        className="w-full text-center py-2.5 px-4 text-sm font-medium text-white"
-        style={{ background: "linear-gradient(135deg, #1c0408 0%, #BA0C2F 100%)" }}
-      >
-        {text}
-      </div>
-    );
-  }
+  const stripStyle = started
+    ? {
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexWrap: "wrap", rowGap: "6px", columnGap: "18px",
+        padding: "14px 20px", fontSize: "13px", color: "#fff",
+        background: "linear-gradient(135deg, #1c0408 0%, #5c0818 100%)",
+      }
+    : {
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexWrap: "wrap", rowGap: "6px", columnGap: "32px",
+        padding: "16px 4px", fontSize: "14.5px", color: "#5C5C5C",
+        background: "#F4F1E6", borderTop: "1px solid #E8E6E1", borderBottom: "1px solid #E8E6E1",
+      };
 
   return (
-    <div
-      className="w-full text-center py-2.5 px-4 text-sm font-medium text-ink-main"
-      style={{ background: "#F4F1E6", borderTop: "1px solid #E8E6E1", borderBottom: "1px solid #E8E6E1" }}
-    >
-      {text}
+    <div className="w-full font-medium" style={stripStyle}>
+      {segments.map((s, i) => (
+        <Fragment key={s.label}>
+          {i > 0 && <span style={{ color: dotColor }}>·</span>}
+          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <b style={{ color: cityColor }}>{s.label}</b> {s.detail}
+          </span>
+        </Fragment>
+      ))}
     </div>
   );
 }
