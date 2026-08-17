@@ -310,9 +310,9 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
   const autoNoticeVisible = source === "api" && autoFilled.size > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 overflow-y-auto">
-      <div className="w-full max-w-md my-6 rounded-xl overflow-hidden bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">
-        <div className="flex items-start justify-between gap-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3">
+      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder">
+        <div className="flex items-start justify-between gap-3 p-5 pb-3">
           <div>
             <div className="text-base font-semibold text-du-crimson">
               {isEdit ? "Edit Flight" : "Add Flight"}
@@ -330,7 +330,7 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
           </button>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="space-y-3 overflow-y-auto px-5 pb-5">
           <div className="grid grid-cols-2 gap-2">
             <AirlineCombobox
               value={airline}
