@@ -18,10 +18,6 @@ function remainingFrom(now) {
   };
 }
 
-function plural(n, word) {
-  return `${word}${n === 1 ? "" : "s"}`;
-}
-
 export default function TripCountdown() {
   const [left, setLeft] = useState(() => remainingFrom(Date.now()));
 
@@ -34,30 +30,30 @@ export default function TripCountdown() {
   if (!left) return null;
 
   const units = [
-    { value: left.days, label: plural(left.days, "day") },
-    { value: left.hours, label: plural(left.hours, "hour") },
-    { value: left.minutes, label: plural(left.minutes, "minute") },
+    { value: left.days, suffix: "d" },
+    { value: left.hours, suffix: "h" },
+    { value: left.minutes, suffix: "m" },
   ];
 
   return (
     <div className="px-6 pb-2 bg-surface-light dark:bg-surface-dark">
       <div
-        className="rounded-xl shadow-card px-4 py-3.5"
+        className="flex items-center justify-center gap-3.5 rounded-xl shadow-card"
         style={{
+          padding: "9px 16px",
           background: "linear-gradient(135deg, #1c0408 0%, #BA0C2F 100%)",
           border: "1px solid rgba(196,150,42,0.35)",
         }}
       >
-        <div className="flex items-end justify-center gap-4 sm:gap-6">
+        <div className="flex items-baseline gap-3.5">
           {units.map((u) => (
-            <div key={u.label} className="text-center min-w-[52px]">
-              <div
+            <div key={u.suffix} className="text-center">
+              <span
                 style={{
                   fontFamily: "Georgia, serif",
-                  fontSize: "30px",
+                  fontSize: "17px",
                   fontWeight: 700,
                   lineHeight: 1,
-                  letterSpacing: "-0.5px",
                   background:
                     "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
                   WebkitBackgroundClip: "text",
@@ -66,32 +62,29 @@ export default function TripCountdown() {
                 }}
               >
                 {u.value}
-              </div>
-              <div
-                className="mt-1 text-[10px] uppercase tracking-wider"
-                style={{ color: "rgba(255,250,243,0.75)" }}
+              </span>
+              <span
+                style={{ fontSize: "9px", color: "rgba(255,250,243,0.75)", marginLeft: "3px" }}
               >
-                {u.label}
-              </div>
+                {u.suffix}
+              </span>
             </div>
           ))}
         </div>
 
-        <div
-          className="mx-auto mt-3"
-          style={{
-            height: "1px",
-            width: "110px",
-            background:
-              "linear-gradient(to right, transparent, rgba(196,150,42,0.6), transparent)",
-          }}
-        />
+        <div style={{ width: "1px", height: "20px", background: "rgba(196,150,42,0.35)" }} />
 
         <p
-          className="mt-2.5 text-center text-xs"
-          style={{ color: "#fffaf3", fontFamily: "Georgia, serif", fontStyle: "italic" }}
+          style={{
+            margin: 0,
+            fontSize: "10px",
+            fontFamily: "Georgia, serif",
+            fontStyle: "italic",
+            color: "#fffaf3",
+            whiteSpace: "nowrap",
+          }}
         >
-          until we're together in Singapore
+          to Singapore
         </p>
       </div>
     </div>
