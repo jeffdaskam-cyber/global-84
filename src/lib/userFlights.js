@@ -320,6 +320,11 @@ const OPTIONAL_STRING_FIELDS = [
   "gate",
   "bookingClass",
   "notes",
+  // Flight auto-fill metadata (populated from the lookup API; all optional so a
+  // manually entered leg carries none of it).
+  "iataCode",       // 2-char airline code behind the display name; the lookup key
+  "flightStatus",   // "on time" / "delayed" / "departed" / "landed"
+  "aircraftType",   // e.g. "Boeing 777-300ER"
 ];
 
 /**
@@ -336,6 +341,15 @@ function shapePayload(data) {
     arrivalDateTime: toDate(data.arrivalDateTime),
     departureTimeZone: data.departureTimeZone,
     arrivalTimeZone: data.arrivalTimeZone,
+    // Provenance: "api" once a lookup populated the leg, else "manual". Written
+    // explicitly (not dropped when default) so an edited-to-manual leg doesn't
+    // keep a stale "api" from a prior update.
+    source: data.source === "api" ? "api" : "manual",
+    // Which fields the API filled and the member hasn't overridden since, so the
+    // editor can badge them. Always an array of strings.
+    autoFilledFields: Array.isArray(data.autoFilledFields)
+      ? data.autoFilledFields.filter((f) => typeof f === "string")
+      : [],
   };
 
   for (const key of OPTIONAL_STRING_FIELDS) {
