@@ -19,6 +19,10 @@ setGlobalOptions({ maxInstances: 10 });
 // Translator: image → Anthropic API proxy (API key never in browser bundle)
 export { translateImage } from "./translateImage.js";
 
+// Flight auto-fill: designator + date → AeroDataBox lookup (API key server-side,
+// per-user rate limit, shared cache). Feeds the flight editor's auto-fill.
+export { lookupFlight } from "./lookupFlight.js";
+
 // Admin-only gallery photo deletion (runs with Admin SDK privileges so it can
 // delete other members' Storage objects, which security rules forbid clients).
 export { deletePhoto } from "./deletePhoto.js";

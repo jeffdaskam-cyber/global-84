@@ -478,6 +478,38 @@ export default function Me() {
   );
 }
 
+// ── Flight status badge ────────────────────────────────────────────────────────
+
+/**
+ * Small pill for the API-sourced flight status. Colors are keyed off the status
+ * text (providers phrase it a few ways) and fall back to a neutral gray for
+ * anything unrecognized. Renders nothing when there is no status, so manually
+ * entered legs look exactly as they did before.
+ */
+function FlightStatusBadge({ status }) {
+  const text = (status || "").trim();
+  if (!text) return null;
+
+  const lower = text.toLowerCase();
+  let tone =
+    "bg-surface-border/50 text-ink-sub dark:bg-surface-darkBorder dark:text-ink-subOnDark";
+  if (/cancel|divert/.test(lower)) {
+    tone = "bg-du-crimson/10 text-du-crimson";
+  } else if (/delay|late/.test(lower)) {
+    tone = "bg-amber-500/15 text-amber-700 dark:text-amber-400";
+  } else if (/on ?time|scheduled|expected|boarding|en ?route|active/.test(lower)) {
+    tone = "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400";
+  } else if (/land|arriv|depart/.test(lower)) {
+    tone = "bg-du-gold/15 text-du-gold";
+  }
+
+  return (
+    <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tone}`}>
+      {text}
+    </span>
+  );
+}
+
 // ── Flight segment card ────────────────────────────────────────────────────────
 
 function FlightSegmentCard({
@@ -499,8 +531,11 @@ function FlightSegmentCard({
     <div className="rounded-lg border border-surface-border dark:border-surface-darkBorder p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">
-            {f.airline} {f.flightNumber}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">
+              {f.airline} {f.flightNumber}
+            </div>
+            <FlightStatusBadge status={f.flightStatus} />
           </div>
           {perSegmentConfirmation && f.confirmationNumber ? (
             <div className="text-xs text-ink-sub dark:text-ink-subOnDark">
