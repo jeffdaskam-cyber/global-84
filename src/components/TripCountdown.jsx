@@ -38,14 +38,14 @@ export default function TripCountdown() {
   return (
     <div className="px-6 pb-2 bg-surface-light dark:bg-surface-dark">
       <div
-        className="flex items-center justify-center gap-3.5 rounded-xl shadow-card"
+        className="flex items-center justify-center gap-2 rounded-xl shadow-card"
         style={{
           padding: "9px 16px",
           background: "linear-gradient(135deg, #1c0408 0%, #BA0C2F 100%)",
           border: "1px solid rgba(196,150,42,0.35)",
         }}
       >
-        <div className="flex items-baseline gap-3.5">
+        <div className="flex items-baseline gap-2">
           {units.map((u) => (
             <div key={u.suffix} className="text-center">
               <span
@@ -77,7 +77,7 @@ export default function TripCountdown() {
         <p
           style={{
             margin: 0,
-            fontSize: "10px",
+            fontSize: "14px",
             fontFamily: "Georgia, serif",
             fontStyle: "italic",
             color: "#fffaf3",
