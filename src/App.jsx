@@ -6,6 +6,7 @@ import { collection, orderBy, query, Timestamp, where } from "firebase/firestore
 import AuthGate from "./components/AuthGate.jsx";
 import SplashScreen from "./components/SplashScreen.jsx";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
+import DesktopSidebar from "./components/DesktopSidebar.jsx";
 import { subscribeIsAdmin } from "./lib/admins.js";
 import { auth, db, COHORT_ID } from "./lib/firebase.js";
 import { watch } from "./lib/subscribe.js";
@@ -384,12 +385,17 @@ export default function App() {
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
 
       <AuthGate>
+      {/* Mobile-only: hamburger drawer. Hidden on desktop, where the persistent
+          sidebar carries the same destinations. */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} isAdmin={isAdmin} />
 
       <NotificationPrompt user={user} />
 
-      <div className="min-h-screen bg-surface-light dark:bg-surface-dark">
-        <div className="pb-16">
+      {/* Desktop-only persistent nav rail (≥lg). */}
+      <DesktopSidebar isAdmin={isAdmin} hasNewEvents={hasNewEvents} />
+
+      <div className="min-h-screen bg-surface-light dark:bg-surface-dark lg:pl-[220px]">
+        <div className="pb-16 lg:pb-0">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route
@@ -425,7 +431,7 @@ export default function App() {
           </Suspense>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-surface-border dark:border-surface-darkBorder bg-white/90 dark:bg-surface-darkCard/90 backdrop-blur">
           <div className="max-w-l mx-auto flex">
             <TabLink to="/" label="Home" icon="🏠" />
             <TabLink to="/explore" label="Explore" icon="🗺️" />
