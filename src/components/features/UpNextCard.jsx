@@ -122,10 +122,12 @@ export default function UpNextCard() {
       });
     }
 
+    // No count cap: every upcoming item is kept and the list scrolls (see the
+    // max-height container below) so a far-out item like an RSVP'd event can't
+    // be silently bumped off by nearer-term flights/itinerary.
     return out
       .filter((r) => r.whenMs > nowMs)
-      .sort((a, b) => a.whenMs - b.whenMs)
-      .slice(0, 4);
+      .sort((a, b) => a.whenMs - b.whenMs);
   }, [itinerary, sgEvents, hcmcEvents, rsvps, flights, nowMs]);
 
   // Nothing coming up: hide the whole module so Home doesn't carry an empty
@@ -145,7 +147,7 @@ export default function UpNextCard() {
           <div className="mt-2 h-px bg-surface-border dark:bg-surface-darkBorder" />
         </div>
 
-        <div className="px-4">
+        <div className="px-4 max-h-80 overflow-y-auto">
           {rows.map((row, i) => {
             const meta = TYPE_META[row.type];
             const tappable = Boolean(row.to);
