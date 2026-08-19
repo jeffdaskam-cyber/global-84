@@ -56,10 +56,26 @@ const CATEGORY_IMAGES = {
   "Ho Chi Minh City": { dining: "/dining-hcmc.jpg",      activity: "/activities-hcmc.jpg" },
 };
 
+// Tracks the ≥lg breakpoint so "back" can return to the right place: the mobile
+// drill-down steps back one level (to the category picker), while the desktop
+// single-screen has no intermediate step and jumps straight back to the landing.
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isDesktop;
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function Explore({ isAdmin, onCreateEvent }) {
   const [nav, setNav] = useState(null);
   const [favorites, setFavorites] = useState(new Set());
+  const isDesktop = useIsDesktop();
 
   // A dropped favorites listener degrades to "nothing favorited" rather than
   // blocking the page; the place list below reports its own load failure.
@@ -68,7 +84,23 @@ export default function Explore({ isAdmin, onCreateEvent }) {
     return () => unsub();
   }, []);
 
-  if (!nav) return <CityPicker onSelect={(city) => setNav({ city })} />;
+  // Desktop chooses category on the single screen, so there's no picker step to
+  // land on — back goes to the landing. Mobile steps back to the category picker.
+  const backFromDetail = () => setNav(isDesktop ? null : { city: nav.city });
+
+  if (!nav) return (
+    <>
+      <div className="lg:hidden">
+        <CityPicker onSelect={(city) => setNav({ city })} />
+      </div>
+      <div className="hidden lg:block">
+        <DesktopExplore
+          onOpenCategory={(city, category) => setNav({ city, category })}
+          onOpenAccommodation={(city) => setNav({ city, category: "accommodations" })}
+        />
+      </div>
+    </>
+  );
   if (!nav.category) return (
     <CategoryPicker
       city={nav.city}
@@ -80,7 +112,7 @@ export default function Explore({ isAdmin, onCreateEvent }) {
   if (nav.category === "accommodations") return (
     <AccommodationDetail
       city={nav.city}
-      onBack={() => setNav({ city: nav.city })}
+      onBack={backFromDetail}
     />
   );
   return (
@@ -89,7 +121,7 @@ export default function Explore({ isAdmin, onCreateEvent }) {
       category={nav.category}
       isAdmin={isAdmin}
       favorites={favorites}
-      onBack={() => setNav({ city: nav.city })}
+      onBack={backFromDetail}
       onCreateEvent={onCreateEvent}
     />
   );
@@ -211,6 +243,203 @@ function CityPicker({ onSelect }) {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Desktop: single-screen Explore ────────────────────────────────────────────
+// Replaces the mobile drill-down on ≥lg. The two city cards act as a selector:
+// picking one re-points the Dining/Activities cards and the hotel below at that
+// city (images + navigation targets all follow the selection). Clicking a
+// category or the hotel drills into the existing PlaceList / AccommodationDetail
+// screens, so nothing downstream had to change.
+function DesktopExplore({ onOpenCategory, onOpenAccommodation }) {
+  const navigate = useNavigate();
+  const [selectedCity, setSelectedCity] = useState(CITIES[0].key);
+  const cityData = CITIES.find((c) => c.key === selectedCity);
+  const hotel = ACCOMMODATIONS[selectedCity];
+
+  return (
+    <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-12">
+      <div className="px-9 pt-8 pb-4 max-w-[1100px]">
+        <h1 className="text-2xl font-bold text-ink-main dark:text-ink-onDark tracking-tight">Explore</h1>
+        <p className="mt-1 text-sm text-ink-sub dark:text-ink-subOnDark">Choose a destination</p>
+      </div>
+
+      {/* City selector */}
+      <div className="px-9 max-w-[1100px] grid grid-cols-2 gap-[18px]">
+        {CITIES.map((city) => {
+          const active = city.key === selectedCity;
+          return (
+            <button
+              key={city.key}
+              onClick={() => setSelectedCity(city.key)}
+              aria-pressed={active}
+              className="relative overflow-hidden rounded-2xl h-52 text-left group focus:outline-none transition-all"
+              style={{
+                boxShadow: active
+                  ? "0 0 0 3px #C4962A, 0 12px 32px rgba(0,0,0,0.18)"
+                  : "0 8px 24px rgba(0,0,0,0.12)",
+              }}
+            >
+              <img
+                src={city.bgImageLandscape || city.bgImage}
+                alt={city.label}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div
+                className="absolute inset-0 transition-colors"
+                style={{ background: active
+                  ? "linear-gradient(to top, rgba(10,2,4,0.8) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.05) 100%)"
+                  : "linear-gradient(to top, rgba(10,2,4,0.78) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.3) 100%)" }}
+              />
+              <div className="absolute inset-0 flex flex-col justify-end p-5">
+                <div className="text-white font-bold text-2xl leading-tight drop-shadow">{city.shortLabel || city.label}</div>
+                <div className="text-white/75 text-sm mt-0.5 drop-shadow">{city.description}</div>
+              </div>
+              {/* Selection indicator */}
+              <div className="absolute top-3.5 right-3.5">
+                {active ? (
+                  <span
+                    className="flex items-center justify-center rounded-full text-du-black"
+                    style={{ width: 26, height: 26, background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)", fontSize: 14, fontWeight: 800 }}
+                  >
+                    ✓
+                  </span>
+                ) : (
+                  <span
+                    className="rounded-full text-[10px] font-bold uppercase tracking-wide text-white/85"
+                    style={{ padding: "4px 10px", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
+                  >
+                    Select
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Category cards for the selected city */}
+      <div className="px-9 max-w-[1100px] mt-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-du-crimson">
+            {cityData?.shortLabel || cityData?.label}
+          </span>
+          <div className="flex-1 h-px bg-surface-border" />
+        </div>
+        <div className="grid grid-cols-2 gap-[18px]">
+          {CATEGORY_CARDS.map((card) => {
+            const image = CATEGORY_IMAGES[selectedCity]?.[card.key];
+            return (
+              <button
+                key={card.key}
+                onClick={() => onOpenCategory(selectedCity, card.key)}
+                className="w-full flex flex-col text-left relative overflow-hidden rounded-2xl h-52 shadow-lg group focus:outline-none focus:ring-2 focus:ring-du-crimson"
+              >
+                <div className="relative flex-1 min-h-0">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} transition-transform duration-500 group-hover:scale-105`} />
+                  {image && (
+                    <img
+                      key={image}
+                      src={image}
+                      alt={card.label}
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
+                  {!image && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-5xl drop-shadow-lg">{card.emoji}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3" style={{ background: HERO_GRADIENT }}>
+                  <div className="min-w-0">
+                    <div className="text-white font-bold text-lg leading-tight">{card.emoji} {card.label}</div>
+                    <div className="text-white/60 text-[10px] mt-0.5 truncate">{card.types.join(" · ")}</div>
+                  </div>
+                  <svg className="ml-auto flex-shrink-0 w-[18px] h-[18px] text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Accommodations for the selected city */}
+      {hotel && (
+        <div className="px-9 max-w-[1100px] mt-6">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-sub">Accommodations</span>
+            <div className="flex-1 h-px bg-surface-border" />
+          </div>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenAccommodation(selectedCity)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenAccommodation(selectedCity); } }}
+            className="flex overflow-hidden rounded-2xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-du-crimson"
+          >
+            <div className="relative w-[240px] flex-shrink-0 overflow-hidden">
+              <img key={hotel.photo || cityData?.bgImageLandscape} src={hotel.photo || cityData?.bgImageLandscape || cityData?.bgImage} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to right, transparent 60%, rgba(255,255,255,0.04))" }} />
+            </div>
+            <div className="flex-1 min-w-0 px-5 py-4">
+              <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-du-crimson">{cityData?.label}</span>
+              <div className="mt-1 text-base font-bold text-ink-main dark:text-ink-onDark">🏨 {hotel.name}</div>
+              <div className="mt-1 text-sm text-ink-sub dark:text-ink-subOnDark leading-normal">{hotel.address}</div>
+              <div className="flex gap-4 mt-3">
+                <a href={hotel.websiteUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-du-crimson hover:underline">
+                  🔗 Website
+                </a>
+                <a href={getMapsUrl(hotel)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-du-crimson hover:underline">
+                  📍 Map
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* On the ground tools */}
+      <div className="px-9 max-w-[1100px] mt-7">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-sub">On the ground</span>
+          <div className="flex-1 h-px bg-surface-border" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {ON_THE_GROUND.map((tool) => (
+            <button
+              key={tool.to}
+              onClick={() => navigate(tool.to)}
+              className="w-full flex items-center gap-3.5 rounded-2xl transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-du-crimson text-left"
+              style={{
+                background: "linear-gradient(160deg, #1c0408, #2a0a10)",
+                border: "1px solid rgba(196,150,42,0.2)",
+                padding: "14px 16px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+              }}
+            >
+              <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(196,150,42,0.14)", fontSize: 18 }}>
+                {tool.icon}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-white" style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700 }}>{tool.title}</span>
+                <span className="block" style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>{tool.subtitle}</span>
+              </span>
+              <span className="flex-shrink-0" style={{ color: "rgba(196,150,42,0.7)" }}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -364,7 +593,7 @@ function AccommodationDetail({ city, onBack }) {
 
       {/* Floating info card — sits above the app's bottom nav */}
       <div
-        className="absolute left-4 right-4 bottom-24 rounded-2xl bg-surface-card dark:bg-surface-darkCard p-5 flex flex-col gap-3.5"
+        className="absolute left-4 right-4 bottom-24 lg:left-9 lg:right-auto lg:bottom-10 lg:w-[380px] rounded-2xl bg-surface-card dark:bg-surface-darkCard p-5 flex flex-col gap-3.5"
         style={{ boxShadow: "0 20px 48px rgba(0,0,0,0.28)" }}
       >
         <div>
@@ -477,8 +706,8 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
   }
 
   return (
-    <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
-      <div className="sticky top-0 z-10 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur border-b border-surface-border dark:border-surface-darkBorder px-4 pt-4 pb-3">
+    <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24 lg:pb-12">
+      <div className="sticky top-0 z-10 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur border-b border-surface-border dark:border-surface-darkBorder px-4 pt-4 pb-3 lg:px-9">
         <div className="flex items-center gap-3 mb-3">
           <button onClick={onBack} className="text-ink-sub dark:text-ink-subOnDark hover:text-ink-main dark:hover:text-ink-onDark transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -549,7 +778,7 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
         </div>
       </div>
 
-      <div className="px-4 pt-4 space-y-3">
+      <div className="px-4 pt-4 space-y-3 lg:px-9">
         {loading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} className="rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder p-4 animate-pulse">
@@ -576,7 +805,9 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
                   <span className="text-xs font-semibold text-amber-500 uppercase tracking-wide">★ My Favorites</span>
                   <div className="flex-1 h-px bg-amber-200 dark:bg-amber-900/40" />
                 </div>
-                {favoritedItems.map(renderCard)}
+                <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
+                  {favoritedItems.map(renderCard)}
+                </div>
               </div>
             )}
 
@@ -594,7 +825,9 @@ function PlaceList({ city, category, isAdmin, favorites, onBack, onCreateEvent }
                 No favorites saved yet. Tap ☆ on any place to save it.
               </div>
             ) : (
-              visibleOthers.map(renderCard)
+              <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
+                {visibleOthers.map(renderCard)}
+              </div>
             )}
           </>
         )}
