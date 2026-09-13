@@ -22,6 +22,11 @@
 export const CITY_TIME_ZONES = {
   "Singapore": { zone: "Asia/Singapore", label: "SGT" },
   "Ho Chi Minh City": { zone: "Asia/Ho_Chi_Minh", label: "ICT" },
+  // Pre-trip planning party only — not a trip destination. Unlike Singapore
+  // and Vietnam, America/Denver observes DST, but the offset math above is
+  // already computed from the IANA database rather than a hardcoded number,
+  // so no special-casing is needed here.
+  "Denver": { zone: "America/Denver", label: "MT" },
 };
 
 export const DEFAULT_TRIP_CITY = "Singapore";

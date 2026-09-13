@@ -6,7 +6,14 @@ import {
   zoneForCity,
 } from "../../config/timezones";
 
-const CITIES = ["Singapore", "Ho Chi Minh City"];
+// Kept in sync with the CITIES array in pages/Events.jsx — see the comment
+// there about Denver being a one-time, Events-only addition.
+const CITIES = ["Singapore", "Ho Chi Minh City", "Denver"];
+const CITY_SHORT_LABELS = {
+  Singapore: "Singapore",
+  "Ho Chi Minh City": "HCMC",
+  Denver: "Denver",
+};
 
 // New events default to 6pm on the current date in the destination city, not
 // on the organiser's device — planning from Denver should still land at dinner
@@ -136,7 +143,7 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
                 }`}
                 disabled={saving}
               >
-                {c === "Ho Chi Minh City" ? "HCMC" : "Singapore"}
+                {CITY_SHORT_LABELS[c] ?? c}
               </button>
             ))}
           </div>
