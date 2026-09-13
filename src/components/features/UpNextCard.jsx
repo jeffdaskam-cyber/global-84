@@ -6,13 +6,14 @@ import { subscribeItinerary } from "../../lib/itinerary";
 import { subscribeEventsByCity, subscribeMyRsvps } from "../../lib/events";
 import { subscribeFlights, toDate, formatFlightTime } from "../../lib/userFlights";
 import { formatRelative } from "../../lib/trip";
+import { CITY_TIME_ZONES } from "../../config/timezones";
 
-// The two trip cities, with the IANA zone their local times are shown in so a
-// pre-trip member in the US still reads the on-the-ground clock.
-const CITY_TZ = {
-  Singapore: "Asia/Singapore",
-  "Ho Chi Minh City": "Asia/Ho_Chi_Minh",
-};
+// Every city that can carry an event, with the IANA zone its local times are
+// shown in so a pre-trip member in the US still reads the on-the-ground clock.
+// Derived from the shared config rather than listed here: this card used to
+// hardcode the two trip cities, so an RSVP in any city added later (Denver's
+// planning party) joined against nothing and never reached the list.
+const EVENT_CITIES = Object.keys(CITY_TIME_ZONES);
 
 // Pill styling per row type. Kept inline (exact hex) since these garnet/crimson/
 // gold tints aren't all in the Tailwind token set.
@@ -35,8 +36,7 @@ export default function UpNextCard() {
   const [uid, setUid] = useState(null);
 
   const [itinerary, setItinerary] = useState([]);
-  const [sgEvents, setSgEvents] = useState([]);
-  const [hcmcEvents, setHcmcEvents] = useState([]);
+  const [eventsByCity, setEventsByCity] = useState({});
   const [rsvps, setRsvps] = useState([]);
   const [flights, setFlights] = useState([]);
 
@@ -54,8 +54,13 @@ export default function UpNextCard() {
   // not a source of record, so a dropped listener should quietly show less
   // rather than error the whole Home page.
   useEffect(() => subscribeItinerary(setItinerary, () => setItinerary([])), []);
-  useEffect(() => subscribeEventsByCity("Singapore", setSgEvents, () => setSgEvents([])), []);
-  useEffect(() => subscribeEventsByCity("Ho Chi Minh City", setHcmcEvents, () => setHcmcEvents([])), []);
+  useEffect(() => {
+    const setCity = (city, list) => setEventsByCity((prev) => ({ ...prev, [city]: list }));
+    const unsubs = EVENT_CITIES.map((city) =>
+      subscribeEventsByCity(city, (list) => setCity(city, list), () => setCity(city, []))
+    );
+    return () => unsubs.forEach((unsub) => unsub?.());
+  }, []);
 
   useEffect(() => {
     if (!uid) return;
@@ -79,14 +84,16 @@ export default function UpNextCard() {
         type: "Itinerary",
         title: it.title,
         whenMs: ms,
-        tz: CITY_TZ[it.city] || null,
+        tz: CITY_TIME_ZONES[it.city]?.zone || null,
         subtitle: it.locationName || it.city || "",
       });
     }
 
     // RSVP'd events (going / interested), joined against the loaded event list.
     const byId = new Map();
-    for (const e of [...sgEvents, ...hcmcEvents]) byId.set(e.id, e);
+    for (const list of Object.values(eventsByCity)) {
+      for (const e of list) byId.set(e.id, e);
+    }
     for (const r of rsvps) {
       const e = byId.get(r.eventId);
       if (!e) continue;
@@ -97,7 +104,7 @@ export default function UpNextCard() {
         type: r.status === "going" ? "Going" : "Interested",
         title: e.title,
         whenMs: ms,
-        tz: CITY_TZ[e.city] || null,
+        tz: CITY_TIME_ZONES[e.city]?.zone || null,
         subtitle: [e.locationName, e.city].filter(Boolean).join(" · "),
         to: "/events",
       });
@@ -128,7 +135,7 @@ export default function UpNextCard() {
     return out
       .filter((r) => r.whenMs > nowMs)
       .sort((a, b) => a.whenMs - b.whenMs);
-  }, [itinerary, sgEvents, hcmcEvents, rsvps, flights, nowMs]);
+  }, [itinerary, eventsByCity, rsvps, flights, nowMs]);
 
   // Nothing coming up: hide the whole module so Home doesn't carry an empty
   // shell before the trip leader seeds the itinerary. Layout reflows via gap.
