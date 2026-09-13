@@ -6,7 +6,17 @@ import EventCard from "../components/features/EventCard.jsx";
 import EventEditorModal from "../components/features/EventEditorModal.jsx";
 import ListenerError from "../components/ListenerError.jsx";
 
-const CITIES = ["Singapore", "Ho Chi Minh City"];
+// "Denver" is a one-time addition for the pre-trip planning party — it's an
+// Events-only city, deliberately not added to Explore (lib/explore.js), which
+// stays scoped to the two trip destinations. Remove it from this array (and
+// from EventEditorModal.jsx's copy) once the party has passed, if you don't
+// want it lingering as a tab.
+const CITIES = ["Singapore", "Ho Chi Minh City", "Denver"];
+const CITY_SHORT_LABELS = {
+  Singapore: "Singapore",
+  "Ho Chi Minh City": "HCMC",
+  Denver: "Denver",
+};
 // Per-user keys so visit state doesn't leak between members on a shared browser.
 const LS_KEY_PREFIX = "global84_lastViewedEventsAt";
 const CITY_KEY_PREFIX = "global84_eventsCity";
@@ -149,7 +159,7 @@ export default function Events({ onViewed, isAdmin }) {
                 : "bg-surface-border/60 text-ink-sub hover:bg-surface-border dark:bg-surface-darkBorder dark:text-ink-subOnDark"
             }`}
           >
-            {option === "Ho Chi Minh City" ? "HCMC" : "Singapore"}
+            {CITY_SHORT_LABELS[option] ?? option}
           </button>
         ))}
       </div>
