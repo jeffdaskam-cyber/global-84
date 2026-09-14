@@ -179,6 +179,25 @@ service cloud.firestore {
           || (isMember() && resource.data.createdByUid == request.auth.uid);
       }
 
+      // Trip documents — shared PDFs from program leadership. Any member may
+      // upload; the uploader or an admin may delete. Immutable once uploaded:
+      // replacing a document means deleting it and uploading the new version,
+      // which keeps the Storage object and the metadata doc from drifting apart.
+      match /tripDocs/{docId} {
+        allow read: if isMember();
+        allow create: if isMember()
+          && request.resource.data.uploadedBy == request.auth.uid
+          && request.resource.data.fileName is string
+          && request.resource.data.fileName.size() <= 300
+          && request.resource.data.storagePath is string
+          && request.resource.data.fileSize is number
+          && request.resource.data.fileSize <= 10 * 1024 * 1024
+          && request.resource.data.city in ['singapore', 'vietnam', 'all'];
+        allow delete: if isAdmin(cohortId)
+          || (isMember() && resource.data.uploadedBy == request.auth.uid);
+        allow update: if false;
+      }
+
       // Teams — private small-group hubs
       // Team doc + members subcollection: admin read/write only
       // Messages + meetings: readable/writable only by assigned team members (or admin for meetings/delete)
