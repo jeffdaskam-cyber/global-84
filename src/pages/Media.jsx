@@ -1,6 +1,7 @@
 // src/pages/Media.jsx
 // Trip Planning page: curated media (YouTube videos + articles, admin-managed)
-// plus a shared Links section any cohort member can contribute to.
+// plus a shared Links section and a shared Documents section any cohort member
+// can contribute to.
 
 import { useState, useEffect } from "react";
 import {
@@ -12,6 +13,10 @@ import {
   subscribeLinks, addLink, deleteLink, validateLink,
   MAX_URL_LENGTH, MAX_DESCRIPTION_LENGTH,
 } from "../lib/links.js";
+import {
+  subscribeTripDocs, uploadTripDoc, deleteTripDoc, validateTripDoc,
+  formatFileSize,
+} from "../lib/tripDocs.js";
 import { watch, listenerErrorMessage } from "../lib/subscribe.js";
 import ListenerError from "../components/ListenerError.jsx";
 
@@ -221,6 +226,9 @@ export default function Media({ isAdmin }) {
 
       {/* ── Links section (cohort-wide) ── */}
       <LinksSection isAdmin={isAdmin} />
+
+      {/* ── Documents section (cohort-wide, follows the city filter above) ── */}
+      <DocumentsSection isAdmin={isAdmin} activeCity={activeCity} />
 
       {/* ── YouTube lightbox ── */}
       {lightboxUrl && (
@@ -786,6 +794,299 @@ function AddLinkModal({ onClose }) {
             style={{ background: "linear-gradient(135deg, #C4962A 0%, #a07820 100%)", color: "#0d0103" }}
           >
             {saving ? "Saving…" : "Add"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Documents section (any member can add; uploader or admin can delete) ──────
+function DocumentsSection({ isAdmin, activeCity }) {
+  const [docs, setDocs]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [addOpen, setAddOpen]     = useState(false);
+  const currentUid = auth.currentUser?.uid;
+
+  useEffect(() => {
+    const unsub = subscribeTripDocs(
+      (data) => {
+        setDocs(data);
+        setLoading(false);
+      },
+      (err) => {
+        setLoading(false);
+        setLoadError(listenerErrorMessage(err));
+      }
+    );
+    return unsub;
+  }, []);
+
+  // Documents filed under "all" stay visible whichever city is selected —
+  // a packing list or visa guide is not city-specific.
+  const filtered = docs.filter(
+    (d) => activeCity === "all" || d.city === activeCity || d.city === "all"
+  );
+
+  async function handleDeleteDoc(tripDoc) {
+    if (!window.confirm(`Remove "${tripDoc.fileName}"?`)) return;
+    try {
+      await deleteTripDoc(tripDoc);
+    } catch (err) {
+      console.error("Document delete failed:", err);
+      alert("Delete failed. Please try again.");
+    }
+  }
+
+  return (
+    <div className="px-4 pt-2 pb-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-base">📄</span>
+        <span className="text-white font-semibold text-sm tracking-wide">Documents</span>
+        {filtered.length > 0 && <span className="text-white/30 text-xs">({filtered.length})</span>}
+        <div className="flex-1 h-px bg-white/10 ml-1" />
+        <button
+          onClick={() => setAddOpen(true)}
+          className="flex items-center gap-1.5 bg-[#BA0C2F] hover:bg-[#9a0a27] text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <span className="text-base leading-none">+</span> Add Document
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="bg-white/5 rounded-xl p-3.5 animate-pulse space-y-2">
+              <div className="h-3 bg-white/10 rounded w-3/5" />
+              <div className="h-2.5 bg-white/10 rounded w-4/5" />
+            </div>
+          ))}
+        </div>
+      ) : loadError ? (
+        <ListenerError message={loadError} />
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-10 text-white/40">
+          <span className="text-4xl block mb-3">📄</span>
+          <p className="text-sm font-medium text-white/50">
+            {docs.length === 0
+              ? "No documents yet. Add the first one!"
+              : "No documents for this city yet."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((tripDoc) => (
+            <DocumentCard
+              key={tripDoc.id}
+              tripDoc={tripDoc}
+              canDelete={isAdmin || tripDoc.uploadedBy === currentUid}
+              onDelete={() => handleDeleteDoc(tripDoc)}
+            />
+          ))}
+        </div>
+      )}
+
+      {addOpen && <AddDocumentModal onClose={() => setAddOpen(false)} />}
+    </div>
+  );
+}
+
+// ── Document card ─────────────────────────────────────────────────────────────
+function DocumentCard({ tripDoc, canDelete, onDelete }) {
+  const added = tripDoc.createdAt?.toDate?.();
+  const addedLabel = added
+    ? added.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "";
+  const cityLabel =
+    tripDoc.city === "singapore" ? "🇸🇬 Singapore"
+    : tripDoc.city === "vietnam" ? "🇻🇳 Vietnam"
+    : "All cities";
+
+  // Save the file rather than opening it in a browser viewer: on the trip a
+  // downloaded PDF is still readable after the signal drops, a streamed one is not.
+  function handleDownload() {
+    const a = document.createElement("a");
+    a.href = tripDoc.downloadUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.download = tripDoc.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function handleDelete(e) {
+    e.stopPropagation();
+    onDelete();
+  }
+
+  return (
+    <div
+      onClick={handleDownload}
+      className="flex gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3.5 cursor-pointer transition-all active:scale-[0.98]"
+    >
+      {/* Icon */}
+      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+        <span className="text-lg">📄</span>
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-semibold leading-snug line-clamp-2">
+          {tripDoc.fileName}
+        </p>
+        <p className="text-white/40 text-xs mt-1">
+          {cityLabel} · {formatFileSize(tripDoc.fileSize || 0)}
+        </p>
+        <p className="text-white/30 text-xs mt-1.5">
+          Added by {tripDoc.uploaderName || "Member"}
+          {addedLabel && ` · ${addedLabel}`}
+        </p>
+      </div>
+
+      {/* Download hint + delete (uploader or admin only) */}
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <svg className="w-4 h-4 text-white/30 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-5l-4 4m0 0l-4-4m4 4V3" />
+        </svg>
+        {canDelete && (
+          <button
+            onClick={handleDelete}
+            className="text-white/20 hover:text-red-400 transition-colors p-0.5"
+            title="Delete"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Add document modal (any member) ───────────────────────────────────────────
+function AddDocumentModal({ onClose }) {
+  const [file, setFile]         = useState(null);
+  const [city, setCity]         = useState("all");
+  const [progress, setProgress] = useState(0);
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState("");
+
+  function handlePick(e) {
+    const picked = e.target.files?.[0] || null;
+    setFile(picked);
+    setError(picked ? validateTripDoc(picked) || "" : "");
+  }
+
+  async function handleUpload() {
+    const validationError = validateTripDoc(file);
+    if (validationError) { setError(validationError); return; }
+    setError("");
+    setSaving(true);
+    setProgress(0);
+    try {
+      await uploadTripDoc(file, city, setProgress);
+      onClose();
+    } catch (err) {
+      console.error("Document upload failed:", err);
+      setError("Upload failed. Check your connection, then try again.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-4">
+      <div
+        className="w-full max-w-md rounded-2xl overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #1a0508 0%, #0d0103 100%)", border: "1px solid rgba(196,150,42,0.25)" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: "1px solid rgba(196,150,42,0.15)" }}>
+          <h2 style={{ fontFamily: "Georgia, serif", color: "#fff", fontSize: "18px", fontWeight: 700 }}>
+            Add Document
+          </h2>
+          <button onClick={onClose} className="text-white/40 hover:text-white/80 transition-colors text-xl">✕</button>
+        </div>
+
+        {/* Form */}
+        <div className="px-5 py-4 space-y-4">
+          {/* File */}
+          <div>
+            <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">
+              PDF file * <span className="text-white/25 normal-case font-normal">(max 10 MB)</span>
+            </label>
+            <input
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={handlePick}
+              disabled={saving}
+              className="w-full text-white/70 text-sm file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-white/15 file:text-white file:text-sm file:font-semibold hover:file:bg-white/25 disabled:opacity-50"
+            />
+            {file && !error && (
+              <p className="text-white/40 text-xs mt-1.5">{formatFileSize(file.size)}</p>
+            )}
+          </div>
+
+          {/* City */}
+          <div>
+            <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">City</label>
+            <div className="flex gap-2">
+              {[
+                { key: "all",       label: "All" },
+                { key: "singapore", label: "🇸🇬 Singapore" },
+                { key: "vietnam",   label: "🇻🇳 Vietnam" },
+              ].map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => setCity(c.key)}
+                  disabled={saving}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                    city === c.key ? "bg-white/20 text-white" : "bg-white/8 text-white/50 hover:bg-white/15"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Progress */}
+          {saving && (
+            <div>
+              <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className="h-full bg-[#BA0C2F] transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-white/40 text-xs mt-1.5">Uploading… {progress}%</p>
+            </div>
+          )}
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 pb-5 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-xl border border-white/15 text-white/60 text-sm font-semibold hover:bg-white/10 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleUpload}
+            disabled={saving || !file}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg, #C4962A 0%, #a07820 100%)", color: "#0d0103" }}
+          >
+            {saving ? "Uploading…" : "Upload"}
           </button>
         </div>
       </div>

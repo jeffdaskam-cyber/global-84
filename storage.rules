@@ -46,5 +46,17 @@ service firebase.storage {
         && (request.resource.contentType == 'application/pdf'
             || request.resource.contentType.matches('image/.*'));
     }
+
+    // Shared trip documents: one cohort-wide folder, readable by every member.
+    // Storage rules can't check the uploader the way Firestore can (there is no
+    // document to read `uploadedBy` from), so delete is open to any member and
+    // the Firestore rule on cohorts/{cohortId}/tripDocs is the real boundary —
+    // a deleted object with a surviving metadata doc is the worst case here.
+    match /tripDocs/{cohortId}/{fileName} {
+      allow read, delete: if isMember();
+      allow write: if isMember()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+    }
   }
 }
