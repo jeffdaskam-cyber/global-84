@@ -22,7 +22,16 @@ function tzForCity(city) {
   return CITY_OPTIONS.find((c) => c.value === city)?.tz || "Asia/Singapore";
 }
 
-const EMPTY = { id: null, title: "", when: "", locationName: "", city: "" };
+const CATEGORY_OPTIONS = [
+  { value: "", label: "None" },
+  { value: "visit", label: "Company visit" },
+  { value: "meal", label: "Group meal" },
+  { value: "social", label: "Cultural / social" },
+  { value: "travel", label: "Travel / transfers" },
+  { value: "teamEvent", label: "Team event" },
+];
+
+const EMPTY = { id: null, title: "", when: "", locationName: "", city: "", category: "" };
 
 export default function ItineraryAdmin() {
   const [items, setItems] = useState([]);
@@ -44,6 +53,7 @@ export default function ItineraryAdmin() {
       when: instantToWallClock(item.startTime, tzForCity(item.city || "")),
       locationName: item.locationName || "",
       city: item.city || "",
+      category: item.category || "",
     });
   }
 
@@ -64,6 +74,7 @@ export default function ItineraryAdmin() {
         startTime,
         locationName: form.locationName,
         city: form.city,
+        category: form.category,
       };
       if (editing) {
         await updateItineraryItem(form.id, payload);
@@ -151,6 +162,19 @@ export default function ItineraryAdmin() {
             />
           </label>
         </div>
+
+        <label className="block">
+          <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">Category (optional)</div>
+          <select
+            className={inputClass}
+            value={form.category}
+            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+          >
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+        </label>
 
         {error && <div className="text-sm text-du-crimson">{error}</div>}
 

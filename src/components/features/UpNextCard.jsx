@@ -8,15 +8,8 @@ import { subscribeFlights, toDate, formatFlightTime } from "../../lib/userFlight
 import { formatRelative } from "../../lib/trip";
 import { CITY_TIME_ZONES } from "../../config/timezones";
 
-// Every city that can carry an event, with the IANA zone its local times are
-// shown in so a pre-trip member in the US still reads the on-the-ground clock.
-// Derived from the shared config rather than listed here: this card used to
-// hardcode the two trip cities, so an RSVP in any city added later (Denver's
-// planning party) joined against nothing and never reached the list.
 const EVENT_CITIES = Object.keys(CITY_TIME_ZONES);
 
-// Pill styling per row type. Kept inline (exact hex) since these garnet/crimson/
-// gold tints aren't all in the Tailwind token set.
 const TYPE_META = {
   Itinerary: { label: "Itinerary", bg: "#F4F1E6", fg: "#8A1538" },
   Going: { label: "Going", bg: "#F8E6EA", fg: "#8E0A24" },
@@ -24,12 +17,37 @@ const TYPE_META = {
   Flight: { label: "Flight", bg: "#F4F1E6", fg: "#BA0C2F" },
 };
 
+const CATEGORIES = {
+  visit: { label: "Company visit", color: "#BA0C2F" },
+  meal: { label: "Group meal", color: "#76918B" },
+  social: { label: "Cultural / social", color: "#C4962A" },
+  travel: { label: "Travel / transfers", color: "#375060" },
+  teamEvent: { label: "Team event", color: "#000000" },
+  rsvpEvent: { label: "RSVP event", color: "#CCBA8C" },
+};
+
+const TINT_ALPHA = 0.08;
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function formatWhen(ms, timeZone) {
   if (!ms) return "";
   const opts = { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
   if (timeZone) opts.timeZone = timeZone;
   return new Intl.DateTimeFormat("en-US", opts).format(new Date(ms));
 }
+
+const LEGEND_ITEMS = Object.values(CATEGORIES).map((c) => ({
+  label: c.label,
+  color: c.color,
+  tintBg: hexToRgba(c.color, TINT_ALPHA),
+}));
 
 export default function UpNextCard() {
   const navigate = useNavigate();
@@ -40,8 +58,6 @@ export default function UpNextCard() {
   const [rsvps, setRsvps] = useState([]);
   const [flights, setFlights] = useState([]);
 
-  // Re-tick each minute so the relative countdowns ("in 3h") stay honest and
-  // items drop off once their time passes, without a reload.
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 60 * 1000);
@@ -50,9 +66,6 @@ export default function UpNextCard() {
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUid(u?.uid || null)), []);
 
-  // All listeners degrade to empty on error — Up Next is a convenience surface,
-  // not a source of record, so a dropped listener should quietly show less
-  // rather than error the whole Home page.
   useEffect(() => subscribeItinerary(setItinerary, () => setItinerary([])), []);
   useEffect(() => {
     const setCity = (city, list) => setEventsByCity((prev) => ({ ...prev, [city]: list }));
@@ -75,7 +88,6 @@ export default function UpNextCard() {
   const rows = useMemo(() => {
     const out = [];
 
-    // Itinerary — admin-posted, no detail screen so these don't navigate.
     for (const it of itinerary) {
       const ms = toDate(it.startTime)?.getTime();
       if (!ms) continue;
@@ -86,10 +98,10 @@ export default function UpNextCard() {
         whenMs: ms,
         tz: CITY_TIME_ZONES[it.city]?.zone || null,
         subtitle: it.locationName || it.city || "",
+        cat: it.category || null,
       });
     }
 
-    // RSVP'd events (going / interested), joined against the loaded event list.
     const byId = new Map();
     for (const list of Object.values(eventsByCity)) {
       for (const e of list) byId.set(e.id, e);
@@ -107,10 +119,10 @@ export default function UpNextCard() {
         tz: CITY_TIME_ZONES[e.city]?.zone || null,
         subtitle: [e.locationName, e.city].filter(Boolean).join(" · "),
         to: "/events",
+        cat: "rsvpEvent",
       });
     }
 
-    // Next upcoming flight only — Me stays the place for the full itinerary.
     const upcomingFlights = flights
       .map((f) => ({ f, ms: toDate(f.departureDateTime)?.getTime() }))
       .filter((x) => x.ms && x.ms > nowMs)
@@ -126,20 +138,18 @@ export default function UpNextCard() {
         tz: f.departureTimeZone || null,
         subtitle: `Departs ${formatFlightTime(f.departureDateTime, f.departureTimeZone)}${f.gate ? ` · Gate ${f.gate}` : ""}`,
         to: "/me",
+        cat: null,
       });
     }
 
-    // No count cap: every upcoming item is kept and the list scrolls (see the
-    // max-height container below) so a far-out item like an RSVP'd event can't
-    // be silently bumped off by nearer-term flights/itinerary.
     return out
       .filter((r) => r.whenMs > nowMs)
       .sort((a, b) => a.whenMs - b.whenMs);
   }, [itinerary, eventsByCity, rsvps, flights, nowMs]);
 
-  // Nothing coming up: hide the whole module so Home doesn't carry an empty
-  // shell before the trip leader seeds the itinerary. Layout reflows via gap.
   if (rows.length === 0) return null;
+
+  const hasCategories = rows.some((r) => r.cat);
 
   return (
     <div className="px-6 pt-4 pb-2 bg-surface-light dark:bg-surface-dark">
@@ -151,48 +161,74 @@ export default function UpNextCard() {
           <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-du-crimson">
             Up Next
           </div>
-          <div className="mt-2 h-px bg-surface-border dark:bg-surface-darkBorder" />
+
+          {hasCategories && (
+            <div className="flex flex-wrap mt-2" style={{ gap: "8px 10px" }}>
+              {LEGEND_ITEMS.map((cat) => (
+                <div key={cat.label} className="flex items-center" style={{ gap: "5px" }}>
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 3,
+                      background: cat.tintBg,
+                      border: `1px solid ${cat.color}`,
+                    }}
+                  />
+                  <span className="text-[10px] text-ink-muted">{cat.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-2.5 h-px bg-surface-border dark:bg-surface-darkBorder" />
         </div>
 
-        <div className="px-4 max-h-80 overflow-y-auto">
-          {rows.map((row, i) => {
+        <div className="px-4 py-2.5 max-h-80 overflow-y-auto flex flex-col" style={{ gap: "6px" }}>
+          {rows.map((row) => {
             const meta = TYPE_META[row.type];
+            const catDef = row.cat ? CATEGORIES[row.cat] : null;
+            const tintBg = catDef ? hexToRgba(catDef.color, TINT_ALPHA) : "transparent";
             const tappable = Boolean(row.to);
             const Tag = tappable ? "button" : "div";
             return (
-              <div key={row.key}>
-                {i > 0 && <div className="h-px bg-surface-border dark:bg-surface-darkBorder" />}
-                <Tag
-                  onClick={tappable ? () => navigate(row.to) : undefined}
-                  className={`w-full flex items-center gap-3 py-3 text-left ${
-                    tappable ? "active:scale-[0.99] transition-transform" : ""
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-ink-main dark:text-ink-onDark truncate">
-                        {row.title}
-                      </span>
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                        style={{ background: meta.bg, color: meta.fg }}
-                      >
-                        {meta.label}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-2 text-xs text-ink-sub dark:text-ink-subOnDark flex-wrap">
-                      <span>{formatWhen(row.whenMs, row.tz)}</span>
-                      {row.subtitle ? <span className="opacity-70">· {row.subtitle}</span> : null}
-                      <span className="font-semibold text-du-crimson">{formatRelative(row.whenMs, nowMs)}</span>
-                    </div>
+              <Tag
+                key={row.key}
+                onClick={tappable ? () => navigate(row.to) : undefined}
+                className={`w-full flex items-center text-left ${
+                  tappable ? "active:scale-[0.99] transition-transform" : ""
+                }`}
+                style={{
+                  gap: "10px",
+                  padding: "9px 10px",
+                  borderRadius: "10px",
+                  background: tintBg,
+                }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-ink-main dark:text-ink-onDark truncate">
+                      {row.title}
+                    </span>
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{ background: meta.bg, color: meta.fg }}
+                    >
+                      {meta.label}
+                    </span>
                   </div>
-                  {tappable && (
-                    <svg className="w-4 h-4 flex-shrink-0 text-ink-sub dark:text-ink-subOnDark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  )}
-                </Tag>
-              </div>
+                  <div className="mt-0.5 flex items-center gap-2 text-xs text-ink-sub dark:text-ink-subOnDark flex-wrap">
+                    <span>{formatWhen(row.whenMs, row.tz)}</span>
+                    {row.subtitle ? <span className="opacity-70">· {row.subtitle}</span> : null}
+                    <span className="font-semibold text-du-crimson">{formatRelative(row.whenMs, nowMs)}</span>
+                  </div>
+                </div>
+                {tappable && (
+                  <svg className="w-4 h-4 flex-shrink-0 text-ink-sub dark:text-ink-subOnDark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
+              </Tag>
             );
           })}
         </div>
