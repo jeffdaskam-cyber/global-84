@@ -42,6 +42,7 @@ export async function createItineraryItem(data) {
     startTime: data.startTime, // Date ok; Firestore stores as Timestamp
     locationName: (data.locationName || "").trim(),
     city: (data.city || "").trim(),
+    category: data.category || "",
     status: "active",
     createdAt: serverTimestamp(),
     createdByUid: u.uid,
@@ -64,6 +65,7 @@ export async function updateItineraryItem(id, patch) {
   if (patch.startTime) payload.startTime = patch.startTime;
   if (typeof patch.locationName === "string") payload.locationName = patch.locationName.trim();
   if (typeof patch.city === "string") payload.city = patch.city.trim();
+  if (typeof patch.category === "string") payload.category = patch.category;
 
   if (Object.keys(payload).length === 0) return;
   await updateDoc(itineraryDoc(id), payload);
