@@ -21,7 +21,62 @@ service cloud.firestore {
     }
     function isAdmin(cohortId) {
       return isMember()
+        && exists(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid))
         && get(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid)).data.enabled == true;
+    }
+    function hasOnlyFields(data, required, optional) {
+      return data.keys().hasAll(required)
+        && data.keys().hasOnly(required.concat(optional));
+    }
+    function isTeamMember(cohortId, teamId) {
+      return isMember()
+        && exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
+    }
+    function isValidEvent(data) {
+      return hasOnlyFields(
+          data,
+          ['title', 'city', 'startTime', 'locationName', 'description', 'status', 'createdAt', 'createdByUid', 'createdByName'],
+          []
+        )
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && data.city in ['Singapore', 'Ho Chi Minh City', 'Denver']
+        && data.startTime is timestamp
+        && data.locationName is string && data.locationName.size() >= 1 && data.locationName.size() <= 200
+        && data.description is string && data.description.size() <= 5000
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp
+        && data.createdByUid is string && data.createdByUid.size() >= 1
+        && data.createdByName is string && data.createdByName.size() >= 1 && data.createdByName.size() <= 80;
+    }
+    function isValidRsvp(data, uid) {
+      return hasOnlyFields(data, ['uid', 'status', 'updatedAt', 'name'], [])
+        && data.uid == uid
+        && data.status in ['going', 'interested', 'not_going']
+        && data.updatedAt is timestamp
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80;
+    }
+    function isValidPhotoCreate(data, cohortId) {
+      return hasOnlyFields(
+          data,
+          ['url', 'storagePath', 'city', 'uploaderUid', 'uploaderName', 'createdAt'],
+          []
+        )
+        && data.url is string && data.url.size() >= 1 && data.url.size() <= 4096
+        && data.storagePath is string
+        && data.city in ['singapore', 'vietnam']
+        && data.uploaderUid == request.auth.uid
+        && data.uploaderName is string && data.uploaderName.size() >= 1 && data.uploaderName.size() <= 80
+        && data.createdAt is timestamp
+        && data.storagePath.matches('photos/' + cohortId + '/' + request.auth.uid + '/.*');
+    }
+    function onlyChangesOwnPhotoLike() {
+      let beforeLikes = resource.data.keys().hasAny(['likes']) ? resource.data.likes : [];
+      let afterLikes = request.resource.data.likes;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        && afterLikes is list
+        && afterLikes.size() <= 100
+        && afterLikes.toSet().size() == afterLikes.size()
+        && afterLikes.removeAll([request.auth.uid]).toSet() == beforeLikes.removeAll([request.auth.uid]).toSet();
     }
 
     match /cohorts/{cohortId} {
@@ -35,9 +90,28 @@ service cloud.firestore {
       match /members/{uid} {
         allow read: if isSelf(uid) || isAdmin(cohortId);
         allow create: if isSelf(uid)
-          && request.resource.data.uid == request.auth.uid;
+          && hasOnlyFields(
+            request.resource.data,
+            ['uid', 'email', 'displayName', 'role', 'createdAt', 'lastLoginAt'],
+            []
+          )
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.email is string && request.resource.data.email.size() <= 320
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() >= 1
+          && request.resource.data.displayName.size() <= 80
+          && request.resource.data.role == 'member'
+          && request.resource.data.createdAt is timestamp
+          && request.resource.data.lastLoginAt is timestamp;
         allow update: if isSelf(uid)
-          && request.resource.data.uid == resource.data.uid;
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName', 'lastLoginAt'])
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() >= 1
+          && request.resource.data.displayName.size() <= 80
+          && request.resource.data.lastLoginAt is timestamp;
         // Admin can update teamId field on any member (for team assignment)
         allow update: if isAdmin(cohortId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamId']);
@@ -102,13 +176,21 @@ service cloud.firestore {
       match /events/{eventId} {
         allow read: if isMember();
         allow create: if isMember()
-          && request.resource.data.createdByUid == request.auth.uid;
-        allow update, delete: if isAdmin(cohortId)
+          && request.resource.data.createdByUid == request.auth.uid
+          && isValidEvent(request.resource.data);
+        allow update: if (isAdmin(cohortId)
+            || (isMember() && resource.data.createdByUid == request.auth.uid))
+          && isValidEvent(request.resource.data)
+          && request.resource.data.createdByUid == resource.data.createdByUid
+          && request.resource.data.createdByName == resource.data.createdByName
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isAdmin(cohortId)
           || (isMember() && resource.data.createdByUid == request.auth.uid);
 
         match /rsvps/{uid} {
           allow read: if isMember();
-          allow create, update: if isSelf(uid);
+          allow create, update: if isSelf(uid)
+            && isValidRsvp(request.resource.data, uid);
           allow delete: if isSelf(uid) || isAdmin(cohortId);
         }
 
@@ -139,19 +221,15 @@ service cloud.firestore {
       }
 
       // Photos (any signed-in user can read; uploader can create; admin can delete)
-      // Any signed-in user can update the likes array only; uploader can update their own photo fields.
+      // Photo metadata is immutable after creation. Members may only add or
+      // remove their own reaction, so a privileged admin delete can never be
+      // redirected to another user's Storage object.
       match /photos/{photoId} {
         allow read: if isMember();
-        // storagePath must live under this uploader's own folder so it can
-        // never reference another user's object (see deletePhoto function).
         allow create: if isMember()
-          && request.resource.data.uploaderUid == request.auth.uid
-          && request.resource.data.storagePath is string
-          && request.resource.data.storagePath.matches('photos/' + cohortId + '/' + request.auth.uid + '/.*');
+          && isValidPhotoCreate(request.resource.data, cohortId);
         allow update: if isMember()
-          && resource.data.uploaderUid == request.auth.uid;
-        allow update: if isMember()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
+          && onlyChangesOwnPhotoLike();
         allow delete: if isAdmin(cohortId);
       }
 
@@ -198,23 +276,20 @@ service cloud.firestore {
         allow update: if false;
       }
 
-      // Teams — private small-group hubs
-      // Team doc + members subcollection: admin read/write only
-      // Messages + meetings: readable/writable only by assigned team members (or admin for meetings/delete)
+      // Teams — private small-group hubs. Assigned members can read the team
+      // record and roster needed by their view; only admins manage them.
       match /teams/{teamId} {
-        allow read, write: if isAdmin(cohortId);
+        allow get: if isAdmin(cohortId) || isTeamMember(cohortId, teamId);
+        allow list, create, update, delete: if isAdmin(cohortId);
 
         match /members/{uid} {
-          allow read, write: if isAdmin(cohortId);
+          allow read: if isAdmin(cohortId) || isTeamMember(cohortId, teamId);
+          allow write: if isAdmin(cohortId);
         }
 
-        // Helper: is the requesting user an assigned member of this team?
-        // Checked by looking up their uid in the members subcollection.
         match /messages/{messageId} {
-          allow read: if isAdmin(cohortId)
-            || exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
-          allow create: if isMember()
-            && exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid))
+          allow read: if isTeamMember(cohortId, teamId);
+          allow create: if isTeamMember(cohortId, teamId)
             && request.resource.data.createdByUid == request.auth.uid
             && request.resource.data.text.size() >= 1
             && request.resource.data.text.size() <= 1000;
@@ -224,7 +299,7 @@ service cloud.firestore {
 
         match /meetings/{meetingId} {
           allow read: if isAdmin(cohortId)
-            || exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
+            || isTeamMember(cohortId, teamId);
           allow create, update, delete: if isAdmin(cohortId);
         }
       }

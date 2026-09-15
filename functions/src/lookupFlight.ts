@@ -25,6 +25,7 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 import corsLib from "cors";
+import { parseFlightLookupRequest } from "./requestValidation.js";
 
 // Initialize the Admin SDK once (used to verify caller ID tokens and to read
 // and write the cache / rate-limit collections with server privileges).
@@ -51,8 +52,6 @@ const CACHE_TTL_MS = 3 * 60 * 60 * 1000;       // 3 hours
 
 // Server-side shape of the lookup key. The client validates too, but the
 // endpoint is public at the platform level, so never trust the body.
-const DESIGNATOR_RE = /^[A-Z0-9]{2}[0-9]{1,4}$/;
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 interface RateLimitResult {
   allowed: boolean;
@@ -327,24 +326,17 @@ export const lookupFlight = onRequest(
         return;
       }
 
-      const { designator: rawDesignator, date, forceRefresh } = req.body as {
-        designator?: string;
-        date?: string;
-        forceRefresh?: boolean;
-      };
-
-      const designator = (rawDesignator || "").trim().toUpperCase();
-      if (!DESIGNATOR_RE.test(designator)) {
-        res.status(400).json({ error: "Invalid flight designator." });
+      const request = parseFlightLookupRequest(req.body);
+      if (!request) {
+        res.status(400).json({
+          error: "Provide a valid flight designator, date, and optional forceRefresh flag.",
+        });
         return;
       }
-      if (!ISO_DATE_RE.test(date || "")) {
-        res.status(400).json({ error: "Invalid date. Use YYYY-MM-DD." });
-        return;
-      }
+      const { designator, date, forceRefresh } = request;
 
       const db = getFirestore();
-      const cacheRef = db.collection("flightLookups").doc(cacheKey(designator, date as string));
+      const cacheRef = db.collection("flightLookups").doc(cacheKey(designator, date));
 
       // Serve a fresh cache hit without touching the rate limit or the provider:
       // a cached read costs nothing and shouldn't count against the member.
@@ -386,7 +378,7 @@ export const lookupFlight = onRequest(
       let matches: FlightMatch[];
       try {
         logger.info("lookupFlight: calling provider", { designator, date });
-        matches = await fetchFlights(designator, date as string, aeroDataBoxKey.value());
+        matches = await fetchFlights(designator, date, aeroDataBoxKey.value());
       } catch (err) {
         const status = (err as { upstreamStatus?: number }).upstreamStatus;
         if (status) {

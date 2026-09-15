@@ -10,7 +10,7 @@ import {
 import {
   ref,
   uploadBytesResumable,
-  getDownloadURL,
+  getBlob,
   deleteObject,
 } from "firebase/storage";
 import { db, storage, COHORT_ID } from "./firebase.js";
@@ -106,14 +106,12 @@ export function uploadFile(uid, file, onProgress) {
       (error) => reject(error),
       async () => {
         try {
-          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
           const docRef = await addDoc(filesColRef(uid), {
             fileName: file.name, // original name shown in UI
             storageName: uniqueName, // deduplicated name used in Storage
             fileSize: file.size,
             fileType: file.type,
             storagePath: `userFiles/${uid}/${uniqueName}`,
-            downloadUrl,
             createdAt: serverTimestamp(),
           });
           resolve(docRef.id);
@@ -123,6 +121,15 @@ export function uploadFile(uid, file, onProgress) {
       }
     );
   });
+}
+
+/**
+ * Read a private file through the authenticated Storage SDK. The caller gets
+ * a short-lived in-memory object URL rather than a persistent bearer URL.
+ */
+export async function getPrivateFileObjectUrl(storagePath) {
+  const blob = await getBlob(ref(storage, storagePath));
+  return URL.createObjectURL(blob);
 }
 
 // ── List ───────────────────────────────────────────────────────────────────────
