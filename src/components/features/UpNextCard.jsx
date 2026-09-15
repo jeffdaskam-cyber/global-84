@@ -138,7 +138,7 @@ export default function UpNextCard() {
         tz: f.departureTimeZone || null,
         subtitle: `Departs ${formatFlightTime(f.departureDateTime, f.departureTimeZone)}${f.gate ? ` · Gate ${f.gate}` : ""}`,
         to: "/me",
-        cat: null,
+        cat: "travel",
       });
     }
 
