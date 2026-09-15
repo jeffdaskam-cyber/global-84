@@ -42,9 +42,9 @@ export async function upsertMemberProfile(user) {
     return { created: true };
   }
 
-  // Existing member: only update safe, non-destructive fields
+  // Existing member: only record their last login. Email changes should go
+  // through Firebase Auth rather than a client-writable profile field.
   await updateDoc(ref, {
-    email: emailLower,
     lastLoginAt: serverTimestamp(),
   });
 

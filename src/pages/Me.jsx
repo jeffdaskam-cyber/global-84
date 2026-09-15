@@ -7,6 +7,7 @@ import {
   subscribeFiles,
   uploadFile,
   deleteFile,
+  getPrivateFileObjectUrl,
   validateFile,
   fileTypeIcon,
   fileTypeLabel,
@@ -173,6 +174,33 @@ export default function Me() {
     } catch (err) {
       console.error("Delete failed:", err);
       setUploadError("Could not delete file. Please try again.");
+    }
+  }
+
+  async function handleOpenFile(file, download = false) {
+    setUploadError("");
+    // Opening the placeholder synchronously keeps browsers from treating the
+    // authenticated download, which follows an await, as an unsolicited popup.
+    const target = download ? null : window.open("", "_blank");
+    try {
+      const objectUrl = await getPrivateFileObjectUrl(file.storagePath);
+      if (download) {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = file.fileName || "download";
+        link.click();
+      } else if (target) {
+        target.opener = null;
+        target.location.replace(objectUrl);
+      } else {
+        URL.revokeObjectURL(objectUrl);
+        throw new Error("Your browser blocked the file window.");
+      }
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err) {
+      target?.close();
+      console.error("Open file failed:", err);
+      setUploadError("Could not open file. Please try again.");
     }
   }
 
@@ -390,21 +418,18 @@ export default function Me() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <a
-                    href={f.downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => handleOpenFile(f)}
                     className="text-xs text-du-gold font-semibold hover:underline"
                   >
                     Open
-                  </a>
-                  <a
-                    href={f.downloadUrl}
-                    download={f.fileName}
+                  </button>
+                  <button
+                    onClick={() => handleOpenFile(f, true)}
                     className="text-xs text-ink-sub dark:text-ink-subOnDark hover:underline"
                   >
                     ↓
-                  </a>
+                  </button>
                   <button
                     onClick={() => handleDeleteFile(f.id, f.storagePath, f.fileName)}
                     className="text-xs text-du-crimson hover:opacity-70 transition"

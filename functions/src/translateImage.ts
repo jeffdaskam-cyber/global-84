@@ -17,6 +17,7 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import corsLib from "cors";
+import { parseTranslationRequest } from "./requestValidation.js";
 
 // Initialize the Admin SDK once (used to verify caller ID tokens).
 if (getApps().length === 0) {
@@ -187,20 +188,14 @@ export const translateImage = onRequest(
         return;
       }
 
-      // Validate request body
-      const { imageBase64, mediaType } = req.body as {
-        imageBase64?: string;
-        mediaType?: string;
-      };
-
-      if (!imageBase64 || typeof imageBase64 !== "string") {
-        res.status(400).json({ error: "Missing required field: imageBase64" });
+      const request = parseTranslationRequest(req.body);
+      if (!request) {
+        res.status(400).json({
+          error: "Provide a JPG, PNG, or WEBP image under 5 MB.",
+        });
         return;
       }
-      if (!mediaType || typeof mediaType !== "string") {
-        res.status(400).json({ error: "Missing required field: mediaType" });
-        return;
-      }
+      const { imageBase64, mediaType } = request;
 
       // Rate-limit only genuine translate attempts (checked after body
       // validation, so a client bug spraying malformed requests doesn't burn a
