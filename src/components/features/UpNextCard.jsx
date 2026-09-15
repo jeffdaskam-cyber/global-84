@@ -26,7 +26,7 @@ const CATEGORIES = {
   rsvpEvent: { label: "RSVP event", color: "#CCBA8C" },
 };
 
-const TINT_ALPHA = 0.08;
+const TINT_ALPHA = 0.20;
 
 function hexToRgba(hex, alpha) {
   const h = hex.replace("#", "");
@@ -200,9 +200,10 @@ export default function UpNextCard() {
                 }`}
                 style={{
                   gap: "10px",
-                  padding: "9px 10px",
+                  padding: "9px 10px 9px 8px",
                   borderRadius: "10px",
                   background: tintBg,
+                  borderLeft: `3px solid ${catDef ? catDef.color : "transparent"}`,
                 }}
               >
                 <div className="min-w-0 flex-1">
