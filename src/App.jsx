@@ -296,7 +296,9 @@ function EventsTabLink({ hasNewEvents }) {
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(
+    () => !sessionStorage.getItem("splashSeen")
+  );
   const [user, setUser] = useState(null);
   const [hasNewEvents, setHasNewEvents] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -382,7 +384,10 @@ export default function App() {
       {/* Splash is rendered outside AuthGate so it paints immediately on load,
           independent of Firebase Auth/Firestore resolving. Its own animation
           runs ~6s while auth resolves in parallel behind this fixed overlay. */}
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen onComplete={() => {
+        sessionStorage.setItem("splashSeen", "1");
+        setShowSplash(false);
+      }} />}
 
       <AuthGate>
       {/* Mobile-only: hamburger drawer. Hidden on desktop, where the persistent
