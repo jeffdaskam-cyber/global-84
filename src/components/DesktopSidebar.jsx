@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { to: "/events", label: "Events", icon: "📅", badge: true },
   { to: "/chat", label: "Chat", icon: "💬" },
   { to: "/media", label: "Trip Planning", icon: "🎬" },
+  { to: "/briefing", label: "Country Briefing", icon: "📋" },
   { to: "/gallery", label: "Gallery", icon: "📷" },
   { to: "/team", label: "Teams", icon: "👥" },
   { to: "/currency", label: "Currency", icon: "💱" },

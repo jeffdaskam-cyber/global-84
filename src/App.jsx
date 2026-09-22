@@ -23,6 +23,7 @@ const Media = lazy(() => import("./pages/Media.jsx"));
 const Currency = lazy(() => import("./pages/Currency.jsx"));
 const Team = lazy(() => import("./pages/Team.jsx"));
 const Translate = lazy(() => import("./pages/Translate.jsx"));
+const Briefing = lazy(() => import("./pages/Briefing.jsx"));
 const EventEditorModal = lazy(() => import("./components/features/EventEditorModal.jsx"));
 
 // Per-user key so visit state doesn't leak between members on a shared
@@ -41,6 +42,7 @@ const DRAWER_SECTIONS = [
     label: "Plan",
     items: [
       { to: "/media", label: "Trip Planning", icon: "🎬" },
+      { to: "/briefing", label: "Country Briefing", icon: "📋" },
       { to: "/gallery", label: "Gallery", icon: "📷" },
     ],
   },
@@ -429,6 +431,7 @@ export default function App() {
               <Route path="/me" element={<Me />} />
               <Route path="/team" element={<Team isAdmin={isAdmin} />} />
               <Route path="/media" element={<Media isAdmin={isAdmin} />} />
+              <Route path="/briefing" element={<Briefing />} />
               <Route path="/currency" element={<Currency />} />
               <Route path="/translate" element={<Translate />} />
               <Route path="*" element={<Navigate to="/" replace />} />
