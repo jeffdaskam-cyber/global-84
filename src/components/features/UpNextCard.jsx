@@ -4,7 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { subscribeItinerary } from "../../lib/itinerary";
 import { subscribeEventsByCity, subscribeMyRsvps } from "../../lib/events";
-import { subscribeFlights, toDate, formatFlightTime } from "../../lib/userFlights";
+import { subscribeFlights, toDate, formatFlightTime, computeLayover } from "../../lib/userFlights";
 import { formatRelative } from "../../lib/trip";
 import { CITY_TIME_ZONES } from "../../config/timezones";
 
@@ -128,18 +128,26 @@ export default function UpNextCard() {
       .filter((x) => x.ms && x.ms > nowMs)
       .sort((a, b) => a.ms - b.ms);
     if (upcomingFlights.length) {
-      const { f, ms } = upcomingFlights[0];
-      const code = f.iataCode || f.airline || "";
-      out.push({
-        key: `flt-${f.id}`,
-        type: "Flight",
-        title: `${`${code} ${f.flightNumber || ""}`.trim()} · ${f.departureAirport} → ${f.arrivalAirport}`,
-        whenMs: ms,
-        tz: f.departureTimeZone || null,
-        subtitle: `Departs ${formatFlightTime(f.departureDateTime, f.departureTimeZone)}${f.gate ? ` · Gate ${f.gate}` : ""}`,
-        to: "/me",
-        cat: "travel",
-      });
+      const journey = [upcomingFlights[0]];
+      for (let i = 1; i < upcomingFlights.length; i++) {
+        const prev = journey[journey.length - 1].f;
+        const next = upcomingFlights[i].f;
+        if (!computeLayover(prev, next)) break;
+        journey.push(upcomingFlights[i]);
+      }
+      for (const { f, ms } of journey) {
+        const code = f.iataCode || f.airline || "";
+        out.push({
+          key: `flt-${f.id}`,
+          type: "Flight",
+          title: `${`${code} ${f.flightNumber || ""}`.trim()} · ${f.departureAirport} → ${f.arrivalAirport}`,
+          whenMs: ms,
+          tz: f.departureTimeZone || null,
+          subtitle: `Departs ${formatFlightTime(f.departureDateTime, f.departureTimeZone)}${f.gate ? ` · Gate ${f.gate}` : ""}`,
+          to: "/me",
+          cat: "travel",
+        });
+      }
     }
 
     return out
