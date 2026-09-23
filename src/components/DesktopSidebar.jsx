@@ -125,9 +125,9 @@ export default function DesktopSidebar({ isAdmin, hasNewEvents }) {
       {/* Brand */}
       <div style={{ padding: "24px 20px 18px" }}>
         <img
-          src="/global84-logo.png"
-          alt="Global 84"
-          style={{ display: "block", width: "88px", height: "88px", borderRadius: "16px" }}
+          src="/du-daniels-emba-logo-white.png"
+          alt="University of Denver Daniels Executive MBA"
+          style={{ display: "block", width: "100%", maxWidth: "180px", height: "auto" }}
         />
       </div>
 
