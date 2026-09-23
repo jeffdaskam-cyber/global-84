@@ -10,6 +10,7 @@ const DESKS = [
     description: "Political landscape, regulatory environment, and risk assessment for business operations.",
     path: "/politics-risk/briefing/need-to-know",
     status: "complete",
+    team: { name: "Team Poesis", members: ["Terese Rainwater", "Allison Eaby", "Zach Van Valkenburg", "Erik Loyd"] },
   },
   {
     key: "hr-culture",
@@ -42,6 +43,7 @@ const DESKS = [
     description: "Economic indicators, financial regulations, and investment climate overview.",
     path: "/finance-economics/briefing/introduction",
     status: "in-progress",
+    team: { name: "Team Money", members: ["Garett Brownlee", "Mel Swayne", "Brian Friedman", "Justin Alexander", "Jeff Daskam"] },
   },
 ];
 
@@ -99,6 +101,13 @@ function DeskCard({ desk, onSelect }) {
           <p className="mt-1 text-sm text-ink-sub dark:text-ink-subOnDark leading-relaxed">
             {desk.description}
           </p>
+          {desk.team?.members.length > 0 && (
+            <p className="mt-2 text-xs text-ink-muted dark:text-ink-subOnDark leading-relaxed">
+              <span className="font-semibold text-du-gold">{desk.team.name}</span>
+              {" "}&middot;{" "}
+              {desk.team.members.join(", ")}
+            </p>
+          )}
         </div>
         <span className="text-ink-muted dark:text-ink-subOnDark mt-1 text-lg shrink-0" aria-hidden>
           &#8250;
