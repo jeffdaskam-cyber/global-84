@@ -169,7 +169,7 @@ export default function Briefing() {
           Business briefings on Singapore &amp; Vietnam, prepared by Cohort 84
         </p>
         <p className="mt-1.5 text-xs text-ink-muted dark:text-ink-subOnDark">
-          Built by Desk Leads &mdash;{" "}
+          Built by Erik Loyd and Team Poesis &mdash;{" "}
           <a
             href={BASE_URL}
             target="_blank"
