@@ -123,33 +123,11 @@ export default function DesktopSidebar({ isAdmin, hasNewEvents }) {
       }}
     >
       {/* Brand */}
-      <div style={{ padding: "28px 20px 22px" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: "7px" }}>
-          <span style={{ fontFamily: "Georgia, serif", fontSize: "24px", fontWeight: 700, color: "#fff", letterSpacing: "-0.4px" }}>
-            Global
-          </span>
-          <span
-            style={{
-              fontFamily: "Georgia, serif",
-              fontSize: "26px",
-              fontWeight: 700,
-              background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            84
-          </span>
-        </div>
-        <div
-          style={{
-            height: "2px",
-            width: "36px",
-            borderRadius: "2px",
-            background: "linear-gradient(to right, #C4962A, rgba(196,150,42,0.2))",
-            marginTop: "10px",
-          }}
+      <div style={{ padding: "24px 20px 18px" }}>
+        <img
+          src="/global84-logo.png"
+          alt="Global 84"
+          style={{ display: "block", width: "88px", height: "88px", borderRadius: "16px" }}
         />
       </div>
 
