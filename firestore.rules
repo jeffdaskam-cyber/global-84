@@ -59,7 +59,7 @@ service cloud.firestore {
       return hasOnlyFields(
           data,
           ['url', 'storagePath', 'city', 'uploaderUid', 'uploaderName', 'createdAt'],
-          ['originalPath', 'originalUrl', 'originalSize', 'originalContentType']
+          ['displaySize', 'originalPath', 'originalUrl', 'originalSize', 'originalContentType']
         )
         && data.url is string && data.url.size() >= 1 && data.url.size() <= 4096
         && data.storagePath is string
@@ -67,6 +67,8 @@ service cloud.firestore {
         && data.uploaderUid == request.auth.uid
         && data.uploaderName is string && data.uploaderName.size() >= 1 && data.uploaderName.size() <= 80
         && data.createdAt is timestamp
+        && (!data.keys().hasAny(['displaySize'])
+          || (data.displaySize is int && data.displaySize >= 0))
         && data.storagePath.matches('photos/' + cohortId + '/' + request.auth.uid + '/.*')
         && isValidPhotoOriginal(data, cohortId);
     }

@@ -52,36 +52,57 @@ export const deletePhoto = onCall(async (request) => {
   }
 
   const photoRef = db.doc(`cohorts/${cohortId}/photos/${photoId}`);
-  const photoSnap = await photoRef.get();
-  if (!photoSnap.exists) {
-    // Already gone — treat as success so the UI stays consistent.
-    return { deleted: true };
+
+  // The uploader's client attaches originalPath to the doc after the photo is
+  // already visible, so it can land between our read and our delete. The doc
+  // delete is conditioned on the doc being unchanged since the read; if it
+  // changed, re-read and delete whatever it now points at. (If the original
+  // lands after the doc is gone, the client's update fails and it removes the
+  // object itself.)
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const photoSnap = await photoRef.get();
+    if (!photoSnap.exists || !photoSnap.updateTime) {
+      // Already gone — treat as success so the UI stays consistent.
+      return { deleted: true };
+    }
+
+    const storagePath = photoSnap.data()?.storagePath;
+    const originalPath = photoSnap.data()?.originalPath;
+    const uploaderUid = photoSnap.data()?.uploaderUid;
+
+    // Only delete Storage objects whose paths match the canonical layout for
+    // this photo's uploader: photos/{cohortId}/{uploaderUid}/... for the
+    // display copy and originals/{cohortId}/{uploaderUid}/... for the full-res
+    // original.
+    //
+    // The Firestore `photos` rules constrain these paths but a client could
+    // still submit arbitrary values, so this Admin SDK call (which bypasses
+    // Storage security rules) must not trust them blindly — otherwise a
+    // crafted gallery entry could point at another user's private object and
+    // an admin deleting it would destroy that object. An unexpected path is
+    // skipped, but the (bogus) metadata doc is still removed.
+    await deleteIfSafe(storagePath, `photos/${cohortId}/${uploaderUid}/`, uploaderUid);
+
+    // Images the client couldn't downscale record the display copy as their
+    // own original; that object is already gone.
+    if (originalPath && originalPath !== storagePath) {
+      await deleteIfSafe(originalPath, `originals/${cohortId}/${uploaderUid}/`, uploaderUid);
+    }
+
+    try {
+      await photoRef.delete({ lastUpdateTime: photoSnap.updateTime });
+      return { deleted: true };
+    } catch (err) {
+      // FAILED_PRECONDITION: the doc changed since the read. Go around again.
+      // NOT_FOUND: someone else deleted it meanwhile.
+      const code = (err as { code?: number }).code;
+      if (code === 5) return { deleted: true };
+      if (code !== 9) throw err;
+      logger.info("deletePhoto: photo changed during delete, retrying", { photoId });
+    }
   }
 
-  const storagePath = photoSnap.data()?.storagePath;
-  const originalPath = photoSnap.data()?.originalPath;
-  const uploaderUid = photoSnap.data()?.uploaderUid;
-
-  // Only delete Storage objects whose paths match the canonical layout for
-  // this photo's uploader: photos/{cohortId}/{uploaderUid}/... for the display
-  // copy and originals/{cohortId}/{uploaderUid}/... for the full-res original.
-  //
-  // The Firestore `photos` rules constrain these paths but a client could
-  // still submit arbitrary values, so this Admin SDK call (which bypasses
-  // Storage security rules) must not trust them blindly — otherwise a crafted
-  // gallery entry could point at another user's private object and an admin
-  // deleting it would destroy that object. An unexpected path is skipped, but
-  // the (bogus) metadata doc is still removed.
-  await deleteIfSafe(storagePath, `photos/${cohortId}/${uploaderUid}/`, uploaderUid);
-
-  // Images the client couldn't downscale record the display copy as their own
-  // original; that object is already gone.
-  if (originalPath && originalPath !== storagePath) {
-    await deleteIfSafe(originalPath, `originals/${cohortId}/${uploaderUid}/`, uploaderUid);
-  }
-
-  await photoRef.delete();
-  return { deleted: true };
+  throw new HttpsError("aborted", "The photo is still being updated. Please try again.");
 });
 
 async function deleteIfSafe(

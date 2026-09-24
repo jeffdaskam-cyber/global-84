@@ -8,8 +8,13 @@
 
 const CITY_LABELS = { singapore: "Singapore", vietnam: "Vietnam" };
 
-// Rough size of a 1600px display copy, used for photos with no original.
-export const DISPLAY_ESTIMATE_BYTES = 400 * 1024;
+// Size guesses for files whose size wasn't recorded (photos uploaded before
+// sizes were stored). Deliberately high: parts are materialized in memory, so
+// underestimating risks a part far over the cap on a phone. A 1600px JPEG
+// display copy is well under 1 MB; a PNG or an image that couldn't be
+// downscaled can approach Storage's 10 MB display limit.
+const UNKNOWN_JPEG_ESTIMATE_BYTES = 1024 * 1024;
+const UNKNOWN_OTHER_ESTIMATE_BYTES = 5 * 1024 * 1024;
 
 const MOBILE_PART_LIMIT_BYTES = 150 * 1024 * 1024;
 const DESKTOP_PART_LIMIT_BYTES = 500 * 1024 * 1024;
@@ -43,7 +48,13 @@ export function downloadUrlFor(photo) {
 
 /** Bytes a photo's download is expected to take. */
 export function estimatedBytes(photo) {
-  return photo.originalUrl && photo.originalSize ? photo.originalSize : DISPLAY_ESTIMATE_BYTES;
+  if (photo.originalUrl) {
+    if (photo.originalSize) return photo.originalSize;
+  } else if (photo.displaySize) {
+    return photo.displaySize;
+  }
+  const ext = extensionFor(photo);
+  return ext === "jpg" ? UNKNOWN_JPEG_ESTIMATE_BYTES : UNKNOWN_OTHER_ESTIMATE_BYTES;
 }
 
 function createdAtMillis(photo) {
@@ -167,14 +178,16 @@ export async function downloadSingle(photo) {
 }
 
 /**
- * Split photos (already sorted) into parts that stay under the byte limit.
- * Each photo keeps its global index so numbering runs across parts.
+ * Sort photos chronologically and split them into parts that stay under the
+ * byte limit. Each photo keeps its global index so numbering runs across
+ * parts. Pass `indexes` (photo id → index) to reuse numbers from an earlier
+ * run, so a retry never produces a filename that's already been saved.
  */
-export function planParts(photos, limit = partLimitBytes()) {
+export function planParts(photos, limit = partLimitBytes(), indexes) {
   const sorted = photos
     .map((photo) => ({ photo, at: createdAtMillis(photo) }))
     .sort((a, b) => a.at - b.at)
-    .map(({ photo }, i) => ({ photo, index: i + 1 }));
+    .map(({ photo }, i) => ({ photo, index: indexes?.get(photo.id) ?? i + 1 }));
 
   const parts = [];
   let current = [];
@@ -235,16 +248,18 @@ async function* fetchInOrder(items, signal, onSettled) {
  * @param {string} options.zipBaseName - e.g. "Global84_Photos_Singapore"
  * @param {function} [options.onProgress] - ({ done, total, part, parts })
  * @param {AbortSignal} [options.signal]
- * @returns {Promise<{ downloaded: number, failed: object[] }>}
+ * @param {Map<string, number>} [options.indexes] - Reuse file numbers (retry)
+ * @returns {Promise<{ downloaded: number, failed: object[], failedIndexes: Map<string, number> }>}
  *   Rejects with an AbortError if cancelled; nothing partial is saved.
  */
-export async function downloadZip(photos, { zipBaseName, onProgress, signal } = {}) {
+export async function downloadZip(photos, { zipBaseName, onProgress, signal, indexes } = {}) {
   const { downloadZip: makeZip } = await import("client-zip");
 
-  const { parts } = planParts(photos);
+  const { parts } = planParts(photos, undefined, indexes);
   const total = photos.length;
   const date = isoDate(new Date());
   const failed = [];
+  const failedIndexes = new Map();
   let downloaded = 0;
   let done = 0;
 
@@ -266,6 +281,7 @@ export async function downloadZip(photos, { zipBaseName, onProgress, signal } = 
           if (isAbortError(error)) throw error;
           console.warn("Skipping photo that couldn't be downloaded.", item.photo.id, error);
           failed.push(item.photo);
+          failedIndexes.set(item.photo.id, item.index);
           continue;
         }
         added += 1;
@@ -288,7 +304,7 @@ export async function downloadZip(photos, { zipBaseName, onProgress, signal } = 
     if (part < parts.length) await pause(PAUSE_BETWEEN_PARTS_MS, signal);
   }
 
-  return { downloaded, failed };
+  return { downloaded, failed, failedIndexes };
 }
 
 export function formatBytes(bytes) {

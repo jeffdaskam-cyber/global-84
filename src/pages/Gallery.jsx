@@ -22,7 +22,9 @@ export default function Gallery({ user, isAdmin }) {
   const [activeCity, setActiveCity] = useState("all");
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lightbox, setLightbox] = useState(null);
+  // Store the id, not the object, so the open lightbox picks up live updates
+  // (e.g. originalUrl landing after the background upload finishes).
+  const [lightboxId, setLightboxId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadCity, setUploadCity] = useState("singapore");
@@ -118,14 +120,14 @@ export default function Gallery({ user, isAdmin }) {
 
       try {
         await deletePhoto(photo);
-        if (lightbox?.id === photo.id) {
-          setLightbox(null);
+        if (lightboxId === photo.id) {
+          setLightboxId(null);
         }
       } catch {
         setError("Delete failed. Please try again.");
       }
     },
-    [lightbox]
+    [lightboxId]
   );
 
   const activeCityLabel = CITIES.find((c) => c.key === activeCity)?.label || "All Photos";
@@ -179,10 +181,10 @@ export default function Gallery({ user, isAdmin }) {
     });
   }, [photos]);
 
-  const runZip = useCallback(async (list, zipBaseName) => {
+  const runZip = useCallback(async (list, zipBaseName, indexes) => {
     const controller = new AbortController();
     jobAbortRef.current = controller;
-    const { parts } = planParts(list);
+    const { parts } = planParts(list, undefined, indexes);
     setJob({
       status: "running",
       done: 0,
@@ -201,15 +203,16 @@ export default function Gallery({ user, isAdmin }) {
     }
 
     try {
-      const { downloaded, failed } = await downloadZip(list, {
+      const { downloaded, failed, failedIndexes } = await downloadZip(list, {
         zipBaseName,
+        indexes,
         signal: controller.signal,
         onProgress: (progress) => {
           if (controller.signal.aborted) return;
           setJob((prev) => (prev ? { ...prev, ...progress } : prev));
         },
       });
-      setJob((prev) => ({ ...prev, status: "done", downloaded, failed }));
+      setJob((prev) => ({ ...prev, status: "done", downloaded, failed, failedIndexes }));
     } catch (err) {
       if (err?.name === "AbortError") {
         setJob(null);
@@ -243,15 +246,19 @@ export default function Gallery({ user, isAdmin }) {
 
   const retryFailed = useCallback(() => {
     if (!job?.failed?.length) return;
-    runZip(job.failed, job.zipBaseName);
+    // Keep each photo's original ### so retried files never collide with
+    // ones already saved from the first zip.
+    runZip(job.failed, job.zipBaseName, job.failedIndexes);
   }, [job, runZip]);
+
+  const lightbox = lightboxId ? photos.find((photo) => photo.id === lightboxId) : null;
 
   const selectedPhotos = useMemo(() => [...selected.values()], [selected]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
-        setLightbox(null);
+        setLightboxId(null);
       }
     };
 
@@ -379,7 +386,7 @@ export default function Gallery({ user, isAdmin }) {
                 userUid={user?.uid}
                 selectMode={selectMode}
                 selected={selected.has(photo.id)}
-                onOpen={() => (selectMode ? toggleSelected(photo) : setLightbox(photo))}
+                onOpen={() => (selectMode ? toggleSelected(photo) : setLightboxId(photo.id))}
                 onDelete={() => handleDelete(photo)}
                 onLike={() => handleLike(photo)}
               />
@@ -393,7 +400,7 @@ export default function Gallery({ user, isAdmin }) {
           photo={lightbox}
           isAdmin={isAdmin}
           userUid={user?.uid}
-          onClose={() => setLightbox(null)}
+          onClose={() => setLightboxId(null)}
           onDelete={() => handleDelete(lightbox)}
           onLike={() => handleLike(lightbox)}
         />

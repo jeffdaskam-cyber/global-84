@@ -116,6 +116,8 @@ export async function uploadPhoto(
     uploaderUid,
     uploaderName,
     createdAt: serverTimestamp(),
+    // Lets zip downloads size their parts when there's no original.
+    displaySize: upload.size,
     ...(displayIsOriginal && {
       originalPath: storagePath,
       originalUrl: url,
