@@ -36,7 +36,14 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+            // Gallery thumbnails only. Download fetches (tagged g84dl=1) and
+            // full-res originals stay out: this cache stores opaque <img>
+            // responses that fetch() can't read, and multi-MB originals would
+            // evict the thumbnails.
+            urlPattern: ({ url }) =>
+              url.hostname === 'firebasestorage.googleapis.com' &&
+              !url.searchParams.has('g84dl') &&
+              !url.pathname.includes('/o/originals%2F'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'firebase-storage-images',

@@ -52,54 +52,91 @@ export const deletePhoto = onCall(async (request) => {
   }
 
   const photoRef = db.doc(`cohorts/${cohortId}/photos/${photoId}`);
-  const photoSnap = await photoRef.get();
-  if (!photoSnap.exists) {
-    // Already gone — treat as success so the UI stays consistent.
-    return { deleted: true };
+
+  // The uploader's client attaches originalPath to the doc after the photo is
+  // already visible, so it can land between our read and our delete. The doc
+  // delete is conditioned on the doc being unchanged since the read; if it
+  // changed, re-read and delete whatever it now points at. (If the original
+  // lands after the doc is gone, the client's update fails and it removes the
+  // object itself.)
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const photoSnap = await photoRef.get();
+    if (!photoSnap.exists || !photoSnap.updateTime) {
+      // Already gone — treat as success so the UI stays consistent.
+      return { deleted: true };
+    }
+
+    const storagePath = photoSnap.data()?.storagePath;
+    const originalPath = photoSnap.data()?.originalPath;
+    const uploaderUid = photoSnap.data()?.uploaderUid;
+
+    // Only delete Storage objects whose paths match the canonical layout for
+    // this photo's uploader: photos/{cohortId}/{uploaderUid}/... for the
+    // display copy and originals/{cohortId}/{uploaderUid}/... for the full-res
+    // original.
+    //
+    // The Firestore `photos` rules constrain these paths but a client could
+    // still submit arbitrary values, so this Admin SDK call (which bypasses
+    // Storage security rules) must not trust them blindly — otherwise a
+    // crafted gallery entry could point at another user's private object and
+    // an admin deleting it would destroy that object. An unexpected path is
+    // skipped, but the (bogus) metadata doc is still removed.
+    await deleteIfSafe(storagePath, `photos/${cohortId}/${uploaderUid}/`, uploaderUid);
+
+    // Images the client couldn't downscale record the display copy as their
+    // own original; that object is already gone.
+    if (originalPath && originalPath !== storagePath) {
+      await deleteIfSafe(originalPath, `originals/${cohortId}/${uploaderUid}/`, uploaderUid);
+    }
+
+    try {
+      await photoRef.delete({ lastUpdateTime: photoSnap.updateTime });
+      return { deleted: true };
+    } catch (err) {
+      // FAILED_PRECONDITION: the doc changed since the read. Go around again.
+      // NOT_FOUND: someone else deleted it meanwhile.
+      const code = (err as { code?: number }).code;
+      if (code === 5) return { deleted: true };
+      if (code !== 9) throw err;
+      logger.info("deletePhoto: photo changed during delete, retrying", { photoId });
+    }
   }
 
-  const storagePath = photoSnap.data()?.storagePath;
-  const uploaderUid = photoSnap.data()?.uploaderUid;
+  throw new HttpsError("aborted", "The photo is still being updated. Please try again.");
+});
 
-  // Only delete a Storage object whose path matches the canonical layout for
-  // this photo's uploader: photos/{cohortId}/{uploaderUid}/...
-  //
-  // The Firestore `photos` create rule constrains uploaderUid but a client
-  // could still submit an arbitrary storagePath, so this Admin SDK call (which
-  // bypasses Storage security rules) must not trust it blindly — otherwise a
-  // crafted gallery entry could point at another user's private object and an
-  // admin deleting it would destroy that object. If the path is unexpected we
-  // skip the object delete entirely but still remove the (bogus) metadata doc.
-  const expectedPrefix = `photos/${cohortId}/${uploaderUid}/`;
+async function deleteIfSafe(
+  path: unknown,
+  expectedPrefix: string,
+  uploaderUid: unknown
+): Promise<void> {
   const pathIsSafe =
-    typeof storagePath === "string" &&
+    typeof path === "string" &&
     typeof uploaderUid === "string" &&
-    storagePath.startsWith(expectedPrefix);
+    path.startsWith(expectedPrefix);
 
-  if (pathIsSafe) {
-    try {
-      await getStorage().bucket().file(storagePath).delete();
-    } catch (err) {
-      // A 404 means the object is already gone — proceed to remove the doc.
-      // Any other error (transient/service failure) must NOT delete the
-      // metadata: that would orphan the object and destroy the only record
-      // the moderation flow could use to retry. Surface it so the client can
-      // retry the whole operation.
-      const code = (err as { code?: number }).code;
-      if (code === 404) {
-        logger.info("deletePhoto: storage object already gone", { storagePath });
-      } else {
-        logger.error("deletePhoto: storage object delete failed", { storagePath, err });
-        throw new HttpsError("internal", "Could not delete the photo file. Please try again.");
-      }
-    }
-  } else {
+  if (!pathIsSafe) {
     logger.warn("deletePhoto: skipping storage delete for unexpected path", {
-      storagePath,
+      path,
       expectedPrefix,
     });
+    return;
   }
 
-  await photoRef.delete();
-  return { deleted: true };
-});
+  try {
+    await getStorage().bucket().file(path).delete();
+  } catch (err) {
+    // A 404 means the object is already gone — proceed to remove the doc.
+    // Any other error (transient/service failure) must NOT delete the
+    // metadata: that would orphan the object and destroy the only record
+    // the moderation flow could use to retry. Surface it so the client can
+    // retry the whole operation.
+    const code = (err as { code?: number }).code;
+    if (code === 404) {
+      logger.info("deletePhoto: storage object already gone", { path });
+    } else {
+      logger.error("deletePhoto: storage object delete failed", { path, err });
+      throw new HttpsError("internal", "Could not delete the photo file. Please try again.");
+    }
+  }
+}

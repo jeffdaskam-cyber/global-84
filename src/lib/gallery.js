@@ -18,6 +18,7 @@ import {
   ref,
   uploadBytesResumable,
   getDownloadURL,
+  deleteObject,
 } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 import { db, storage, functions, COHORT_ID } from "./firebase";
@@ -48,15 +49,33 @@ export function subscribePhotos(onData, city = null, onError) {
 }
 
 // ─── Upload ────────────────────────────────────────────────────────────────────
+// Originals are kept for downloads (travel books need print resolution). The
+// display copy is what the gallery renders; the original is never shown in the
+// grid and is only fetched when a member downloads.
+export const MAX_ORIGINAL_BYTES = 25 * 1024 * 1024;
+
 /**
  * Upload a photo file to Firebase Storage, then write metadata to Firestore.
  *
+ * The downscaled display copy is uploaded first and the doc is written as soon
+ * as it lands, so the photo shows up in the gallery exactly as fast as before.
+ * The untouched original (EXIF intact) follows in the background; if that
+ * fails the photo stays and downloads fall back to the display copy.
+ *
  * @param {File}   file         - The image File object from <input type="file">
  * @param {object} meta         - { city, uploaderUid, uploaderName }
- * @param {function} onProgress - Called with 0–100 as upload progresses
+ * @param {function} onProgress - Called with 0–100 as the display copy uploads
+ * @param {object} [options]
+ * @param {function} [options.onOriginalSaving] - Called with true when the
+ *   background original upload starts and false when it settles.
  * @returns {Promise<string>}   - Resolves with the new Firestore doc ID
  */
-export async function uploadPhoto(file, { city, uploaderUid, uploaderName }, onProgress) {
+export async function uploadPhoto(
+  file,
+  { city, uploaderUid, uploaderName },
+  onProgress,
+  { onOriginalSaving } = {}
+) {
   // Validate file type client-side (Storage rules enforce server-side too)
   if (!file.type.startsWith("image/")) {
     throw new Error("Only image files are allowed.");
@@ -72,16 +91,66 @@ export async function uploadPhoto(file, { city, uploaderUid, uploaderName }, onP
     throw new Error("Photos must be under 10 MB.");
   }
 
-  // Build a unique storage path: photos/{cohortId}/{uid}/{timestamp}_{filename}
+  // Build a unique storage path: photos/{cohortId}/{uid}/{timestamp}.{ext}
   const ext = upload.name.split(".").pop();
   const timestamp = Date.now();
   const storagePath = `photos/${COHORT_ID}/${uploaderUid}/${timestamp}.${ext}`;
   const storageRef = ref(storage, storagePath);
 
   // Upload with progress tracking
-  await new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, upload, {
-      contentType: upload.type,
+  await uploadWithProgress(storageRef, upload, onProgress);
+
+  // Get public download URL
+  const url = await getDownloadURL(storageRef);
+
+  // downscaleImage hands back the very same File when it could not (or did not
+  // need to) shrink it. The display copy then already is the original, so
+  // record that on the doc instead of uploading the same bytes twice.
+  const displayIsOriginal = upload === file;
+
+  // Write metadata to Firestore
+  const docRef = await addDoc(photosCol(), {
+    url,
+    storagePath,
+    city,                  // "singapore" | "vietnam"
+    uploaderUid,
+    uploaderName,
+    createdAt: serverTimestamp(),
+    // Lets zip downloads size their parts when there's no original.
+    displaySize: upload.size,
+    ...(displayIsOriginal && {
+      originalPath: storagePath,
+      originalUrl: url,
+      originalSize: file.size,
+      originalContentType: file.type,
+    }),
+  });
+
+  if (!displayIsOriginal) {
+    if (file.size > MAX_ORIGINAL_BYTES) {
+      console.warn("Original over 25 MB; keeping only the display copy.", {
+        photoId: docRef.id,
+        size: file.size,
+      });
+    } else {
+      // Deliberately not awaited: the caller's upload is done once the photo is
+      // in the gallery. A slow trip network only delays the full-res copy.
+      onOriginalSaving?.(true);
+      saveOriginal(docRef, file, uploaderUid, timestamp)
+        .catch((err) => {
+          console.warn("Full-resolution upload failed; downloads will use the display copy.", err);
+        })
+        .finally(() => onOriginalSaving?.(false));
+    }
+  }
+
+  return docRef.id;
+}
+
+function uploadWithProgress(storageRef, blob, onProgress) {
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, blob, {
+      contentType: blob.type,
     });
 
     task.on(
@@ -94,21 +163,40 @@ export async function uploadPhoto(file, { city, uploaderUid, uploaderName }, onP
       () => resolve()
     );
   });
+}
 
-  // Get public download URL
-  const url = await getDownloadURL(storageRef);
+/**
+ * Upload the untouched original next to the display copy and record it on the
+ * photo doc. Same timestamp as the display copy so the pair is easy to match.
+ */
+async function saveOriginal(photoRef, file, uploaderUid, timestamp) {
+  const originalExt = extensionFor(file);
+  const originalPath = `originals/${COHORT_ID}/${uploaderUid}/${timestamp}.${originalExt}`;
+  const originalRef = ref(storage, originalPath);
 
-  // Write metadata to Firestore
-  const docRef = await addDoc(photosCol(), {
-    url,
-    storagePath,
-    city,                  // "singapore" | "vietnam"
-    uploaderUid,
-    uploaderName,
-    createdAt: serverTimestamp(),
-  });
+  await uploadWithProgress(originalRef, file);
+  const originalUrl = await getDownloadURL(originalRef);
 
-  return docRef.id;
+  try {
+    await updateDoc(photoRef, {
+      originalPath,
+      originalUrl,
+      originalSize: file.size,
+      originalContentType: file.type,
+    });
+  } catch (err) {
+    // Most likely the photo was deleted while its original was still
+    // uploading. Don't leave an orphaned full-res file behind.
+    await deleteObject(originalRef).catch(() => {});
+    throw err;
+  }
+}
+
+function extensionFor(file) {
+  const fromName = file.name?.includes(".") ? file.name.split(".").pop().toLowerCase() : "";
+  if (/^[a-z0-9]{1,5}$/.test(fromName)) return fromName;
+  const fromType = file.type.split("/")[1]?.replace("jpeg", "jpg").replace("svg+xml", "svg");
+  return /^[a-z0-9]{1,5}$/.test(fromType || "") ? fromType : "jpg";
 }
 
 // ─── Likes ─────────────────────────────────────────────────────────────────────

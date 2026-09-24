@@ -36,19 +36,25 @@ If you are copying this repo to build your own version, work through these in or
    firebase login
    firebase deploy --only firestore:rules,firestore:indexes,storage
    ```
-6. **Bootstrap your first admin.** Sign in once so your user gets a uid, then in the Firestore console create the document:
+6. **Set CORS on the Storage bucket.** Gallery downloads `fetch()` photos from Storage, which the browser only allows if the bucket has a CORS policy. `firebase deploy` does not apply it. Edit the origins in `storage-cors.json` to your domains, then run once with the Google Cloud SDK:
+   ```bash
+   gcloud storage buckets update gs://<VITE_FIREBASE_STORAGE_BUCKET> --cors-file=storage-cors.json
+   gcloud storage buckets describe gs://<VITE_FIREBASE_STORAGE_BUCKET> --format="default(cors_config)"
+   ```
+   Re-run it whenever you add a domain.
+7. **Bootstrap your first admin.** Sign in once so your user gets a uid, then in the Firestore console create the document:
    ```
    cohorts/{VITE_COHORT_ID}/admins/{your-uid}
    { "enabled": true }
    ```
    Security rules block client writes to this collection, so it has to be done from the console.
-7. **(Optional) Configure the image-translation function.** If you want the `translateImage` callable function:
+8. **(Optional) Configure the image-translation function.** If you want the `translateImage` callable function:
    ```bash
    firebase functions:secrets:set ANTHROPIC_API_KEY
    firebase deploy --only functions
    ```
-8. **(Optional) Wire up the Explore feed.** Publish a Google Sheet to the web as CSV, then set `VITE_EXPLORE_SHEET_URL` in your Vercel project (NOT in `.env`, since the proxy at `api/sheets.js` reads it server-side).
-9. **Swap branding.** The launch page (`public/launch.html`), splash images in `public/`, and copy referencing "Global 84" or specific cities (Singapore, HCMC) are project-specific. Replace as needed.
+9. **(Optional) Wire up the Explore feed.** Publish a Google Sheet to the web as CSV, then set `VITE_EXPLORE_SHEET_URL` in your Vercel project (NOT in `.env`, since the proxy at `api/sheets.js` reads it server-side).
+10. **Swap branding.** The launch page (`public/launch.html`), splash images in `public/`, and copy referencing "Global 84" or specific cities (Singapore, HCMC) are project-specific. Replace as needed.
 
 ## Deploying to Vercel
 
@@ -60,7 +66,7 @@ Vercel project settings:
 
 In Vercel, add every variable from `.env.example` under Project Settings > Environment Variables (Production and Preview). Don't forget `VITE_EXPLORE_SHEET_URL` if you use Explore.
 
-In the Firebase Console > Authentication > Settings, add your Vercel preview and production domains to **Authorized domains**.
+In the Firebase Console > Authentication > Settings, add your Vercel preview and production domains to **Authorized domains**. Add the same domains to `storage-cors.json` and re-run the `gcloud` command above, or photo downloads fail with a CORS error.
 
 ## Routing
 
