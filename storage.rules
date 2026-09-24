@@ -33,6 +33,19 @@ service firebase.storage {
         && request.auth.uid == uid;
     }
 
+    // Full-resolution originals, kept next to the 1600px display copy in
+    // photos/ so members can download print-quality files for travel books.
+    // Same ownership model as photos/; admin cleanup goes through the
+    // deletePhoto Cloud Function, which removes both objects.
+    match /originals/{cohortId}/{uid}/{filename} {
+      allow read: if isMember();
+      allow write: if isMember()
+        && request.auth.uid == uid
+        && request.resource.size < 25 * 1024 * 1024       // 25 MB max
+        && request.resource.contentType.matches("image/.*"); // images only
+      allow delete: if isMember() && request.auth.uid == uid;
+    }
+
     // User private files: each user can only read/write/delete their own folder.
     // No other user, including admins, can access another user's files.
     match /userFiles/{uid}/{fileName} {

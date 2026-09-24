@@ -59,7 +59,7 @@ service cloud.firestore {
       return hasOnlyFields(
           data,
           ['url', 'storagePath', 'city', 'uploaderUid', 'uploaderName', 'createdAt'],
-          []
+          ['originalPath', 'originalUrl', 'originalSize', 'originalContentType']
         )
         && data.url is string && data.url.size() >= 1 && data.url.size() <= 4096
         && data.storagePath is string
@@ -67,7 +67,32 @@ service cloud.firestore {
         && data.uploaderUid == request.auth.uid
         && data.uploaderName is string && data.uploaderName.size() >= 1 && data.uploaderName.size() <= 80
         && data.createdAt is timestamp
-        && data.storagePath.matches('photos/' + cohortId + '/' + request.auth.uid + '/.*');
+        && data.storagePath.matches('photos/' + cohortId + '/' + request.auth.uid + '/.*')
+        && isValidPhotoOriginal(data, cohortId);
+    }
+    // Optional full-resolution original fields. originalPath mirrors the
+    // storagePath check so deletePhoto (Admin SDK) can never be pointed at
+    // another member's object. It may also equal storagePath, for images the
+    // client could not downscale (the display copy already is the original).
+    function isValidPhotoOriginal(data, cohortId) {
+      return (!data.keys().hasAny(['originalPath'])
+          || (data.originalPath is string
+            && (data.originalPath == data.storagePath
+              || data.originalPath.matches('originals/' + cohortId + '/' + request.auth.uid + '/.*'))))
+        && (!data.keys().hasAny(['originalUrl'])
+          || (data.originalUrl is string && data.originalUrl.size() >= 1 && data.originalUrl.size() <= 4096))
+        && (!data.keys().hasAny(['originalSize'])
+          || (data.originalSize is int && data.originalSize >= 0))
+        && (!data.keys().hasAny(['originalContentType'])
+          || (data.originalContentType is string && data.originalContentType.size() <= 100));
+    }
+    // The uploader attaches the original to their own photo once its
+    // background upload finishes. Nothing else on the doc may change.
+    function onlyAddsOwnPhotoOriginal(cohortId) {
+      return resource.data.uploaderUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['originalPath', 'originalUrl', 'originalSize', 'originalContentType'])
+        && isValidPhotoOriginal(request.resource.data, cohortId);
     }
     function onlyChangesOwnPhotoLike() {
       let beforeLikes = resource.data.keys().hasAny(['likes']) ? resource.data.likes : [];
@@ -229,7 +254,7 @@ service cloud.firestore {
         allow create: if isMember()
           && isValidPhotoCreate(request.resource.data, cohortId);
         allow update: if isMember()
-          && onlyChangesOwnPhotoLike();
+          && (onlyChangesOwnPhotoLike() || onlyAddsOwnPhotoOriginal(cohortId));
         allow delete: if isAdmin(cohortId);
       }
 
