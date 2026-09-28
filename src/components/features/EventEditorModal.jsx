@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createEvent, updateEvent, archiveEvent } from "../../lib/events";
+import { createEvent, updateEvent, archiveEvent, eventKind } from "../../lib/events";
 import {
   instantToWallClock,
   wallClockToInstant,
@@ -20,9 +20,23 @@ const CITY_SHORT_LABELS = {
 // time in Singapore.
 const DEFAULT_START_HOUR = "18:00";
 
+function defaultStartFor(city) {
+  // Today's date as it reads in the destination city, at the default hour.
+  const todayThere = instantToWallClock(new Date(), city).slice(0, 10);
+  return `${todayThere}T${DEFAULT_START_HOUR}`;
+}
+
+const KIND_OPTIONS = [
+  { value: "scheduled", label: "Scheduled" },
+  { value: "adhoc", label: "Ad hoc" },
+];
+
 export default function EventEditorModal({ open, onClose, defaultCity, event, prefill }) {
   const isEdit = !!event?.id;
 
+  const [kind, setKind] = useState("scheduled");
+  // Ad hoc only: whether the organiser is attaching a time at all.
+  const [hasTime, setHasTime] = useState(false);
   const [title, setTitle] = useState("");
   const [city, setCity] = useState(defaultCity || "Singapore");
   const [startTime, setStartTime] = useState("");
@@ -38,19 +52,24 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
 
     if (isEdit) {
       const editCity = event.city || defaultCity || "Singapore";
+      const editKind = eventKind(event);
+      const dated = event.startTime != null;
+      setKind(editKind);
+      setHasTime(dated);
       setTitle(event.title || "");
       setCity(editCity);
-      setStartTime(instantToWallClock(event.startTime, editCity));
+      // Undated ad hoc events get the usual default so ticking "Add a time"
+      // or switching to Scheduled starts somewhere sensible.
+      setStartTime(dated ? instantToWallClock(event.startTime, editCity) : defaultStartFor(editCity));
       setLocationName(event.locationName || "");
       setDescription(event.description || "");
     } else {
       const newCity = prefill?.city || defaultCity || "Singapore";
+      setKind("scheduled");
+      setHasTime(false);
       setTitle(prefill?.title || "");
       setCity(newCity);
-
-      // Today's date as it reads in the destination city, at the default hour.
-      const todayThere = instantToWallClock(new Date(), newCity).slice(0, 10);
-      setStartTime(`${todayThere}T${DEFAULT_START_HOUR}`);
+      setStartTime(defaultStartFor(newCity));
 
       setLocationName(prefill?.locationName || "");
       setDescription("");
@@ -58,9 +77,14 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
     setError("");
   }, [open, isEdit, event, defaultCity, prefill]);
 
+  const isAdhoc = kind === "adhoc";
+  const showTime = !isAdhoc || hasTime;
+
   const canSave = useMemo(() => {
-    return title.trim() && city && startTime && locationName.trim();
-  }, [title, city, startTime, locationName]);
+    if (!title.trim() || !city) return false;
+    if (kind === "adhoc") return !hasTime || !!startTime;
+    return !!startTime && !!locationName.trim();
+  }, [kind, hasTime, title, city, startTime, locationName]);
 
   if (!open) return null;
 
@@ -70,22 +94,19 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
     setSaving(true);
 
     try {
+      const fields = {
+        kind,
+        title,
+        city,
+        // null (not omitted) clears the time — see lib/events.js.
+        startTime: showTime ? wallClockToInstant(startTime, city) : null,
+        locationName,
+        description,
+      };
       if (isEdit) {
-        await updateEvent(event.id, {
-          title,
-          city,
-          startTime: wallClockToInstant(startTime, city),
-          locationName,
-          description,
-        });
+        await updateEvent(event.id, fields);
       } else {
-        await createEvent({
-          title,
-          city,
-          startTime: wallClockToInstant(startTime, city),
-          locationName,
-          description,
-        });
+        await createEvent(fields);
       }
 
       onClose();
@@ -131,6 +152,31 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
         </div>
 
         <div className="mt-4 space-y-3">
+          <div>
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-surface-border/60 dark:bg-surface-darkBorder p-1">
+              {KIND_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setKind(opt.value)}
+                  className={`rounded-md py-1.5 text-xs font-semibold transition ${
+                    kind === opt.value
+                      ? "bg-surface-card dark:bg-surface-darkCard text-ink-main dark:text-ink-onDark shadow-sm"
+                      : "text-ink-sub dark:text-ink-subOnDark"
+                  }`}
+                  disabled={saving}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {isAdhoc ? (
+              <div className="mt-1.5 text-xs text-ink-sub dark:text-ink-subOnDark">
+                No set place or time needed. Great for a morning run or a pub crawl.
+              </div>
+            ) : null}
+          </div>
+
           <div className="flex gap-2">
             {CITIES.map((c) => (
               <button
@@ -156,38 +202,53 @@ export default function EventEditorModal({ open, onClose, defaultCity, event, pr
               className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Dinner, rooftop drinks, museum…"
+              placeholder={isAdhoc ? "Morning run, pub crawl…" : "Dinner, rooftop drinks, museum…"}
               disabled={saving}
             />
           </label>
 
-          <label className="block overflow-hidden">
-            <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
-              Date &amp; time{" "}
-              <span className="font-normal text-ink-sub/80 dark:text-ink-subOnDark/80">
-                — local time in {city} ({zoneForCity(city).label})
-              </span>
-            </div>
-            <div className="overflow-hidden rounded-lg">
+          {isAdhoc ? (
+            <label className="flex items-center gap-2 text-xs font-semibold text-ink-sub dark:text-ink-subOnDark">
               <input
-                type="datetime-local"
-                className="w-full block rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                type="checkbox"
+                className="h-4 w-4 accent-du-crimson"
+                checked={hasTime}
+                onChange={(e) => setHasTime(e.target.checked)}
                 disabled={saving}
               />
-            </div>
-          </label>
+              Add a time
+            </label>
+          ) : null}
+
+          {showTime ? (
+            <label className="block overflow-hidden">
+              <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
+                Date &amp; time{" "}
+                <span className="font-normal text-ink-sub/80 dark:text-ink-subOnDark/80">
+                  — local time in {city} ({zoneForCity(city).label})
+                </span>
+              </div>
+              <div className="overflow-hidden rounded-lg">
+                <input
+                  type="datetime-local"
+                  className="w-full block rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+            </label>
+          ) : null}
 
           <label className="block">
             <div className="text-xs font-semibold text-ink-sub dark:text-ink-subOnDark mb-1">
-              Location name
+              {isAdhoc ? "Meeting point (optional)" : "Location name"}
             </div>
             <input
               className="w-full rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-3 py-2 text-sm text-ink-main dark:text-ink-onDark focus:outline-none focus:ring-2 focus:ring-du-gold"
               value={locationName}
               onChange={(e) => setLocationName(e.target.value)}
-              placeholder="Venue name"
+              placeholder={isAdhoc ? "e.g. Hotel lobby" : "Venue name"}
               disabled={saving}
             />
           </label>

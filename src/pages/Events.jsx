@@ -27,6 +27,19 @@ function cityKey(uid) {
   return uid ? `${CITY_KEY_PREFIX}_${uid}` : CITY_KEY_PREFIX;
 }
 
+const millis = (ts) => ts?.toMillis?.() ?? 0;
+
+// "All Events" order: undated events (ad hoc with no time) first, newest
+// posted first, then dated events soonest first.
+function compareForAllEvents(a, b) {
+  const aUndated = a.startTime == null;
+  const bUndated = b.startTime == null;
+  if (aUndated && bUndated) return millis(b.createdAt) - millis(a.createdAt);
+  if (aUndated) return -1;
+  if (bUndated) return 1;
+  return millis(a.startTime) - millis(b.startTime);
+}
+
 export default function Events({ onViewed, isAdmin }) {
   const user = auth.currentUser;
   // The threshold for "New for You" is the timestamp of the *previous* visit,
@@ -116,7 +129,7 @@ export default function Events({ onViewed, isAdmin }) {
     }
 
     newItems.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
-    regularItems.sort((a, b) => (a.startTime?.toMillis?.() ?? 0) - (b.startTime?.toMillis?.() ?? 0));
+    regularItems.sort(compareForAllEvents);
 
     return { newForYou: newItems, allEvents: regularItems };
   }, [allRsvps, events, user?.uid, lastViewedAt]);
@@ -173,7 +186,7 @@ export default function Events({ onViewed, isAdmin }) {
         <div className="rounded-xl bg-surface-card dark:bg-surface-darkCard shadow-card border border-surface-border dark:border-surface-darkBorder p-5">
           <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">No events yet</div>
           <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">
-            Be the first to plan something for {city}.
+            Be the first to plan something for {city}, or post an ad hoc meetup.
           </div>
           <button
             className="mt-4 rounded-lg bg-du-crimson text-white px-4 py-2 text-sm font-semibold hover:bg-du-crimsonDark transition"

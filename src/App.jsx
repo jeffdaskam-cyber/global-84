@@ -372,8 +372,11 @@ export default function App() {
         const hasNew = snapshot.docs.some((doc) => {
           const data = doc.data();
           const createdMs = data.createdAt?.toMillis?.() ?? 0;
-          const eventDate = data.startTime?.toMillis?.() ?? 0;
-          return createdMs > lastViewed && eventDate > now;
+          // Undated ad hoc events have startTime: null and never "start",
+          // so they stay upcoming until archived.
+          const upcoming =
+            data.startTime == null || (data.startTime.toMillis?.() ?? 0) > now;
+          return createdMs > lastViewed && upcoming;
         });
         setHasNewEvents(hasNew);
       },

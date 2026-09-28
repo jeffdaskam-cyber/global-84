@@ -1,9 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { auth } from "../../lib/firebase";
 import { fmtDateTime } from "../../lib/format";
-import { setRsvp } from "../../lib/events";
+import { setRsvp, eventKind } from "../../lib/events";
 import { subscribeEventChat, sendEventMessage, deleteEventMessage } from "../../lib/eventChat";
 import { listenerErrorMessage } from "../../lib/subscribe";
+
+// Retry delay for a chat listener that was denied right after joining. See the
+// chat effect below.
+const CHAT_RETRY_MS = 1500;
+
+function LockIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        fillRule="evenodd"
+        d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
 function formatNames(names) {
   const MAX = 5;
@@ -23,6 +44,7 @@ function formatNames(names) {
  */
 export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
   const me = auth.currentUser;
+  const isAdhoc = eventKind(event) === "adhoc";
 
   const [saving, setSaving]           = useState(false);
   const [showChat, setShowChat]       = useState(false);
@@ -31,16 +53,6 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
   const [sending, setSending]         = useState(false);
   const [chatError, setChatError]     = useState("");
   const bottomRef                     = useRef(null);
-
-  // Subscribe to chat only when thread is open
-  useEffect(() => {
-    if (!showChat) return;
-    setChatError("");
-    const unsub = subscribeEventChat(event.id, setMessages, (err) =>
-      setChatError(listenerErrorMessage(err))
-    );
-    return () => unsub();
-  }, [showChat, event.id]);
 
   // Scroll to bottom when messages load or new message arrives
   useEffect(() => {
@@ -73,8 +85,48 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
     return rsvps.find((r) => r.uid === me.uid)?.status || null;
   }, [rsvps, me]);
 
-  // Can post if RSVP is going or interested
+  // Event chats are private to attendees: going/interested can read and post;
+  // admins can also read (and delete) for moderation. Mirrors firestore.rules.
   const canPost = myStatus === "going" || myStatus === "interested";
+  const canReadChat = canPost || !!isAdmin;
+
+  // Subscribe to chat only while the thread is open *and* the member may read
+  // it. Losing access (e.g. switching to Not going) tears the listener down and
+  // clears the thread so earlier messages don't linger on screen.
+  //
+  // Joining races the rules: setRsvp resolves locally (latency compensation)
+  // before the server has the RSVP, so a listener attached in that window is
+  // denied by the rules' get() on the RSVP. The first permission-denied is
+  // therefore retried once after a short delay before any error is shown.
+  useEffect(() => {
+    if (!canReadChat) setMessages([]);
+    if (!showChat || !canReadChat) return;
+    setChatError("");
+
+    let unsub = () => {};
+    let retryTimer = null;
+    let cancelled = false;
+
+    function attach(isRetry) {
+      unsub = subscribeEventChat(event.id, setMessages, (err) => {
+        if (cancelled) return;
+        if (!isRetry && err?.code === "permission-denied") {
+          retryTimer = setTimeout(() => {
+            if (!cancelled) attach(true);
+          }, CHAT_RETRY_MS);
+          return;
+        }
+        setChatError(listenerErrorMessage(err));
+      });
+    }
+
+    attach(false);
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      unsub();
+    };
+  }, [showChat, canReadChat, event.id]);
 
   async function handle(status) {
     setSaving(true);
@@ -128,15 +180,30 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark truncate">
-              {event.title}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark truncate">
+                {event.title}
+              </div>
+              {isAdhoc ? (
+                <span className="shrink-0 rounded-full bg-du-gold/15 text-du-gold px-2 py-0.5 text-[10px] font-semibold uppercase">
+                  Ad hoc
+                </span>
+              ) : null}
             </div>
-            <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark">
-              {fmtDateTime(event.startTime, event.city)}
-            </div>
-            <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark truncate">
-              {event.locationName}
-            </div>
+            {event.startTime ? (
+              <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark">
+                {fmtDateTime(event.startTime, event.city)}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-ink-muted dark:text-ink-subOnDark/70">
+                Time TBD
+              </div>
+            )}
+            {event.locationName ? (
+              <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark truncate">
+                {event.locationName}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col items-end gap-2 shrink-0">
@@ -228,6 +295,9 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
           >
             <span>💬</span>
             <span>{showChat ? "Hide discussion" : "Discussion"}</span>
+            {!canReadChat && (
+              <LockIcon className="h-3 w-3" />
+            )}
             {messages.length > 0 && !showChat && (
               <span className="ml-0.5 rounded-full bg-du-crimson text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
                 {messages.length}
@@ -238,7 +308,16 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
       </div>
 
       {/* ── Inline chat thread ── */}
-      {showChat && (
+      {showChat && !canReadChat && (
+        <div className="border-t border-surface-border dark:border-surface-darkBorder px-4 py-6 flex flex-col items-center gap-2 text-center">
+          <LockIcon className="h-5 w-5 text-ink-muted dark:text-ink-subOnDark" />
+          <div className="text-xs text-ink-sub dark:text-ink-subOnDark">
+            Tap Going or Interested to join the chat.
+          </div>
+        </div>
+      )}
+
+      {showChat && canReadChat && (
         <div className="border-t border-surface-border dark:border-surface-darkBorder">
           {/* Message list */}
           <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-3">

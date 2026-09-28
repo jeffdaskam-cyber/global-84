@@ -144,6 +144,32 @@ export const onAnnouncementCreated = onDocumentCreated(
 );
 
 // ── New event → push to everyone ─────────────────────────────────────────────
+// Short, zone-labelled start time in the event's city. Mirrors
+// src/config/timezones.js on the client (unknown cities fall back to Singapore).
+const CITY_ZONES: Record<string, { zone: string; label: string }> = {
+  "Singapore": { zone: "Asia/Singapore", label: "SGT" },
+  "Ho Chi Minh City": { zone: "Asia/Ho_Chi_Minh", label: "ICT" },
+  "Denver": { zone: "America/Denver", label: "MT" },
+};
+
+function formatEventTime(startTime: unknown, city: string): string | null {
+  const date =
+    startTime && typeof (startTime as { toDate?: unknown }).toDate === "function"
+      ? (startTime as FirebaseFirestore.Timestamp).toDate()
+      : null;
+  if (!date || Number.isNaN(date.getTime())) return null;
+  const { zone, label } = CITY_ZONES[city] ?? CITY_ZONES["Singapore"];
+  const formatted = date.toLocaleString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: zone,
+  });
+  return `${formatted} ${label}`;
+}
+
 export const onEventCreated = onDocumentCreated(
   "cohorts/{cohortId}/events/{eventId}",
   async (event) => {
@@ -155,14 +181,23 @@ export const onEventCreated = onDocumentCreated(
 
     const eventTitle = (data.title as string) || "an event";
 
-    await sendToCohort(
-      getFirestore(),
-      cohortId,
-      {
+    // Ad hoc events may have no time (startTime: null) and no meeting point
+    // (locationName: ""); a missing `kind` means a regular scheduled event.
+    let notification: { title: string; body: string };
+    if (data.kind === "adhoc") {
+      const city = (data.city as string) || "";
+      const when = formatEventTime(data.startTime, city) ?? "Time TBD";
+      notification = {
+        title: `New ad hoc event: ${eventTitle}`,
+        body: snippet([city, when].filter(Boolean).join(" · ")),
+      };
+    } else {
+      notification = {
         title: `New Event: ${eventTitle}`,
         body: snippet((data.locationName as string) || (data.description as string) || ""),
-      },
-      { url: "/events" },
-    );
+      };
+    }
+
+    await sendToCohort(getFirestore(), cohortId, notification, { url: "/events" });
   },
 );

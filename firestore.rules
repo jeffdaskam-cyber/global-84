@@ -32,21 +32,40 @@ service cloud.firestore {
       return isMember()
         && exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
     }
+    // Events come in two kinds. A missing `kind` means "scheduled" (docs
+    // written before ad hoc events existed are not migrated). Scheduled events
+    // require a time and a location. Ad hoc events may have startTime == null
+    // and an empty locationName — but startTime must still be *present*, since
+    // the Events list orders by it and Firestore drops docs missing that field.
     function isValidEvent(data) {
+      let kind = data.get('kind', 'scheduled');
       return hasOnlyFields(
           data,
           ['title', 'city', 'startTime', 'locationName', 'description', 'status', 'createdAt', 'createdByUid', 'createdByName'],
-          []
+          ['kind']
         )
+        && kind in ['adhoc', 'scheduled']
         && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
         && data.city in ['Singapore', 'Ho Chi Minh City', 'Denver']
-        && data.startTime is timestamp
-        && data.locationName is string && data.locationName.size() >= 1 && data.locationName.size() <= 200
+        && data.locationName is string && data.locationName.size() <= 200
+        && (
+          (kind == 'scheduled'
+            && data.startTime is timestamp
+            && data.locationName.size() >= 1)
+          || (kind == 'adhoc'
+            && (data.startTime == null || data.startTime is timestamp))
+        )
         && data.description is string && data.description.size() <= 5000
         && data.status in ['active', 'archived']
         && data.createdAt is timestamp
         && data.createdByUid is string && data.createdByUid.size() >= 1
         && data.createdByName is string && data.createdByName.size() >= 1 && data.createdByName.size() <= 80;
+    }
+    // Event discussion threads are private to attendees: a going/interested
+    // RSVP on the event. RSVP doc ids are the member's uid.
+    function isEventAttendee(cohortId, eventId) {
+      let rsvpPath = /databases/$(database)/documents/cohorts/$(cohortId)/events/$(eventId)/rsvps/$(request.auth.uid);
+      return exists(rsvpPath) && get(rsvpPath).data.status in ['going', 'interested'];
     }
     function isValidRsvp(data, uid) {
       return hasOnlyFields(data, ['uid', 'status', 'updatedAt', 'name'], [])
@@ -221,16 +240,17 @@ service cloud.firestore {
           allow delete: if isSelf(uid) || isAdmin(cohortId);
         }
 
-        // Event discussion thread — read by any signed-in user;
-        // post only if the user has a going/interested RSVP for this event;
-        // admin can delete; update never allowed.
+        // Event discussion thread: private to attendees.
+        // Read + post require a going/interested RSVP on this event; admins can
+        // read and delete for moderation. Update never allowed.
         match /messages/{messageId} {
-          allow read: if isMember();
+          allow read: if isAdmin(cohortId)
+            || (isMember() && isEventAttendee(cohortId, eventId));
           allow create: if isMember()
+            && isEventAttendee(cohortId, eventId)
             && request.resource.data.createdByUid == request.auth.uid
             && request.resource.data.text.size() >= 1
-            && request.resource.data.text.size() <= 1000
-            && get(/databases/$(database)/documents/cohorts/$(cohortId)/events/$(eventId)/rsvps/$(request.auth.uid)).data.status in ["going", "interested"];
+            && request.resource.data.text.size() <= 1000;
           allow delete: if isAdmin(cohortId);
           allow update: if false;
         }
