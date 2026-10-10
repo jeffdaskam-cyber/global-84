@@ -73,6 +73,7 @@ In the Firebase Console > Authentication > Settings, add your Vercel preview and
 - Forgotten passwords use Firebase's reset email, which lands on `/reset-password` (set it as the custom action URL under Authentication > Templates).
 - Firestore, Storage, and the functions all require an active, set-up access record in `cohorts/{cohort}/access/{uid}`; a verified domain email alone is not enough.
 - `docs/password-signin-runbook.md` covers rollout, recovery, and the device test matrix.
+- Three exclusive roles: Member, Program Leader, Admin. Admin is `cohorts/{cohort}/admins/{uid}.enabled`; Program Leader is `cohorts/{cohort}/programLeaders/{uid}.enabled`. Admins set roles per roster row on **Member Access** (the `setMemberRole` callable; nobody can change their own role, and the last admin can't be demoted). Program Leaders can post, pin, and archive announcements (badged "Program Leader"), delete cohort chat messages and gallery photos, and delete event chat messages only in events they've joined; every other admin tool stays admin-only. `members/{uid}.role` is self-writable and never used for authorization.
 
 Email-link sign-in remains available only during the migration window (`VITE_AUTH_REDIRECT_URL` sets where those links land) and is removed at final cutover.
 

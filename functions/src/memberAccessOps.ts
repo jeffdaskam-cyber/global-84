@@ -9,6 +9,8 @@
  *   cohorts/{c}/access/{uid}                 safe access state, rules-readable by its owner
  *   cohorts/{c}/roster/{emailLower}          admin-only approval and delivery status
  *   cohorts/{c}/credentialOperations/{id}    private operation log, no client access
+ *   cohorts/{c}/admins/{uid}                 admin allowlist, readable by its owner
+ *   cohorts/{c}/programLeaders/{uid}         Program Leader allowlist, readable by its owner
  *
  * Firebase Auth and Firestore cannot be updated atomically together, so every
  * credential operation is written as a sequence that is safe to stop at any
@@ -30,6 +32,7 @@ import {
   AuthAccountSummary,
   CREDENTIAL_STATES,
   CredentialState,
+  MemberRole,
   OPERATION_LEASE_MS,
   OperationPhase,
   OperationRecord,
@@ -41,6 +44,7 @@ import {
   generateTemporaryPassword,
   leaseIsHeld,
   planOperationRequest,
+  planRoleChange,
   reviewFlagsForAccount,
 } from "./memberAccessCore.js";
 import { lookupAccountPasswordState, PasswordLookupError } from "./authPasswordLookup.js";
@@ -69,6 +73,8 @@ export const operationRef = (cohortId: string, operationId: string) =>
   db().doc(`cohorts/${cohortId}/credentialOperations/${operationId}`);
 export const adminRef = (cohortId: string, uid: string) =>
   db().doc(`cohorts/${cohortId}/admins/${uid}`);
+export const programLeaderRef = (cohortId: string, uid: string) =>
+  db().doc(`cohorts/${cohortId}/programLeaders/${uid}`);
 
 export function toAccessRecord(data: DocumentData | undefined): AccessRecord | null {
   if (!data) return null;
@@ -762,4 +768,48 @@ export async function setMemberAccess(params: {
     authDisabled: user?.disabled ?? false,
     replayed: outcome.replayed,
   };
+}
+
+// ── Roles ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Make `uid` exactly one of Member, Program Leader, or Admin. Runs in a
+ * transaction so two admins demoting each other at once can't both pass the
+ * last-admin check. Clients pick the change up through their live listeners
+ * on the two allowlist docs; nobody is signed out.
+ */
+export async function setMemberRole(params: {
+  cohortId: string;
+  actorUid: string;
+  uid: string;
+  email: string;
+  role: MemberRole;
+}): Promise<void> {
+  const { cohortId, actorUid, uid, email, role } = params;
+  const aRef = adminRef(cohortId, uid);
+  const pRef = programLeaderRef(cohortId, uid);
+  const enabledAdmins = db().collection(`cohorts/${cohortId}/admins`).where("enabled", "==", true);
+
+  await db().runTransaction(async (tx) => {
+    const [adminSnap, leaderSnap, enabledSnap] = await Promise.all([
+      tx.get(aRef),
+      tx.get(pRef),
+      tx.get(enabledAdmins),
+    ]);
+    const plan = planRoleChange(role, {
+      adminExists: adminSnap.exists,
+      adminEnabled: adminSnap.data()?.enabled === true,
+      leaderExists: leaderSnap.exists,
+    }, enabledSnap.size);
+    if (!plan.ok) throw new AccessOpError(plan.code, plan.message);
+
+    const stamp = (enabled: boolean) => ({
+      enabled,
+      email,
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: actorUid,
+    });
+    if (plan.admin !== null) tx.set(aRef, stamp(plan.admin), { merge: true });
+    if (plan.programLeader !== null) tx.set(pRef, stamp(plan.programLeader), { merge: true });
+  });
 }

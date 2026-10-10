@@ -103,3 +103,26 @@ export async function loadCurrentMemberEmails() {
 export function callableReason(err) {
   return err?.details?.reason || null;
 }
+
+// ── Admin: roles ───────────────────────────────────────────────────────────────
+
+/** "member" | "programLeader" | "admin". The callable enforces exclusivity. */
+export async function setMemberRole(email, role) {
+  const res = await call("setMemberRole")({ cohortId: COHORT_ID, email, role });
+  return res.data;
+}
+
+/**
+ * One-time read of both role allowlists, as a Map of uid → role. Members
+ * absent from the map are plain members. Admin wins if both docs are enabled.
+ */
+export async function loadRoles() {
+  const [admins, leaders] = await Promise.all([
+    getDocs(collection(db, "cohorts", COHORT_ID, "admins")),
+    getDocs(collection(db, "cohorts", COHORT_ID, "programLeaders")),
+  ]);
+  const roles = new Map();
+  for (const d of leaders.docs) if (d.data().enabled === true) roles.set(d.id, "programLeader");
+  for (const d of admins.docs) if (d.data().enabled === true) roles.set(d.id, "admin");
+  return roles;
+}

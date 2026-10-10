@@ -1,12 +1,12 @@
 /**
  * deletePhoto — Firebase Callable Cloud Function
  *
- * Admin-only deletion of a gallery photo. Storage security rules restrict
- * object deletes to the file's owner, so admins cannot delete other members'
- * photos directly from the client. This callable runs with Admin SDK
+ * Moderator deletion of a gallery photo. Storage security rules restrict
+ * object deletes to the file's owner, so moderators cannot delete other
+ * members' photos directly from the client. This callable runs with Admin SDK
  * privileges (which bypass security rules): it verifies the caller is an
- * enabled admin in the cohort allowlist, then removes both the Storage object
- * and the Firestore metadata doc.
+ * enabled admin or Program Leader in the cohort allowlists, then removes both
+ * the Storage object and the Firestore metadata doc.
  */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -31,8 +31,8 @@ export const deletePhoto = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
 
-  // Verified member of the allowed domain (defense in depth; admin docs only
-  // exist for real members, but this keeps the check consistent everywhere).
+  // Verified member of the allowed domain (defense in depth; moderator docs
+  // only exist for real members, but this keeps the check consistent everywhere).
   const email = (auth.token.email || "").toLowerCase();
   if (auth.token.email_verified !== true || !email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
     throw new HttpsError("permission-denied", "Not authorized.");
@@ -45,7 +45,7 @@ export const deletePhoto = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "cohortId and photoId are required.");
   }
 
-  // Admin rights never stand alone: the caller must also hold usable access
+  // Moderator rights never stand alone: the caller must also hold usable access
   // on this cohort's approved roster (the Admin SDK bypasses the rules that
   // would otherwise enforce this).
   if (!(await hasUsableTripAccess(cohortId, auth.uid, email))) {
@@ -54,10 +54,15 @@ export const deletePhoto = onCall(async (request) => {
 
   const db = getFirestore();
 
-  // Verify the caller is an enabled admin of this cohort.
-  const adminSnap = await db.doc(`cohorts/${cohortId}/admins/${auth.uid}`).get();
-  if (!adminSnap.exists || adminSnap.data()?.enabled !== true) {
-    throw new HttpsError("permission-denied", "Admin access required.");
+  // Verify the caller is an enabled admin or Program Leader of this cohort.
+  const [adminSnap, leaderSnap] = await Promise.all([
+    db.doc(`cohorts/${cohortId}/admins/${auth.uid}`).get(),
+    db.doc(`cohorts/${cohortId}/programLeaders/${auth.uid}`).get(),
+  ]);
+  const isModerator =
+    adminSnap.data()?.enabled === true || leaderSnap.data()?.enabled === true;
+  if (!isModerator) {
+    throw new HttpsError("permission-denied", "Moderator access required.");
   }
 
   const photoRef = db.doc(`cohorts/${cohortId}/photos/${photoId}`);
@@ -88,7 +93,7 @@ export const deletePhoto = onCall(async (request) => {
     // still submit arbitrary values, so this Admin SDK call (which bypasses
     // Storage security rules) must not trust them blindly — otherwise a
     // crafted gallery entry could point at another user's private object and
-    // an admin deleting it would destroy that object. An unexpected path is
+    // a moderator deleting it would destroy that object. An unexpected path is
     // skipped, but the (bogus) metadata doc is still removed.
     await deleteIfSafe(storagePath, `photos/${cohortId}/${uploaderUid}/`, uploaderUid);
 

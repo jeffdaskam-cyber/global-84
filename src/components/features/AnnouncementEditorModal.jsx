@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createAnnouncement } from "../../lib/announcements";
 
-export default function AnnouncementEditorModal({ open, onClose }) {
+export default function AnnouncementEditorModal({ open, onClose, authorRole }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pinned, setPinned] = useState(true);
@@ -26,7 +26,7 @@ export default function AnnouncementEditorModal({ open, onClose }) {
     if (!canSave) return;
     setSaving(true);
     try {
-      await createAnnouncement({ title, body, pinned });
+      await createAnnouncement({ title, body, pinned, authorRole });
       onClose();
     } catch (e) {
       setError(e?.message || "Could not create announcement.");

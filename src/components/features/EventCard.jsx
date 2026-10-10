@@ -42,7 +42,7 @@ function formatNames(names) {
  * is a second trans-Pacific query per event, so the page owns the listener and
  * passes results down.
  */
-export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
+export default function EventCard({ event, rsvps = [], onEdit, isAdmin, isProgramLeader }) {
   const me = auth.currentUser;
   const isAdhoc = eventKind(event) === "adhoc";
 
@@ -86,9 +86,12 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
   }, [rsvps, me]);
 
   // Event chats are private to attendees: going/interested can read and post;
-  // admins can also read (and delete) for moderation. Mirrors firestore.rules.
+  // admins can also read (and delete) for moderation. Program Leaders can
+  // delete only in threads they've joined, with no extra read. Mirrors
+  // firestore.rules.
   const canPost = myStatus === "going" || myStatus === "interested";
   const canReadChat = canPost || !!isAdmin;
+  const canDeleteMessages = !!isAdmin || (!!isProgramLeader && canPost);
 
   // Subscribe to chat only while the thread is open *and* the member may read
   // it. Losing access (e.g. switching to Not going) tears the listener down and
@@ -164,6 +167,11 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
       await deleteEventMessage(event.id, messageId);
     } catch (e) {
       console.error("Delete failed:", e);
+      alert(
+        e?.code === "permission-denied"
+          ? "You can't delete messages in this chat. Program Leaders need to be Going or Interested."
+          : "Couldn't delete the message. Check your connection and try again."
+      );
     }
   }
 
@@ -355,7 +363,7 @@ export default function EventCard({ event, rsvps = [], onEdit, isAdmin }) {
                       >
                         {msg.text}
                       </div>
-                      {isAdmin && (
+                      {canDeleteMessages && (
                         <button
                           onClick={() => handleDelete(msg.id)}
                           className="text-[10px] text-ink-sub dark:text-ink-subOnDark hover:text-du-crimson transition px-1"

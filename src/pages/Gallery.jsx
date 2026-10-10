@@ -18,7 +18,8 @@ const CITIES = [
   { key: "vietnam", label: "Vietnam" },
 ];
 
-export default function Gallery({ user, isAdmin }) {
+// canModerate (admin or Program Leader) shows delete on every photo.
+export default function Gallery({ user, canModerate }) {
   const [activeCity, setActiveCity] = useState("all");
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -382,7 +383,7 @@ export default function Gallery({ user, isAdmin }) {
               <PhotoCard
                 key={photo.id}
                 photo={photo}
-                isAdmin={isAdmin}
+                canModerate={canModerate}
                 userUid={user?.uid}
                 selectMode={selectMode}
                 selected={selected.has(photo.id)}
@@ -398,7 +399,7 @@ export default function Gallery({ user, isAdmin }) {
       {lightbox && (
         <Lightbox
           photo={lightbox}
-          isAdmin={isAdmin}
+          canModerate={canModerate}
           userUid={user?.uid}
           onClose={() => setLightboxId(null)}
           onDelete={() => handleDelete(lightbox)}
@@ -608,7 +609,7 @@ function DownloadProgressModal({ job, onCancel, onRetry, onClose }) {
   );
 }
 
-function PhotoCard({ photo, isAdmin, userUid, selectMode, selected, onOpen, onDelete, onLike }) {
+function PhotoCard({ photo, canModerate, userUid, selectMode, selected, onOpen, onDelete, onLike }) {
   const formattedDate = photo.createdAt?.toDate
     ? photo.createdAt.toDate().toLocaleDateString("en-US", {
         month: "short",
@@ -669,7 +670,7 @@ function PhotoCard({ photo, isAdmin, userUid, selectMode, selected, onOpen, onDe
             </button>
           </div>
 
-          {isAdmin && (
+          {canModerate && (
             <button
               onClick={(event) => {
                 event.stopPropagation();
@@ -687,7 +688,7 @@ function PhotoCard({ photo, isAdmin, userUid, selectMode, selected, onOpen, onDe
   );
 }
 
-function Lightbox({ photo, isAdmin, userUid, onClose, onDelete, onLike }) {
+function Lightbox({ photo, canModerate, userUid, onClose, onDelete, onLike }) {
   const formattedDate = photo.createdAt?.toDate
     ? photo.createdAt.toDate().toLocaleDateString("en-US", {
         month: "long",
@@ -755,7 +756,7 @@ function Lightbox({ photo, isAdmin, userUid, onClose, onDelete, onLike }) {
             )}
             {downloading ? "Downloading" : downloadError ? "Retry" : "Download"}
           </button>
-          {isAdmin && (
+          {canModerate && (
             <button onClick={onDelete} className="text-red-400 hover:text-red-300 transition-colors p-2" title="Delete photo">
               Delete
             </button>

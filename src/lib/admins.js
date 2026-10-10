@@ -41,3 +41,37 @@ export function subscribeIsAdmin(cb, onError) {
     unsubAuth();
   };
 }
+
+// Same shape as subscribeIsAdmin, against the Program Leader allowlist
+// (cohorts/{cohortId}/programLeaders/{uid}). A dropped listener reports false.
+export function subscribeIsProgramLeader(cb, onError) {
+  let unsubLeaderDoc = null;
+
+  const unsubAuth = onAuthStateChanged(auth, (u) => {
+    if (unsubLeaderDoc) {
+      unsubLeaderDoc();
+      unsubLeaderDoc = null;
+    }
+
+    if (!u) {
+      cb(false);
+      return;
+    }
+
+    const ref = doc(db, "cohorts", COHORT_ID, "programLeaders", u.uid);
+    unsubLeaderDoc = watch(
+      "is-program-leader",
+      ref,
+      (snap) => cb(!!snap.exists() && snap.data()?.enabled === true),
+      (err) => {
+        cb(false);
+        if (onError) onError(err);
+      }
+    );
+  });
+
+  return () => {
+    if (unsubLeaderDoc) unsubLeaderDoc();
+    unsubAuth();
+  };
+}
