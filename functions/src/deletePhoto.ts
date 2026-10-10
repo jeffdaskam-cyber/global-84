@@ -14,6 +14,8 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import * as logger from "firebase-functions/logger";
+import { isAllowedCohort } from "./memberAccessCore.js";
+import { hasUsableTripAccess } from "./memberAccessOps.js";
 
 // Initialize the Admin SDK once (shared across functions in this codebase).
 if (getApps().length === 0) {
@@ -38,9 +40,16 @@ export const deletePhoto = onCall(async (request) => {
 
   const cohortId = request.data?.cohortId;
   const photoId = request.data?.photoId;
-  if (typeof cohortId !== "string" || !cohortId ||
-      typeof photoId !== "string" || !photoId) {
+  if (!isAllowedCohort(cohortId) ||
+      typeof photoId !== "string" || !photoId || photoId.includes("/")) {
     throw new HttpsError("invalid-argument", "cohortId and photoId are required.");
+  }
+
+  // Admin rights never stand alone: the caller must also hold usable access
+  // on this cohort's approved roster (the Admin SDK bypasses the rules that
+  // would otherwise enforce this).
+  if (!(await hasUsableTripAccess(cohortId, auth.uid, email))) {
+    throw new HttpsError("permission-denied", "Not authorized.");
   }
 
   const db = getFirestore();

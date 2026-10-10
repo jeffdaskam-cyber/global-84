@@ -34,3 +34,15 @@ export { onAnnouncementCreated, onEventCreated } from "./pushNotifications.js";
 // Keeps explore/{itemId}.favoriteCount in sync with per-member favorite docs,
 // which drives the "Cohort Favorite" tag in the Explore list.
 export { onFavoriteChange } from "./onFavoriteChange.js";
+
+// Member access: approved roster, individually issued temporary passwords,
+// server-verified password setup, and membership on/off. See memberAccess.ts.
+export {
+  addRosterMembers,
+  issueMemberTemporaryPassword,
+  resetMemberPassword,
+  markCredentialDelivered,
+  getCredentialOperationStatus,
+  completeMyPasswordSetup,
+  setMemberAccess,
+} from "./memberAccess.js";

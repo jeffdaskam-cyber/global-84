@@ -2,14 +2,45 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // A cohort member is a signed-in user with a *verified* email in the
-    // allowed domain. Enforced here (not only in client JS) because the
-    // Firebase web API key is public. Keep in sync with firestore.rules and
-    // VITE_ALLOWED_EMAIL_DOMAIN (default "du.edu") if you fork.
-    function isMember() {
+    // The single cohort this deployment serves. Used for paths that carry no
+    // cohort ID (userFiles). Keep in sync with VITE_COHORT_ID, firestore.rules,
+    // and CONFIGURED_COHORT_ID in functions/src/memberAccessCore.ts.
+    function configuredCohort() {
+      return 'cohort84';
+    }
+
+    // Verified email in the allowed domain. Necessary, never sufficient: the
+    // Firebase web API key is public. Keep the domain in sync with
+    // firestore.rules and VITE_ALLOWED_EMAIL_DOMAIN (default "du.edu").
+    function hasVerifiedDuIdentity() {
       return request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.email.matches('.*@du[.]edu$');
+    }
+
+    function accessPath(cohortId) {
+      return /databases/(default)/documents/cohorts/$(cohortId)/access/$(request.auth.uid);
+    }
+
+    function accessAllowsTripData(access) {
+      return access.uid == request.auth.uid
+        && access.email == request.auth.token.email.lower()
+        && access.active == true
+        && (access.credentialState == 'ready'
+          // MIGRATION ONLY: remove with the matching clause in firestore.rules
+          // at final cutover.
+          || (access.credentialState == 'legacy'
+            && access.get('legacyUntil', null) is timestamp
+            && request.time < access.legacyUntil));
+    }
+
+    // Same membership gate as canUseTripData() in firestore.rules, read
+    // through the cross-service Firestore lookup. Bound to the cohort in the
+    // object path, so access in one cohort never opens another's files.
+    function canUseTripData(cohortId) {
+      return hasVerifiedDuIdentity()
+        && firestore.exists(accessPath(cohortId))
+        && accessAllowsTripData(firestore.get(accessPath(cohortId)).data);
     }
 
     // Photos: cohort members can upload their own and view all; only the
@@ -18,10 +49,10 @@ service firebase.storage {
     match /photos/{cohortId}/{uid}/{filename} {
 
       // Any member can view photos
-      allow read: if isMember();
+      allow read: if canUseTripData(cohortId);
 
       // Members can only upload to their own uid folder
-      allow write: if isMember()
+      allow write: if canUseTripData(cohortId)
         && request.auth.uid == uid
         && request.resource.size < 10 * 1024 * 1024       // 10 MB max
         && request.resource.contentType.matches("image/.*"); // images only
@@ -29,7 +60,7 @@ service firebase.storage {
       // Deletion is restricted to the file owner. Any-signed-in-user delete
       // was a data-integrity hole: the client only renders the delete button
       // for admins, but Storage rules are the real boundary and the UI is not.
-      allow delete: if isMember()
+      allow delete: if canUseTripData(cohortId)
         && request.auth.uid == uid;
     }
 
@@ -38,22 +69,23 @@ service firebase.storage {
     // Same ownership model as photos/; admin cleanup goes through the
     // deletePhoto Cloud Function, which removes both objects.
     match /originals/{cohortId}/{uid}/{filename} {
-      allow read: if isMember();
-      allow write: if isMember()
+      allow read: if canUseTripData(cohortId);
+      allow write: if canUseTripData(cohortId)
         && request.auth.uid == uid
         && request.resource.size < 25 * 1024 * 1024       // 25 MB max
         && request.resource.contentType.matches("image/.*"); // images only
-      allow delete: if isMember() && request.auth.uid == uid;
+      allow delete: if canUseTripData(cohortId) && request.auth.uid == uid;
     }
 
     // User private files: each user can only read/write/delete their own folder.
-    // No other user, including admins, can access another user's files.
+    // No other user, including admins, can access another user's files. The
+    // path has no cohort ID, so membership is checked in configuredCohort().
     match /userFiles/{uid}/{fileName} {
       // Read and delete: owner only, no resource conditions needed
-      allow read, delete: if isMember()
+      allow read, delete: if canUseTripData(configuredCohort())
         && request.auth.uid == uid;
       // Upload (write): owner only + size and content type validation
-      allow write: if isMember()
+      allow write: if canUseTripData(configuredCohort())
         && request.auth.uid == uid
         && request.resource.size < 10 * 1024 * 1024
         && (request.resource.contentType == 'application/pdf'
@@ -66,8 +98,8 @@ service firebase.storage {
     // the Firestore rule on cohorts/{cohortId}/tripDocs is the real boundary —
     // a deleted object with a surviving metadata doc is the worst case here.
     match /tripDocs/{cohortId}/{fileName} {
-      allow read, delete: if isMember();
-      allow write: if isMember()
+      allow read, delete: if canUseTripData(cohortId);
+      allow write: if canUseTripData(cohortId)
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType == 'application/pdf';
     }

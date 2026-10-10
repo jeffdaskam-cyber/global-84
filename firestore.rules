@@ -4,23 +4,60 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
-    // A cohort member is a signed-in user with a *verified* email in the
-    // allowed domain. The @du.edu restriction is enforced here (not only in
-    // client JS) because the Firebase web API key is public and anyone can
-    // obtain a session for an arbitrary email via the Auth REST API.
-    // Email-link sign-in produces verified emails, so this holds for all
-    // legitimate members. NOTE: the domain is hardcoded to match
-    // VITE_ALLOWED_EMAIL_DOMAIN (default "du.edu"); update both if you fork.
-    function isMember() {
+    // The single cohort this deployment serves, for rules that cannot see a
+    // cohort ID in their path (the collection-group RSVP read). Keep in sync
+    // with VITE_COHORT_ID, storage.rules, and CONFIGURED_COHORT_ID in
+    // functions/src/memberAccessCore.ts.
+    function configuredCohort() {
+      return 'cohort84';
+    }
+    // Signed in with a *verified* email in the allowed domain. Necessary but
+    // never sufficient on its own: the Firebase web API key is public, so
+    // membership comes from the approved roster's access record below. NOTE:
+    // the domain is hardcoded to match VITE_ALLOWED_EMAIL_DOMAIN (default
+    // "du.edu"); update both if you fork.
+    function hasVerifiedDuIdentity() {
       return signedIn()
         && request.auth.token.email_verified == true
         && request.auth.token.email.matches('.*@du[.]edu$');
     }
-    function isSelf(uid) {
-      return isMember() && request.auth.uid == uid;
+    // cohorts/{cohortId}/access/{uid} is written only by Cloud Functions and
+    // the operator script (Admin SDK). It is the authorization source.
+    function accessPath(cohortId) {
+      return /databases/$(database)/documents/cohorts/$(cohortId)/access/$(request.auth.uid);
     }
+    function accessMatchesCaller(access) {
+      return access.uid == request.auth.uid
+        && access.email == request.auth.token.email.lower()
+        && access.active == true;
+    }
+    function credentialAllowsTripData(access) {
+      return access.credentialState == 'ready'
+        // MIGRATION ONLY: time-limited access for existing members seeded by
+        // the operator script. Remove this clause at final cutover.
+        || (access.credentialState == 'legacy'
+          && access.get('legacyUntil', null) is timestamp
+          && request.time < access.legacyUntil);
+    }
+    // Approved, active roster membership in this cohort.
+    function hasApprovedAccess(cohortId) {
+      return hasVerifiedDuIdentity()
+        && exists(accessPath(cohortId))
+        && accessMatchesCaller(get(accessPath(cohortId)).data);
+    }
+    // Membership plus finished password setup. Pending, issuing, temporary,
+    // and error states can sign in and change a password but read no trip data.
+    function canUseTripData(cohortId) {
+      return hasApprovedAccess(cohortId)
+        && credentialAllowsTripData(get(accessPath(cohortId)).data);
+    }
+    function isSelf(cohortId, uid) {
+      return canUseTripData(cohortId) && request.auth.uid == uid;
+    }
+    // A separate enabled allowlist entry on top of usable access; membership
+    // never grants admin rights by itself.
     function isAdmin(cohortId) {
-      return isMember()
+      return canUseTripData(cohortId)
         && exists(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid))
         && get(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid)).data.enabled == true;
     }
@@ -29,7 +66,7 @@ service cloud.firestore {
         && data.keys().hasOnly(required.concat(optional));
     }
     function isTeamMember(cohortId, teamId) {
-      return isMember()
+      return canUseTripData(cohortId)
         && exists(/databases/$(database)/documents/cohorts/$(cohortId)/teams/$(teamId)/members/$(request.auth.uid));
     }
     // Events come in two kinds. A missing `kind` means "scheduled" (docs
@@ -126,16 +163,36 @@ service cloud.firestore {
     }
 
     match /cohorts/{cohortId} {
+      // Access records: a member may read their own, even before setup is
+      // finished, so the app can show the right setup or denial screen.
+      // Admins may read all of them. No client writes, ever.
+      match /access/{uid} {
+        allow get: if hasVerifiedDuIdentity() && request.auth.uid == uid;
+        allow read: if isAdmin(cohortId);
+        allow write: if false;
+      }
+
+      // Approved roster (email-keyed): admin-only, written by Cloud Functions.
+      match /roster/{emailLower} {
+        allow read: if isAdmin(cohortId);
+        allow write: if false;
+      }
+
+      // Credential operation log: server-only. Never client-readable.
+      match /credentialOperations/{operationId} {
+        allow read, write: if false;
+      }
+
       // Admin allowlist docs
       match /admins/{uid} {
-        allow read: if isSelf(uid) || isAdmin(cohortId);
+        allow read: if isSelf(cohortId, uid) || isAdmin(cohortId);
         allow write: if false;
       }
 
       // Member profile docs
       match /members/{uid} {
-        allow read: if isSelf(uid) || isAdmin(cohortId);
-        allow create: if isSelf(uid)
+        allow read: if isSelf(cohortId, uid) || isAdmin(cohortId);
+        allow create: if isSelf(cohortId, uid)
           && hasOnlyFields(
             request.resource.data,
             ['uid', 'email', 'displayName', 'role', 'createdAt', 'lastLoginAt'],
@@ -149,7 +206,7 @@ service cloud.firestore {
           && request.resource.data.role == 'member'
           && request.resource.data.createdAt is timestamp
           && request.resource.data.lastLoginAt is timestamp;
-        allow update: if isSelf(uid)
+        allow update: if isSelf(cohortId, uid)
           && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['displayName', 'lastLoginAt'])
           && request.resource.data.uid == resource.data.uid
@@ -164,14 +221,14 @@ service cloud.firestore {
 
         // Per-user saved Explore favorites
         match /favorites/{exploreId} {
-          allow read, create, delete: if isSelf(uid);
+          allow read, create, delete: if isSelf(cohortId, uid);
           allow update: if false;
         }
 
         // Per-user private file metadata (My Files feature) — March 10
         // Only the owning user can read, create, or delete — admins have no access.
         match /files/{fileId} {
-          allow read, create, delete: if isSelf(uid);
+          allow read, create, delete: if isSelf(cohortId, uid);
           allow update: if false;
         }
 
@@ -181,7 +238,7 @@ service cloud.firestore {
         // (unlike files) because segment fields and segmentOrder are edited in
         // place. Bumped to force a fresh rules deploy.
         match /flights/{flightId} {
-          allow read, create, update, delete: if isSelf(uid);
+          allow read, create, update, delete: if isSelf(cohortId, uid);
         }
 
         // Per-device push notification (FCM) tokens.
@@ -190,21 +247,21 @@ service cloud.firestore {
         // the token) and stale docs are cleaned up server-side by the
         // notification Cloud Functions.
         match /fcmTokens/{token} {
-          allow read, create, delete: if isSelf(uid);
+          allow read, create, delete: if isSelf(cohortId, uid);
           allow update: if false;
         }
       }
 
       // Announcements (admins manage; all members can read)
       match /announcements/{id} {
-        allow read: if isMember();
+        allow read: if canUseTripData(cohortId);
         allow create, update, delete: if isAdmin(cohortId);
       }
 
       // Cohort itinerary (admin-managed; all members read). The trip leader's
       // dated plan; feeds the Home "Up Next" module.
       match /itinerary/{id} {
-        allow read: if isMember();
+        allow read: if canUseTripData(cohortId);
         allow create, update, delete: if isAdmin(cohortId);
       }
 
@@ -213,31 +270,31 @@ service cloud.firestore {
       // Function via the Admin SDK, which bypasses these rules. Do not open a
       // client write path for it — members must not be able to inflate it.
       match /explore/{id} {
-        allow read: if isMember();
+        allow read: if canUseTripData(cohortId);
         allow create: if isAdmin(cohortId);
         allow update, delete: if isAdmin(cohortId);
       }
 
       // Events (members can read/create; creator or admins can mutate)
       match /events/{eventId} {
-        allow read: if isMember();
-        allow create: if isMember()
+        allow read: if canUseTripData(cohortId);
+        allow create: if canUseTripData(cohortId)
           && request.resource.data.createdByUid == request.auth.uid
           && isValidEvent(request.resource.data);
         allow update: if (isAdmin(cohortId)
-            || (isMember() && resource.data.createdByUid == request.auth.uid))
+            || (canUseTripData(cohortId) && resource.data.createdByUid == request.auth.uid))
           && isValidEvent(request.resource.data)
           && request.resource.data.createdByUid == resource.data.createdByUid
           && request.resource.data.createdByName == resource.data.createdByName
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if isAdmin(cohortId)
-          || (isMember() && resource.data.createdByUid == request.auth.uid);
+          || (canUseTripData(cohortId) && resource.data.createdByUid == request.auth.uid);
 
         match /rsvps/{uid} {
-          allow read: if isMember();
-          allow create, update: if isSelf(uid)
+          allow read: if canUseTripData(cohortId);
+          allow create, update: if isSelf(cohortId, uid)
             && isValidRsvp(request.resource.data, uid);
-          allow delete: if isSelf(uid) || isAdmin(cohortId);
+          allow delete: if isSelf(cohortId, uid) || isAdmin(cohortId);
         }
 
         // Event discussion thread: private to attendees.
@@ -245,8 +302,8 @@ service cloud.firestore {
         // read and delete for moderation. Update never allowed.
         match /messages/{messageId} {
           allow read: if isAdmin(cohortId)
-            || (isMember() && isEventAttendee(cohortId, eventId));
-          allow create: if isMember()
+            || (canUseTripData(cohortId) && isEventAttendee(cohortId, eventId));
+          allow create: if canUseTripData(cohortId)
             && isEventAttendee(cohortId, eventId)
             && request.resource.data.createdByUid == request.auth.uid
             && request.resource.data.text.size() >= 1
@@ -258,8 +315,8 @@ service cloud.firestore {
 
       // Group chat
       match /messages/{messageId} {
-        allow read: if isMember();
-        allow create: if isMember()
+        allow read: if canUseTripData(cohortId);
+        allow create: if canUseTripData(cohortId)
           && request.resource.data.createdByUid == request.auth.uid
           && request.resource.data.text.size() >= 1
           && request.resource.data.text.size() <= 1000;
@@ -272,10 +329,10 @@ service cloud.firestore {
       // remove their own reaction, so a privileged admin delete can never be
       // redirected to another user's Storage object.
       match /photos/{photoId} {
-        allow read: if isMember();
-        allow create: if isMember()
+        allow read: if canUseTripData(cohortId);
+        allow create: if canUseTripData(cohortId)
           && isValidPhotoCreate(request.resource.data, cohortId);
-        allow update: if isMember()
+        allow update: if canUseTripData(cohortId)
           && (onlyChangesOwnPhotoLike() || onlyAddsOwnPhotoOriginal(cohortId));
         allow delete: if isAdmin(cohortId);
       }
@@ -287,21 +344,21 @@ service cloud.firestore {
 
       // Media — videos and articles (admin-managed)
       match /media/{mediaId} {
-        allow read: if isMember();
+        allow read: if canUseTripData(cohortId);
         allow create, update, delete: if isAdmin(cohortId);
       }
 
       // Links — shared trip-planning links (any member creates; creator or admin deletes)
       match /links/{linkId} {
-        allow read: if isMember();
-        allow create: if isMember()
+        allow read: if canUseTripData(cohortId);
+        allow create: if canUseTripData(cohortId)
           && request.resource.data.createdByUid == request.auth.uid
           && request.resource.data.url is string
           && request.resource.data.url.size() <= 500
           && request.resource.data.description is string
           && request.resource.data.description.size() <= 200;
         allow update, delete: if isAdmin(cohortId)
-          || (isMember() && resource.data.createdByUid == request.auth.uid);
+          || (canUseTripData(cohortId) && resource.data.createdByUid == request.auth.uid);
       }
 
       // Trip documents — shared PDFs from program leadership. Any member may
@@ -309,8 +366,8 @@ service cloud.firestore {
       // replacing a document means deleting it and uploading the new version,
       // which keeps the Storage object and the metadata doc from drifting apart.
       match /tripDocs/{docId} {
-        allow read: if isMember();
-        allow create: if isMember()
+        allow read: if canUseTripData(cohortId);
+        allow create: if canUseTripData(cohortId)
           && request.resource.data.uploadedBy == request.auth.uid
           && request.resource.data.fileName is string
           && request.resource.data.fileName.size() <= 300
@@ -319,7 +376,7 @@ service cloud.firestore {
           && request.resource.data.fileSize <= 10 * 1024 * 1024
           && request.resource.data.city in ['singapore', 'vietnam', 'all'];
         allow delete: if isAdmin(cohortId)
-          || (isMember() && resource.data.uploadedBy == request.auth.uid);
+          || (canUseTripData(cohortId) && resource.data.uploadedBy == request.auth.uid);
         allow update: if false;
       }
 
@@ -354,11 +411,13 @@ service cloud.firestore {
 
     // Collection-group read for RSVPs so a member can query their own RSVPs
     // across every event (Home "Up Next"). Writes stay governed by the nested
-    // events/{eventId}/rsvps/{uid} rule above; this only authorizes the
-    // collection-group *read*. RSVPs are already member-readable per-event, so
-    // this widens nothing beyond what a member could already see.
+    // events/{eventId}/rsvps/{uid} rule above. Collection-group rules cannot
+    // see the cohort in the path, so this grants only the caller's own RSVP
+    // docs (provable from the query's uid filter) and only while they hold
+    // usable access in the configured cohort.
     match /{path=**}/rsvps/{rsvpId} {
-      allow read: if isMember();
+      allow read: if canUseTripData(configuredCohort())
+        && resource.data.uid == request.auth.uid;
     }
   }
 }

@@ -1803,6 +1803,18 @@
       transition: transform 180ms ease;
     }
     .access-input button:hover { transform: translateY(-1px); }
+    .access-open {
+      display: inline-block;
+      padding: 14px 26px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-deep));
+      color: var(--paper);
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: transform 180ms ease;
+    }
+    .access-open:hover { transform: translateY(-1px); }
     .access-card .note { font-size: 0.84rem; color: var(--ink-faint); margin-top: 14px; }
     .access-card .note b { color: var(--ink); }
 
@@ -2707,7 +2719,7 @@
 
       <div class="fcard span-4 reveal" style="background: linear-gradient(160deg, rgba(196,150,42,0.16), rgba(186,12,47,0.1)); border: 1px solid rgba(196,150,42,0.25);">
         <h3>Secure, cohort-only access.</h3>
-        <p>Email-link sign-in restricted to <span class="mono" style="font-size: 0.86rem;">@du.edu</span>. Security rules enforce membership at every step. Your data never leaks to another cohort.</p>
+        <p>Password sign-in for approved <span class="mono" style="font-size: 0.86rem;">@du.edu</span> cohort members only. Security rules enforce membership at every step. Your data never leaks to another cohort.</p>
       </div>
     </div>
   </section>
@@ -2837,29 +2849,25 @@
       <div class="access-content">
         <div class="access-card reveal">
           <span class="ek">Cohort access</span>
-          <h3>Request access with your DU email address.</h3>
-          <p>Check your inbox, open the link, and you're in!</p>
-          <div class="access-input">
-            <input id="access-email" type="email" placeholder="firstname.lastname@du.edu" autocomplete="email" />
-            <button id="access-send" type="button">Send link</button>
-          </div>
-          <div id="access-msg" class="note" role="status" aria-live="polite"></div>
-          <div class="note">After install: open the link → tap <b>Share</b> → <b>Add to Home Screen</b>. Global 84 then lives next to your favorite apps.</div>
+          <h3>Open Global 84 on your phone.</h3>
+          <p>Add it to your Home Screen, then sign in from the icon with your DU email and the temporary password sent to you individually.</p>
+          <a class="access-open" href="/">Open Global 84</a>
+          <div class="note">Already have the icon? Open Global 84 from your Home Screen. No need to install again.</div>
         </div>
 
         <div class="access-steps reveal">
         <div class="access-step">
           <div class="n">1.</div>
           <div>
-            <strong>Verify with DU email.</strong>
-            <span>Firebase Auth restricts sign-in to approved cohort domains, enforced at the Firestore rules layer.</span>
+            <strong>Add to Home Screen.</strong>
+            <span>Open the link on your phone and follow the on-screen steps. No app store involved.</span>
           </div>
         </div>
         <div class="access-step">
           <div class="n">2.</div>
           <div>
-            <strong>Add to Home Screen.</strong>
-            <span>iOS Safari and Android Chrome both support full PWA install. No app store gatekeeping involved.</span>
+            <strong>Sign in from the icon.</strong>
+            <span>Use your DU email and your temporary password, then choose your own password and let your phone save it.</span>
           </div>
         </div>
         <div class="access-step">
@@ -3092,39 +3100,6 @@
     }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-    // Cohort access: validate @du.edu, then hand off to the app to send the link
-    (function () {
-      const input = document.getElementById('access-email');
-      const button = document.getElementById('access-send');
-      const msg = document.getElementById('access-msg');
-      if (!input || !button) return;
-
-      function showError(text) {
-        if (!msg) return;
-        msg.textContent = text;
-        msg.style.color = '#ff8a8a';
-      }
-
-      function submit() {
-        const raw = (input.value || '').trim().toLowerCase();
-        if (!raw) { showError('Enter your DU email.'); input.focus(); return; }
-        if (!/^[^\s@]+@du\.edu$/.test(raw)) {
-          showError('Use your @du.edu address.');
-          input.focus();
-          return;
-        }
-        if (msg) { msg.textContent = 'Opening sign-in…'; msg.style.color = ''; }
-        window.location.assign('/?email=' + encodeURIComponent(raw));
-      }
-
-      button.addEventListener('click', submit);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); submit(); }
-      });
-      input.addEventListener('input', () => {
-        if (msg && msg.textContent) { msg.textContent = ''; }
-      });
-    })();
   </script>
 </body>
 </html>
