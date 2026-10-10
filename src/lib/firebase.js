@@ -31,8 +31,11 @@ export const app = initializeApp(firebaseConfig);
  * suspend/resume more reliably than localStorage on mobile Safari, so the
  * signed-in state comes back faster and the app is not left waiting on a token
  * refresh. Falls back to browserLocalPersistence where IndexedDB is unavailable
- * (Safari private browsing). Only email-link sign-in is used, so no popup or
- * redirect resolver is needed.
+ * (Safari private browsing). Sign-in is email + password (plus email links
+ * during the migration window), so no popup or redirect resolver is needed.
+ *
+ * Keep this persistence: it is what lets a member tap the Home Screen icon and
+ * land in the app without signing in again.
  */
 export const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence, browserLocalPersistence],

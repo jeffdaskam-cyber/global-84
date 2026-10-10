@@ -1,14 +1,15 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
 import { collection, orderBy, query, Timestamp, where } from "firebase/firestore";
 
-import AuthGate from "./components/AuthGate.jsx";
+import AuthGate, { useAuthGate } from "./components/AuthGate.jsx";
 import SplashScreen from "./components/SplashScreen.jsx";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import DesktopSidebar from "./components/DesktopSidebar.jsx";
+import InstallGuide from "./components/InstallGuide.jsx";
 import { subscribeIsAdmin } from "./lib/admins.js";
-import { auth, db, COHORT_ID } from "./lib/firebase.js";
+import { db, COHORT_ID } from "./lib/firebase.js";
+import { safeStorage } from "./lib/platform.js";
 import { watch } from "./lib/subscribe.js";
 
 const Home = lazy(() => import("./pages/Home.jsx"));
@@ -24,6 +25,8 @@ const Currency = lazy(() => import("./pages/Currency.jsx"));
 const Team = lazy(() => import("./pages/Team.jsx"));
 const Translate = lazy(() => import("./pages/Translate.jsx"));
 const Briefing = lazy(() => import("./pages/Briefing.jsx"));
+const MemberAccess = lazy(() => import("./pages/MemberAccess.jsx"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword.jsx"));
 const EventEditorModal = lazy(() => import("./components/features/EventEditorModal.jsx"));
 
 // Per-user key so visit state doesn't leak between members on a shared
@@ -69,6 +72,7 @@ const ADMIN_SECTION = {
     { to: "/events", label: "Manage Events", icon: "📅" },
     { to: "/itinerary-admin", label: "Manage Itinerary", icon: "🗓️" },
     { to: "/explore-import", label: "Import Explore Content", icon: "📥" },
+    { to: "/member-access", label: "Member Access", icon: "🔑" },
   ],
 };
 
@@ -296,12 +300,47 @@ function EventsTabLink({ hasNewEvents }) {
   );
 }
 
+// The photo splash plays once per device, on the first entry after setup, and
+// never in front of sign-in, password setup, or the reset page. Returning
+// members go straight to their cached content.
+const SPLASH_SEEN_KEY = "global84_splashSeen";
+
 export default function App() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showSplash, setShowSplash] = useState(
-    () => !sessionStorage.getItem("splashSeen")
+  const location = useLocation();
+  const [gateState, setGateState] = useState("restoringAuth");
+  const [splashDone, setSplashDone] = useState(() => safeStorage.get(SPLASH_SEEN_KEY) === "1");
+  const handleSplashComplete = useCallback(() => {
+    safeStorage.set(SPLASH_SEEN_KEY, "1");
+    setSplashDone(true);
+  }, []);
+
+  // Public Firebase action page: outside AuthGate, the splash, and every
+  // private listener or prompt.
+  if (location.pathname === "/reset-password") {
+    return (
+      <Suspense fallback={null}>
+        <ResetPassword />
+      </Suspense>
+    );
+  }
+
+  return (
+    <>
+      {gateState === "ready" && !splashDone && <SplashScreen onComplete={handleSplashComplete} />}
+      <AuthGate onStateChange={setGateState}>
+        <AppShell />
+      </AuthGate>
+    </>
   );
-  const [user, setUser] = useState(null);
+}
+
+// Everything below mounts only once AuthGate reaches "ready", keyed by UID, so
+// none of these listeners run before access is confirmed or survive a switch
+// to another member.
+function AppShell() {
+  const { user } = useAuthGate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [notificationBannerVisible, setNotificationBannerVisible] = useState(false);
   const [hasNewEvents, setHasNewEvents] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [eventEditorOpen, setEventEditorOpen] = useState(false);
@@ -326,8 +365,6 @@ export default function App() {
   }
 
   useEffect(() => subscribeIsAdmin(setIsAdmin), []);
-
-  useEffect(() => onAuthStateChanged(auth, setUser), []);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -386,20 +423,15 @@ export default function App() {
 
   return (
     <>
-      {/* Splash is rendered outside AuthGate so it paints immediately on load,
-          independent of Firebase Auth/Firestore resolving. Its own animation
-          runs ~6s while auth resolves in parallel behind this fixed overlay. */}
-      {showSplash && <SplashScreen onComplete={() => {
-        sessionStorage.setItem("splashSeen", "1");
-        setShowSplash(false);
-      }} />}
-
-      <AuthGate>
       {/* Mobile-only: hamburger drawer. Hidden on desktop, where the persistent
           sidebar carries the same destinations. */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} isAdmin={isAdmin} />
 
-      <NotificationPrompt user={user} />
+      <NotificationPrompt user={user} onBannerChange={setNotificationBannerVisible} />
+
+      {/* Home Screen nudge for members using a mobile browser. Waits while the
+          notification banner is up so the two never stack. */}
+      <InstallGuide variant="banner" hidden={notificationBannerVisible} />
 
       {/* Desktop-only persistent nav rail (≥lg). */}
       <DesktopSidebar isAdmin={isAdmin} hasNewEvents={hasNewEvents} />
@@ -425,6 +457,10 @@ export default function App() {
               <Route
                 path="/itinerary-admin"
                 element={isAdmin ? <ItineraryAdmin /> : <Navigate to="/" replace />}
+              />
+              <Route
+                path="/member-access"
+                element={isAdmin ? <MemberAccess /> : <Navigate to="/" replace />}
               />
               <Route path="/chat" element={<Chat isAdmin={isAdmin} />} />
               <Route
@@ -461,7 +497,6 @@ export default function App() {
           prefill={eventEditorPrefill}
         />
       </Suspense>
-      </AuthGate>
     </>
   );
 }

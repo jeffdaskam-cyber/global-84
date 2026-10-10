@@ -20,6 +20,8 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import * as logger from "firebase-functions/logger";
+import { accessAllowsTripData } from "./memberAccessCore.js";
+import { toAccessRecord } from "./memberAccessOps.js";
 
 // Initialize the Admin SDK once (shared across functions in this codebase).
 if (getApps().length === 0) {
@@ -46,10 +48,23 @@ async function collectCohortTokens(
   db: FirebaseFirestore.Firestore,
   cohortId: string,
 ): Promise<TokenDoc[]> {
-  const membersSnap = await db.collection(`cohorts/${cohortId}/members`).get();
+  const [membersSnap, accessSnap] = await Promise.all([
+    db.collection(`cohorts/${cohortId}/members`).get(),
+    db.collection(`cohorts/${cohortId}/access`).get(),
+  ]);
+
+  // Notifications carry trip content, so they go only to members who could
+  // read it in the app: approved, active, and set up (or within the legacy
+  // migration window). A revoked member's old device tokens get nothing.
+  const now = Date.now();
+  const usable = new Set(
+    accessSnap.docs
+      .filter((d) => d.id === d.data().uid && accessAllowsTripData(toAccessRecord(d.data()), now))
+      .map((d) => d.id),
+  );
 
   const perMember = await Promise.all(
-    membersSnap.docs.map(async (member) => {
+    membersSnap.docs.filter((member) => usable.has(member.id)).map(async (member) => {
       const tokensSnap = await member.ref.collection("fcmTokens").get();
       return tokensSnap.docs
         .map((d) => ({ token: d.data().token as string, ref: d.ref }))

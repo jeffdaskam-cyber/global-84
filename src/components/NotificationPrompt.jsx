@@ -23,7 +23,7 @@ function promptShownKey(uid) {
   return `global84_notifPromptShown_${uid}`;
 }
 
-export default function NotificationPrompt({ user }) {
+export default function NotificationPrompt({ user, onBannerChange }) {
   const navigate = useNavigate();
   const [showBanner, setShowBanner] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -31,6 +31,11 @@ export default function NotificationPrompt({ user }) {
   const toastTimer = useRef(null);
 
   const uid = user?.uid;
+
+  // Lets the install banner wait its turn instead of stacking on this one.
+  useEffect(() => {
+    onBannerChange?.(showBanner);
+  }, [showBanner, onBannerChange]);
 
   // Decide whether to show the one-time banner.
   useEffect(() => {

@@ -18,6 +18,8 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import corsLib from "cors";
 import { parseTranslationRequest } from "./requestValidation.js";
+import { CONFIGURED_COHORT_ID } from "./memberAccessCore.js";
+import { hasUsableTripAccess } from "./memberAccessOps.js";
 
 // Initialize the Admin SDK once (used to verify caller ID tokens).
 if (getApps().length === 0) {
@@ -104,6 +106,9 @@ async function verifyMember(authHeader: string | undefined): Promise<string | nu
     const email = (decoded.email || "").toLowerCase();
     if (!decoded.email_verified) return null;
     if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return null;
+    // A verified DU email alone is not membership: the caller also needs
+    // usable access on the approved roster.
+    if (!(await hasUsableTripAccess(CONFIGURED_COHORT_ID, decoded.uid, email))) return null;
     return decoded.uid;
   } catch {
     return null;

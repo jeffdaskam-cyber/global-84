@@ -31,6 +31,7 @@ const ADMIN_ITEMS = [
   { to: "/events", label: "Manage Events", icon: "📅" },
   { to: "/itinerary-admin", label: "Manage Itinerary", icon: "🗓️" },
   { to: "/explore-import", label: "Import Explore", icon: "📥" },
+  { to: "/member-access", label: "Member Access", icon: "🔑" },
 ];
 
 function rowStyle(active, hovered) {

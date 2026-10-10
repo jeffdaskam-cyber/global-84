@@ -28,6 +28,9 @@ import { listenerErrorMessage } from "../lib/subscribe";
 import { downscaleImage } from "../lib/images";
 import ListenerError from "../components/ListenerError.jsx";
 import ArcadeModal from "../components/features/ArcadeModal.jsx";
+import ChangePasswordForm from "../components/ChangePasswordForm.jsx";
+import { InstallGuideModal } from "../components/InstallGuide.jsx";
+import { isMobileOs, isStandalone } from "../lib/platform";
 import FlightEditorModal from "../components/features/FlightEditorModal.jsx";
 
 // Small caps section label. "My Trip" leads (crimson) since members check trip
@@ -70,6 +73,14 @@ export default function Me() {
 
   // Hidden arcade easter egg
   const [arcadeOpen, setArcadeOpen] = useState(false);
+
+  // ── Account: password + install help ────────────────────────────────────────
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  // Lives outside the collapsible form so the confirmation stays visible
+  // (and announced) after the form closes.
+  const [passwordStatus, setPasswordStatus] = useState("");
+  const [installOpen, setInstallOpen] = useState(false);
+  const showInstallHelp = !isStandalone() && isMobileOs();
 
   // React to auth state (fixes refresh timing issue)
   useEffect(() => {
@@ -482,6 +493,47 @@ export default function Me() {
           </button>
         </div>
 
+        <div className="border-t border-surface-border dark:border-surface-darkBorder" />
+
+        <div>
+          <button
+            type="button"
+            aria-expanded={passwordOpen}
+            onClick={() => { setPasswordOpen((v) => !v); setPasswordStatus(""); }}
+            className="w-full flex items-center justify-between text-sm font-semibold text-ink-main dark:text-ink-onDark min-h-[44px]"
+          >
+            <span>Change password</span>
+            <span aria-hidden="true">{passwordOpen ? "−" : "+"}</span>
+          </button>
+          <div role="status" aria-live="polite" className="text-sm text-ink-sub dark:text-ink-subOnDark">
+            {passwordStatus}
+          </div>
+          {passwordOpen && (
+            <div className="mt-3">
+              <ChangePasswordForm
+                mode="change"
+                email={user?.email}
+                onComplete={() => {
+                  setPasswordStatus("Password updated. Other devices may need to sign in again.");
+                  setPasswordOpen(false);
+                }}
+                onCancel={() => setPasswordOpen(false)}
+              />
+            </div>
+          )}
+        </div>
+
+        {showInstallHelp && (
+          <button
+            type="button"
+            onClick={() => setInstallOpen(true)}
+            className="w-full flex items-center justify-between text-sm font-semibold text-ink-main dark:text-ink-onDark min-h-[44px]"
+          >
+            <span>Install app on your Home Screen</span>
+            <span aria-hidden="true">›</span>
+          </button>
+        )}
+
         <button
           className="w-full rounded-lg border border-du-crimson text-du-crimson py-3 text-sm font-semibold hover:bg-du-crimsonSoft transition disabled:opacity-40"
           onClick={signOutUser}
@@ -489,7 +541,13 @@ export default function Me() {
         >
           Sign out
         </button>
+
+        <div className="text-[11px] text-ink-muted dark:text-ink-subOnDark text-center">
+          Build {import.meta.env.VITE_BUILD_ID}
+        </div>
       </div>
+
+      <InstallGuideModal open={installOpen} onClose={() => setInstallOpen(false)} />
 
       {/* Unlabeled easter-egg tile — opens the hidden arcade game */}
       <div className="flex justify-center pt-2 pb-4">

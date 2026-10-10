@@ -2,7 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Shown on the Me page so support can tell which version a member is running.
+const BUILD_ID = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7) ||
+  new Date().toISOString().slice(0, 16).replace("T", " ")
+
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_BUILD_ID': JSON.stringify(BUILD_ID),
+  },
   build: {
     rollupOptions: {
       output: {

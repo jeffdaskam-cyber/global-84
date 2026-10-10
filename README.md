@@ -1,6 +1,6 @@
 # Global 84 (Vite + React + Firebase)
 
-A cohort web app for a University of Denver group. Email-link sign-in restricted to a configurable email domain (defaults to `du.edu`), with Firestore-backed members, events, photos, group chat, teams, announcements, and an Explore feed sourced from a Google Sheet. Optional Anthropic-powered image translation runs as a Firebase Function.
+A cohort web app for a University of Denver group. Password sign-in for an administrator-approved roster of accounts in a configurable email domain (defaults to `du.edu`), with individually issued temporary passwords, with Firestore-backed members, events, photos, group chat, teams, announcements, and an Explore feed sourced from a Google Sheet. Optional Anthropic-powered image translation runs as a Firebase Function.
 
 Stack: Vite, React 19, React Router 7, Firebase (Auth, Firestore, Storage, Functions), Tailwind, deployed on Vercel with a serverless route under `/api`.
 
@@ -26,10 +26,10 @@ If you are copying this repo to build your own version, work through these in or
    { "projects": { "default": "your-project-id" } }
    ```
 3. **Enable Firebase services** in the console:
-   - Authentication, with Email/Password and Email Link sign-in turned on.
+   - Authentication, with Email/Password turned on, public sign-up turned off, and email enumeration protection on. (Email Link stays on only during a migration from email-link sign-in.)
    - Cloud Firestore (Native mode).
    - Cloud Storage.
-4. **Copy `.env.example` to `.env`** and fill in the Firebase web config plus your `VITE_COHORT_ID` and `VITE_ALLOWED_EMAIL_DOMAIN`.
+4. **Copy `.env.example` to `.env`** and fill in the Firebase web config plus your `VITE_COHORT_ID` and `VITE_ALLOWED_EMAIL_DOMAIN`. The cohort ID is also hardcoded as `configuredCohort()` in `firestore.rules` and `storage.rules` and as `CONFIGURED_COHORT_ID` in `functions/src/memberAccessCore.ts`; change all of them together.
 5. **Deploy Firestore rules and indexes** (requires the Firebase CLI):
    ```bash
    npm install -g firebase-tools
@@ -42,12 +42,7 @@ If you are copying this repo to build your own version, work through these in or
    gcloud storage buckets describe gs://<VITE_FIREBASE_STORAGE_BUCKET> --format="default(cors_config)"
    ```
    Re-run it whenever you add a domain.
-7. **Bootstrap your first admin.** Sign in once so your user gets a uid, then in the Firestore console create the document:
-   ```
-   cohorts/{VITE_COHORT_ID}/admins/{your-uid}
-   { "enabled": true }
-   ```
-   Security rules block client writes to this collection, so it has to be done from the console.
+7. **Bootstrap your administrators and roster.** Membership comes from server-written access records, so the first admins are set up with the operator tool (`functions/scripts/memberAccessOperator.ts`: `grant-admin`, then `issue`), after which the in-app **Member Access** page handles everyone else. See `docs/password-signin-runbook.md` for the full sequence, Firebase Console settings, and IAM.
 8. **(Optional) Configure the image-translation function.** If you want the `translateImage` callable function:
    ```bash
    firebase functions:secrets:set ANTHROPIC_API_KEY
@@ -72,25 +67,29 @@ In the Firebase Console > Authentication > Settings, add your Vercel preview and
 
 `vercel.json` has a catch-all rewrite to `/` so React Router routes like `/explore`, `/events`, and `/me` resolve correctly on refresh and direct open. `/launch` is served as a static HTML page, and `/api/*` is preserved for serverless functions.
 
-## Email-link redirect behavior
+## Sign-in and member access
 
-Email-link sign-in uses:
+- Members sign in with their DU email and password. First sign-in uses a unique temporary password an admin issues from **Member Access** (`/member-access`) and delivers individually; the app then requires choosing a personal password before any trip content loads.
+- Forgotten passwords use Firebase's reset email, which lands on `/reset-password` (set it as the custom action URL under Authentication > Templates).
+- Firestore, Storage, and the functions all require an active, set-up access record in `cohorts/{cohort}/access/{uid}`; a verified domain email alone is not enough.
+- `docs/password-signin-runbook.md` covers rollout, recovery, and the device test matrix.
 
-- `VITE_AUTH_REDIRECT_URL` when provided
-- otherwise `window.location.origin`
+Email-link sign-in remains available only during the migration window (`VITE_AUTH_REDIRECT_URL` sets where those links land) and is removed at final cutover.
 
-Set `VITE_AUTH_REDIRECT_URL` in production so links return to your deployed domain instead of localhost.
+## Tests
 
-## iPhone Safari test checklist
+```bash
+npm --prefix functions test     # member-access logic (no emulator needed)
+npm run test:rules              # Firestore + Storage rules on the emulators (needs Java)
+```
 
-1. Open your Vercel URL in Safari.
-2. Start email-link sign-in with your allowed email.
-3. Tap the email link on iPhone.
-4. Confirm it opens and completes sign-in on the same deployed domain.
-5. Navigate to `/explore`, `/events`, and `/me`.
-6. Refresh each page to verify no 404 on deep links.
-7. Add to Home Screen and launch from the icon.
-8. Repeat navigation and sign-in checks from the Home Screen context.
+## iPhone test checklist
+
+1. Open your Vercel URL in Safari and follow the Home Screen steps on the sign-in screen.
+2. Open the icon and sign in with a test account's temporary password.
+3. Choose a new password and confirm the phone offers to save it.
+4. Navigate to `/explore`, `/events`, and `/me`; refresh each to verify no 404 on deep links.
+5. Close and reopen the icon: you should land in the app without signing in.
 
 ## License
 
