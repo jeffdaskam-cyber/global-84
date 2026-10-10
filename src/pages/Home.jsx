@@ -259,9 +259,10 @@ function DesktopHero() {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-// isAdmin comes from App, which already watches the admin doc for every other
-// route. Subscribing again here meant two listeners on the same document.
-export default function Home({ isAdmin, onOpenDrawer }) {
+// canAnnounce (admin or Program Leader) and authorRole come from App, which
+// already watches the role docs for every other route. Subscribing again here
+// would mean two listeners on the same documents.
+export default function Home({ canAnnounce, authorRole, onOpenDrawer }) {
   const [items, setItems]     = useState([]);
   const [openNew, setOpenNew] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -274,18 +275,18 @@ export default function Home({ isAdmin, onOpenDrawer }) {
     return () => clearTimeout(t);
   }, []);
 
-  // The drawer's admin "Post Announcement" routes here with this flag, since the
+  // The drawer's "Post Announcement" routes here with this flag, since the
   // announcement editor lives on Home. Open it once, then clear the flag from
   // history so a back/forward or refresh doesn't reopen the editor.
   useEffect(() => {
-    if (!(isAdmin && location.state?.openAnnounce)) return;
+    if (!(canAnnounce && location.state?.openAnnounce)) return;
     // Defer the open so we're not calling setState synchronously in the effect
     // body (same reason the mounted flag above uses a timeout). Clear the flag
     // from history immediately so a refresh or back/forward won't reopen it.
     const t = setTimeout(() => setOpenNew(true), 0);
     navigate(location.pathname, { replace: true, state: null });
     return () => clearTimeout(t);
-  }, [isAdmin, location.pathname, location.state, navigate]);
+  }, [canAnnounce, location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const unsub = subscribeAnnouncements(setItems, (err) =>
@@ -363,7 +364,7 @@ export default function Home({ isAdmin, onOpenDrawer }) {
             <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Announcements</div>
             <div className="text-xs text-ink-sub dark:text-ink-subOnDark">Pinned items appear first.</div>
           </div>
-          {isAdmin && (
+          {canAnnounce && (
             <button
               className="rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
               style={{
@@ -384,13 +385,13 @@ export default function Home({ isAdmin, onOpenDrawer }) {
           <div className="bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card p-4">
             <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">No announcements yet</div>
             <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">
-              {isAdmin ? "Post the first update for the cohort." : "Admins will post updates here."}
+              {canAnnounce ? "Post the first update for the cohort." : "Program staff will post updates here."}
             </div>
           </div>
         ) : (
           <div className="space-y-4">
             {items.map((a) => (
-              <AnnouncementCard key={a.id} item={a} isAdmin={isAdmin} />
+              <AnnouncementCard key={a.id} item={a} canManage={canAnnounce} />
             ))}
           </div>
         )}
@@ -410,7 +411,7 @@ export default function Home({ isAdmin, onOpenDrawer }) {
               <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">Announcements</div>
               <div className="text-xs text-ink-sub dark:text-ink-subOnDark">Pinned items appear first.</div>
             </div>
-            {isAdmin && (
+            {canAnnounce && (
               <button
                 className="rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
                 style={{
@@ -432,13 +433,13 @@ export default function Home({ isAdmin, onOpenDrawer }) {
             <div className="bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder rounded-xl shadow-card p-4">
               <div className="text-sm font-semibold text-ink-main dark:text-ink-onDark">No announcements yet</div>
               <div className="mt-2 text-sm text-ink-sub dark:text-ink-subOnDark">
-                {isAdmin ? "Post the first update for the cohort." : "Admins will post updates here."}
+                {canAnnounce ? "Post the first update for the cohort." : "Program staff will post updates here."}
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {items.map((a) => (
-                <AnnouncementCard key={a.id} item={a} isAdmin={isAdmin} />
+                <AnnouncementCard key={a.id} item={a} canManage={canAnnounce} />
               ))}
             </div>
           )}
@@ -446,7 +447,7 @@ export default function Home({ isAdmin, onOpenDrawer }) {
       </div>
     </div>
 
-    <AnnouncementEditorModal open={openNew} onClose={() => setOpenNew(false)} />
+    <AnnouncementEditorModal open={openNew} onClose={() => setOpenNew(false)} authorRole={authorRole} />
     </>
   );
 }

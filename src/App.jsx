@@ -7,7 +7,7 @@ import SplashScreen from "./components/SplashScreen.jsx";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import DesktopSidebar from "./components/DesktopSidebar.jsx";
 import InstallGuide from "./components/InstallGuide.jsx";
-import { subscribeIsAdmin } from "./lib/admins.js";
+import { subscribeIsAdmin, subscribeIsProgramLeader } from "./lib/admins.js";
 import { db, COHORT_ID } from "./lib/firebase.js";
 import { safeStorage } from "./lib/platform.js";
 import { watch } from "./lib/subscribe.js";
@@ -76,6 +76,15 @@ const ADMIN_SECTION = {
   ],
 };
 
+// Program Leaders (professors) who aren't admins get only the announcement
+// action. Keep in sync with LEADER_ITEMS in DesktopSidebar.jsx.
+const LEADER_SECTION = {
+  label: "Program Leader",
+  items: [
+    { to: "/", state: { openAnnounce: true }, label: "Post Announcement", icon: "📣" },
+  ],
+};
+
 function PageLoader() {
   return (
     <div className="p-5">
@@ -87,8 +96,9 @@ function PageLoader() {
 }
 
 // One flattened, non-collapsing drawer section: a small caps label over a
-// column of single-tap nav rows. The Admin variant is fenced off by a top
-// hairline and takes a crimson label instead of the gold used elsewhere.
+// column of single-tap nav rows. The Admin and Program Leader variants are
+// fenced off by a top hairline and take a crimson label instead of the gold
+// used elsewhere.
 function DrawerSection({ section, onNav, hoverHandlers, admin = false }) {
   return (
     <div
@@ -126,7 +136,7 @@ function DrawerSection({ section, onNav, hoverHandlers, admin = false }) {
   );
 }
 
-function SideDrawer({ open, onClose, isAdmin }) {
+function SideDrawer({ open, onClose, isAdmin, isProgramLeader }) {
   const navigate = useNavigate();
   const drawerRef = useRef(null);
 
@@ -231,14 +241,21 @@ function SideDrawer({ open, onClose, isAdmin }) {
             <DrawerSection key={section.label} section={section} onNav={handleNav} hoverHandlers={hoverHandlers} />
           ))}
 
-          {isAdmin && (
+          {isAdmin ? (
             <DrawerSection
               section={ADMIN_SECTION}
               onNav={handleNav}
               hoverHandlers={hoverHandlers}
               admin
             />
-          )}
+          ) : isProgramLeader ? (
+            <DrawerSection
+              section={LEADER_SECTION}
+              onNav={handleNav}
+              hoverHandlers={hoverHandlers}
+              admin
+            />
+          ) : null}
         </nav>
 
         <div className="px-5 py-5" style={{ borderTop: "1px solid rgba(196,150,42,0.15)" }}>
@@ -340,6 +357,7 @@ export default function App() {
 function AppShell() {
   const { user } = useAuthGate();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isProgramLeader, setIsProgramLeader] = useState(false);
   const [notificationBannerVisible, setNotificationBannerVisible] = useState(false);
   const [hasNewEvents, setHasNewEvents] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -365,6 +383,16 @@ function AppShell() {
   }
 
   useEffect(() => subscribeIsAdmin(setIsAdmin), []);
+  useEffect(() => subscribeIsProgramLeader(setIsProgramLeader), []);
+
+  // Capability flags. The same today, but named separately so they can be
+  // split later. Rules and callables enforce every one of these; the flags only
+  // decide which controls to show. Admin-only tools keep using isAdmin.
+  const canAnnounce = isAdmin || isProgramLeader;
+  const canModerate = isAdmin || isProgramLeader;
+  // Drives the "Program Leader" badge. If both allowlist docs are ever enabled,
+  // admin wins and no badge is written.
+  const authorRole = isProgramLeader && !isAdmin ? "programLeader" : undefined;
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -425,7 +453,12 @@ function AppShell() {
     <>
       {/* Mobile-only: hamburger drawer. Hidden on desktop, where the persistent
           sidebar carries the same destinations. */}
-      <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} isAdmin={isAdmin} />
+      <SideDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        isAdmin={isAdmin}
+        isProgramLeader={isProgramLeader}
+      />
 
       <NotificationPrompt user={user} onBannerChange={setNotificationBannerVisible} />
 
@@ -434,7 +467,7 @@ function AppShell() {
       <InstallGuide variant="banner" hidden={notificationBannerVisible} />
 
       {/* Desktop-only persistent nav rail (≥lg). */}
-      <DesktopSidebar isAdmin={isAdmin} hasNewEvents={hasNewEvents} />
+      <DesktopSidebar isAdmin={isAdmin} isProgramLeader={isProgramLeader} hasNewEvents={hasNewEvents} />
 
       <div className="min-h-screen bg-surface-light dark:bg-surface-dark lg:pl-[220px]">
         <div className="pb-16 lg:pb-0">
@@ -442,10 +475,16 @@ function AppShell() {
             <Routes>
               <Route
                 path="/"
-                element={<Home isAdmin={isAdmin} onOpenDrawer={() => setDrawerOpen(true)} />}
+                element={
+                  <Home
+                    canAnnounce={canAnnounce}
+                    authorRole={authorRole}
+                    onOpenDrawer={() => setDrawerOpen(true)}
+                  />
+                }
               />
               <Route path="/home" element={<Navigate to="/" replace />} />
-              <Route path="/gallery" element={<Gallery user={user} isAdmin={isAdmin} />} />
+              <Route path="/gallery" element={<Gallery user={user} canModerate={canModerate} />} />
               <Route
                 path="/explore"
                 element={<Explore isAdmin={isAdmin} onCreateEvent={openEventEditor} />}
@@ -462,10 +501,10 @@ function AppShell() {
                 path="/member-access"
                 element={isAdmin ? <MemberAccess /> : <Navigate to="/" replace />}
               />
-              <Route path="/chat" element={<Chat isAdmin={isAdmin} />} />
+              <Route path="/chat" element={<Chat canModerate={canModerate} />} />
               <Route
                 path="/events"
-                element={<Events isAdmin={isAdmin} onViewed={() => setHasNewEvents(false)} onCreateEvent={openEventEditor} />}
+                element={<Events isAdmin={isAdmin} isProgramLeader={isProgramLeader} onViewed={() => setHasNewEvents(false)} onCreateEvent={openEventEditor} />}
               />
               <Route path="/me" element={<Me />} />
               <Route path="/team" element={<Team isAdmin={isAdmin} />} />

@@ -34,6 +34,36 @@ const ADMIN_ITEMS = [
   { to: "/member-access", label: "Member Access", icon: "🔑" },
 ];
 
+// Program Leaders (professors) who aren't admins get only the announcement
+// action. Keep in sync with LEADER_SECTION in App.jsx.
+const LEADER_ITEMS = [
+  { to: "/", label: "Post Announcement", icon: "📣", state: { openAnnounce: true } },
+];
+
+// Crimson-labelled section fenced off by a hairline, shared by Admin and
+// Program Leader.
+function RoleSection({ label, items }) {
+  return (
+    <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid rgba(196,150,42,0.12)" }}>
+      <div
+        style={{
+          padding: "0 14px 6px",
+          fontSize: "10px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.14em",
+          color: "rgba(186,12,47,0.8)",
+        }}
+      >
+        {label}
+      </div>
+      {items.map((item) => (
+        <AdminRow key={item.label} item={item} />
+      ))}
+    </div>
+  );
+}
+
 function rowStyle(active, hovered) {
   return {
     display: "flex",
@@ -99,7 +129,7 @@ function AdminRow({ item }) {
 
 // Show the Events dot only when there's something new AND the member isn't
 // already on Events, matching the bottom-nav rule.
-export default function DesktopSidebar({ isAdmin, hasNewEvents }) {
+export default function DesktopSidebar({ isAdmin, isProgramLeader, hasNewEvents }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
@@ -139,23 +169,9 @@ export default function DesktopSidebar({ isAdmin, hasNewEvents }) {
         ))}
 
         {isAdmin ? (
-          <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid rgba(196,150,42,0.12)" }}>
-            <div
-              style={{
-                padding: "0 14px 6px",
-                fontSize: "10px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: "rgba(186,12,47,0.8)",
-              }}
-            >
-              Admin
-            </div>
-            {ADMIN_ITEMS.map((item) => (
-              <AdminRow key={item.label} item={item} />
-            ))}
-          </div>
+          <RoleSection label="Admin" items={ADMIN_ITEMS} />
+        ) : isProgramLeader ? (
+          <RoleSection label="Program Leader" items={LEADER_ITEMS} />
         ) : null}
       </nav>
 

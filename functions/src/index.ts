@@ -23,8 +23,9 @@ export { translateImage } from "./translateImage.js";
 // per-user rate limit, shared cache). Feeds the flight editor's auto-fill.
 export { lookupFlight } from "./lookupFlight.js";
 
-// Admin-only gallery photo deletion (runs with Admin SDK privileges so it can
-// delete other members' Storage objects, which security rules forbid clients).
+// Moderator (admin or Program Leader) gallery photo deletion. Runs with Admin
+// SDK privileges so it can delete other members' Storage objects, which
+// security rules forbid clients.
 export { deletePhoto } from "./deletePhoto.js";
 
 // Push notifications: Firestore triggers that fan out FCM messages to all
@@ -45,4 +46,5 @@ export {
   getCredentialOperationStatus,
   completeMyPasswordSetup,
   setMemberAccess,
+  setMemberRole,
 } from "./memberAccess.js";

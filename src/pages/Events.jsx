@@ -40,7 +40,7 @@ function compareForAllEvents(a, b) {
   return millis(a.startTime) - millis(b.startTime);
 }
 
-export default function Events({ onViewed, isAdmin }) {
+export default function Events({ onViewed, isAdmin, isProgramLeader }) {
   const user = auth.currentUser;
   // The threshold for "New for You" is the timestamp of the *previous* visit,
   // read once on mount before we overwrite it below. On a first-ever visit
@@ -210,6 +210,7 @@ export default function Events({ onViewed, isAdmin }) {
                   rsvps={allRsvps[event.id] ?? []}
                   onEdit={openEdit}
                   isAdmin={isAdmin}
+                  isProgramLeader={isProgramLeader}
                 />
               ))}
             </div>
@@ -230,6 +231,7 @@ export default function Events({ onViewed, isAdmin }) {
                   rsvps={allRsvps[event.id] ?? []}
                   onEdit={openEdit}
                   isAdmin={isAdmin}
+                  isProgramLeader={isProgramLeader}
                 />
               ))}
             </div>

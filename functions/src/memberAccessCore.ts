@@ -306,3 +306,43 @@ export function isRecentAuth(authTimeSeconds: unknown, nowMs: number): boolean {
   const ageSeconds = nowMs / 1000 - authTimeSeconds;
   return ageSeconds >= -60 && ageSeconds <= RECENT_AUTH_WINDOW_SECONDS;
 }
+
+// ── Roles ──────────────────────────────────────────────────────────────────────
+
+// Exclusive roles. Admin = admins/{uid}.enabled; Program Leader =
+// programLeaders/{uid}.enabled; Member = neither. members/{uid}.role is
+// self-writable and is never used for authorization.
+export type MemberRole = "member" | "programLeader" | "admin";
+
+export const MEMBER_ROLES: ReadonlySet<string> = new Set(["member", "programLeader", "admin"]);
+
+export function isMemberRole(value: unknown): value is MemberRole {
+  return typeof value === "string" && MEMBER_ROLES.has(value);
+}
+
+export interface RoleDocsState {
+  adminExists: boolean;
+  adminEnabled: boolean;
+  leaderExists: boolean;
+}
+
+/** enabled value to write to each allowlist doc, or null to leave it alone. */
+export type RolePlan =
+  | { ok: true; admin: boolean | null; programLeader: boolean | null }
+  | { ok: false; code: string; message: string };
+
+/**
+ * Decide the allowlist writes for a role change. A doc is only created when
+ * the role needs it enabled; otherwise an existing doc is switched off and a
+ * missing one is left missing. Demoting the last enabled admin is refused.
+ */
+export function planRoleChange(role: MemberRole, current: RoleDocsState, enabledAdminCount: number): RolePlan {
+  if (current.adminEnabled && role !== "admin" && enabledAdminCount <= 1) {
+    return { ok: false, code: "last-admin", message: "At least one admin is required." };
+  }
+  return {
+    ok: true,
+    admin: role === "admin" ? true : current.adminExists ? false : null,
+    programLeader: role === "programLeader" ? true : current.leaderExists ? false : null,
+  };
+}

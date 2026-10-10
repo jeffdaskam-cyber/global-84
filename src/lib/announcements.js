@@ -21,10 +21,14 @@ export function announcementDoc(id) {
   return doc(db, "cohorts", COHORT_ID, "announcements", id);
 }
 
-export async function createAnnouncement({ title, body, pinned }) {
+// authorRole is "programLeader" for Program Leaders who aren't admins, and
+// undefined otherwise. The key is written only for Program Leaders, so admin
+// posts stay identical to before; the rules reject it from anyone else.
+export async function createAnnouncement({ title, body, pinned, authorRole }) {
   const u = auth.currentUser;
   if (!u) throw new Error("Not signed in.");
 
+  const isLeader = authorRole === "programLeader";
   const payload = {
     title: (title || "").trim(),
     body: (body || "").trim(),
@@ -32,8 +36,9 @@ export async function createAnnouncement({ title, body, pinned }) {
     status: "active",
     createdAt: serverTimestamp(),
     createdByUid: u.uid,                 // <-- IMPORTANT (spelling)
-    createdByName: await myDisplayName("Admin"),
+    createdByName: await myDisplayName(isLeader ? "Program Leader" : "Admin"),
   };
+  if (isLeader) payload.authorRole = "programLeader";
 
   if (!payload.title) throw new Error("Title is required.");
   if (!payload.body) throw new Error("Body is required.");

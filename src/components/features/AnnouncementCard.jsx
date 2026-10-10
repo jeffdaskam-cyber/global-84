@@ -16,7 +16,8 @@ function formatAgo(ts) {
   return `${d} day${d === 1 ? "" : "s"} ago`;
 }
 
-export default function AnnouncementCard({ item, isAdmin }) {
+// canManage (admin or Program Leader) shows Pin/Archive.
+export default function AnnouncementCard({ item, canManage }) {
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -59,13 +60,20 @@ export default function AnnouncementCard({ item, isAdmin }) {
               </span>
             ) : null}
           </div>
-          <div className="mt-1 text-xs text-ink-muted dark:text-ink-subOnDark">
-            by {item.createdByName || "—"}
-            {ago ? <span> · {ago}</span> : null}
+          <div className="mt-1 flex items-center gap-2 text-xs text-ink-muted dark:text-ink-subOnDark min-w-0">
+            <span className="truncate">
+              by {item.createdByName || "—"}
+              {ago ? <span> · {ago}</span> : null}
+            </span>
+            {item.authorRole === "programLeader" ? (
+              <span className="shrink-0 whitespace-nowrap rounded-full border border-du-crimson px-2 py-0.5 text-[10px] font-bold text-du-crimson">
+                PROGRAM LEADER
+              </span>
+            ) : null}
           </div>
         </div>
 
-        {isAdmin ? (
+        {canManage ? (
           <div className="flex gap-2 shrink-0">
             <button
               className="rounded-lg border border-surface-border dark:border-surface-darkBorder px-3 py-2 text-xs font-semibold text-ink-sub dark:text-ink-subOnDark hover:bg-surface-border/40 dark:hover:bg-surface-darkBorder/60 transition disabled:opacity-40"

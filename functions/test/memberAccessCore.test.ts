@@ -8,11 +8,13 @@ import {
   checkResetEligibility,
   evaluateCompletion,
   generateTemporaryPassword,
+  isMemberRole,
   isRecentAuth,
   isValidOperationId,
   normalizeDuEmail,
   parseRosterEmails,
   planOperationRequest,
+  planRoleChange,
   reviewFlagsForAccount,
 } from "../src/memberAccessCore.js";
 import { parsePasswordUpdatedAt } from "../src/authPasswordLookup.js";
@@ -205,4 +207,37 @@ test("recent authentication window is five minutes", () => {
   assert.ok(isRecentAuth(nowS - 300, NOW));
   assert.ok(!isRecentAuth(nowS - 301, NOW));
   assert.ok(!isRecentAuth(undefined, NOW));
+});
+
+// ── Roles ──────────────────────────────────────────────────────────────────────
+
+const NO_DOCS = { adminExists: false, adminEnabled: false, leaderExists: false };
+
+test("only the three roles are accepted", () => {
+  for (const r of ["member", "programLeader", "admin"]) assert.equal(isMemberRole(r), true);
+  for (const r of ["Admin", "leader", "", null, undefined, 1]) assert.equal(isMemberRole(r), false);
+});
+
+test("promoting a plain member creates only the doc the role needs", () => {
+  assert.deepEqual(planRoleChange("programLeader", NO_DOCS, 2), { ok: true, admin: null, programLeader: true });
+  assert.deepEqual(planRoleChange("admin", NO_DOCS, 2), { ok: true, admin: true, programLeader: null });
+  assert.deepEqual(planRoleChange("member", NO_DOCS, 2), { ok: true, admin: null, programLeader: null });
+});
+
+test("roles are exclusive: the other existing doc is switched off", () => {
+  const leader = { adminExists: false, adminEnabled: false, leaderExists: true };
+  assert.deepEqual(planRoleChange("admin", leader, 1), { ok: true, admin: true, programLeader: false });
+  const admin = { adminExists: true, adminEnabled: true, leaderExists: true };
+  assert.deepEqual(planRoleChange("programLeader", admin, 2), { ok: true, admin: false, programLeader: true });
+  assert.deepEqual(planRoleChange("member", admin, 2), { ok: true, admin: false, programLeader: false });
+});
+
+test("the last enabled admin cannot be demoted", () => {
+  const admin = { adminExists: true, adminEnabled: true, leaderExists: false };
+  assert.equal(planRoleChange("member", admin, 1).ok, false);
+  assert.equal(planRoleChange("programLeader", admin, 1).ok, false);
+  assert.deepEqual(planRoleChange("admin", admin, 1), { ok: true, admin: true, programLeader: null });
+  // A disabled admin doc doesn't count toward or against the floor.
+  const formerAdmin = { adminExists: true, adminEnabled: false, leaderExists: false };
+  assert.deepEqual(planRoleChange("member", formerAdmin, 1), { ok: true, admin: false, programLeader: null });
 });

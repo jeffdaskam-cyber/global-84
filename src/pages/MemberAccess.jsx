@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useAuthGate } from "../components/AuthGate.jsx";
 import ListenerError from "../components/ListenerError.jsx";
 import { ALLOWED_DOMAIN } from "../lib/firebase";
@@ -9,10 +9,12 @@ import {
   getCredentialOperationStatus,
   issueMemberTemporaryPassword,
   loadCurrentMemberEmails,
+  loadRoles,
   markCredentialDelivered,
   newOperationId,
   resetMemberPassword,
   setMemberAccess,
+  setMemberRole,
   subscribeAllAccess,
   subscribeRoster,
 } from "../lib/access";
@@ -106,6 +108,54 @@ const TONE_CLASS = {
   alert: "bg-du-crimsonSoft text-du-crimsonDark dark:bg-red-900/40 dark:text-red-200",
   muted: "bg-surface-light text-ink-sub dark:bg-surface-dark dark:text-ink-subOnDark",
 };
+
+// ── Roles ──────────────────────────────────────────────────────────────────────
+
+const ROLE_OPTIONS = [
+  { value: "member", label: "Member" },
+  { value: "programLeader", label: "Program Leader" },
+  { value: "admin", label: "Admin" },
+];
+const ROLE_LABEL = Object.fromEntries(ROLE_OPTIONS.map((o) => [o.value, o.label]));
+const ROLE_PILL = {
+  member: "bg-surface-light text-ink-sub dark:bg-surface-dark dark:text-ink-subOnDark",
+  programLeader: "border border-du-crimson text-du-crimson",
+  admin: "bg-du-crimson text-white",
+};
+const ADMIN_CONFIRM =
+  "Admins can import Explore content, manage the itinerary and events, and reset passwords. Continue?";
+
+// Compact per-row role picker. The setMemberRole callable enforces everything
+// (admin caller, rostered target, no self-change, last admin kept); this only
+// keeps the obvious mistakes out of reach.
+function RoleControl({ row, role, isSelf, saving, onChange }) {
+  const selectId = useId();
+  const disabled = isSelf || saving || !row.uid;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${ROLE_PILL[role]}`}>
+        {ROLE_LABEL[role]}
+      </span>
+      <label htmlFor={selectId} className="sr-only">Role for {row.email}</label>
+      <select
+        id={selectId}
+        value={role}
+        disabled={disabled}
+        onChange={(e) => onChange(row, role, e.target.value)}
+        className="rounded-lg border border-surface-border dark:border-surface-darkBorder bg-white dark:bg-surface-darkCard px-2 py-1.5 text-sm text-ink-main dark:text-ink-onDark disabled:opacity-50"
+      >
+        {ROLE_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      {isSelf && <span className="text-xs text-ink-sub dark:text-ink-subOnDark">Your role</span>}
+      {!isSelf && !row.uid && (
+        <span className="text-xs text-ink-sub dark:text-ink-subOnDark">Available once a password is issued.</span>
+      )}
+      {saving && <span className="text-xs text-ink-sub dark:text-ink-subOnDark">Saving…</span>}
+    </div>
+  );
+}
 
 function setupMessage(email, password, isReplacement) {
   const opening = isReplacement
@@ -460,6 +510,9 @@ export default function MemberAccess() {
   const [action, setAction] = useState(null);
   const [issued, setIssued] = useState(null);
   const [filter, setFilter] = useState("");
+  const [roles, setRoles] = useState(() => new Map());
+  const [roleError, setRoleError] = useState("");
+  const [savingRoleEmail, setSavingRoleEmail] = useState(null);
   // Re-evaluated periodically so an expired operation lease shows up as
   // "Needs attention" without a reload.
   const [now, setNow] = useState(() => Date.now());
@@ -473,6 +526,34 @@ export default function MemberAccess() {
   useEffect(() => subscribeAllAccess(setAccessList, (err) => setLoadError(listenerErrorMessage(err))), []);
   // Never keep a password around after leaving the page.
   useEffect(() => () => setIssued(null), []);
+
+  // Roles are a one-time read (admins can read both allowlists), refreshed
+  // after each change rather than held open as two more listeners.
+  const refreshRoles = useCallback(async () => {
+    try {
+      setRoles(await loadRoles());
+    } catch (err) {
+      setRoleError(err?.message || "Couldn't load roles.");
+    }
+  }, []);
+  useEffect(() => {
+    refreshRoles();
+  }, [refreshRoles]);
+
+  async function changeRole(row, from, to) {
+    if (from === to) return;
+    if ((from === "admin" || to === "admin") && !window.confirm(ADMIN_CONFIRM)) return;
+    setRoleError("");
+    setSavingRoleEmail(row.email);
+    try {
+      await setMemberRole(row.email, to);
+    } catch (err) {
+      setRoleError(err?.message || "Couldn't change the role.");
+    } finally {
+      await refreshRoles();
+      setSavingRoleEmail(null);
+    }
+  }
 
   const accessByUid = useMemo(() => new Map(accessList.map((a) => [a.id, a])), [accessList]);
   const rows = useMemo(() => {
@@ -513,6 +594,11 @@ export default function MemberAccess() {
         <div className="text-xs text-ink-sub dark:text-ink-subOnDark">
           {Object.entries(counts).map(([k, v]) => `${k}: ${v}`).join(" · ") || "No one on the roster yet."}
         </div>
+        <p className="text-xs text-ink-sub dark:text-ink-subOnDark">
+          Program Leaders can post and manage announcements and remove chat messages and photos. They can't change
+          the itinerary, events, Explore, or member access.
+        </p>
+        {roleError && <div role="alert" className="text-sm text-du-crimson">{roleError}</div>}
         <label className="block">
           <span className="sr-only">Filter by email</span>
           <input
@@ -549,6 +635,13 @@ export default function MemberAccess() {
                   </span>
                 </div>
                 {status.detail && <div className="mt-1 text-xs text-du-crimson">{status.detail}</div>}
+                <RoleControl
+                  row={r}
+                  role={(r.uid && roles.get(r.uid)) || "member"}
+                  isSelf={isSelf}
+                  saving={savingRoleEmail === r.email}
+                  onChange={changeRole}
+                />
                 <div className="mt-1 text-xs text-ink-sub dark:text-ink-subOnDark space-x-2">
                   {fmt(r.issuedAt) && <span>Issued {fmt(r.issuedAt)}</span>}
                   {fmt(r.deliveredAt) && <span>· Delivered {fmt(r.deliveredAt)}</span>}

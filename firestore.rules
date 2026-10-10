@@ -61,6 +61,18 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid))
         && get(/databases/$(database)/documents/cohorts/$(cohortId)/admins/$(request.auth.uid)).data.enabled == true;
     }
+    // Program Leaders (professors): announcements + light moderation only.
+    // Separate allowlist from admins so no existing isAdmin() check widens.
+    function isProgramLeader(cohortId) {
+      let p = /databases/$(database)/documents/cohorts/$(cohortId)/programLeaders/$(request.auth.uid);
+      return canUseTripData(cohortId) && exists(p) && get(p).data.enabled == true;
+    }
+    function canAnnounce(cohortId) {
+      return isAdmin(cohortId) || isProgramLeader(cohortId);
+    }
+    function canModerate(cohortId) {
+      return isAdmin(cohortId) || isProgramLeader(cohortId);
+    }
     function hasOnlyFields(data, required, optional) {
       return data.keys().hasAll(required)
         && data.keys().hasOnly(required.concat(optional));
@@ -189,6 +201,12 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Program Leader allowlist. Written only by the setMemberRole callable.
+      match /programLeaders/{uid} {
+        allow read: if isSelf(cohortId, uid) || isAdmin(cohortId);
+        allow write: if false;
+      }
+
       // Member profile docs
       match /members/{uid} {
         allow read: if isSelf(cohortId, uid) || isAdmin(cohortId);
@@ -252,10 +270,20 @@ service cloud.firestore {
         }
       }
 
-      // Announcements (admins manage; all members can read)
+      // Announcements: admins and Program Leaders manage; all members read.
+      // authorRole is optional; when present it must match the caller's role
+      // (drives the "Program Leader" badge). Authorship fields are immutable.
       match /announcements/{id} {
         allow read: if canUseTripData(cohortId);
-        allow create, update, delete: if isAdmin(cohortId);
+        allow create: if canAnnounce(cohortId)
+          && request.resource.data.createdByUid == request.auth.uid
+          && (!('authorRole' in request.resource.data)
+            || (request.resource.data.authorRole == 'programLeader'
+              && isProgramLeader(cohortId)));
+        allow update: if canAnnounce(cohortId)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['createdByUid', 'createdByName', 'authorRole', 'createdAt']);
+        allow delete: if canAnnounce(cohortId);
       }
 
       // Cohort itinerary (admin-managed; all members read). The trip leader's
@@ -299,7 +327,8 @@ service cloud.firestore {
 
         // Event discussion thread: private to attendees.
         // Read + post require a going/interested RSVP on this event; admins can
-        // read and delete for moderation. Update never allowed.
+        // read and delete for moderation. Program Leaders may delete only in
+        // threads they have joined, and get no extra read. Update never allowed.
         match /messages/{messageId} {
           allow read: if isAdmin(cohortId)
             || (canUseTripData(cohortId) && isEventAttendee(cohortId, eventId));
@@ -308,7 +337,8 @@ service cloud.firestore {
             && request.resource.data.createdByUid == request.auth.uid
             && request.resource.data.text.size() >= 1
             && request.resource.data.text.size() <= 1000;
-          allow delete: if isAdmin(cohortId);
+          allow delete: if isAdmin(cohortId)
+            || (isProgramLeader(cohortId) && isEventAttendee(cohortId, eventId));
           allow update: if false;
         }
       }
@@ -320,11 +350,12 @@ service cloud.firestore {
           && request.resource.data.createdByUid == request.auth.uid
           && request.resource.data.text.size() >= 1
           && request.resource.data.text.size() <= 1000;
-        allow delete: if isAdmin(cohortId);
+        allow delete: if canModerate(cohortId);
         allow update: if false;
       }
 
-      // Photos (any signed-in user can read; uploader can create; admin can delete)
+      // Photos (any signed-in user can read; uploader can create; admins and
+      // Program Leaders can delete)
       // Photo metadata is immutable after creation. Members may only add or
       // remove their own reaction, so a privileged admin delete can never be
       // redirected to another user's Storage object.
@@ -334,7 +365,7 @@ service cloud.firestore {
           && isValidPhotoCreate(request.resource.data, cohortId);
         allow update: if canUseTripData(cohortId)
           && (onlyChangesOwnPhotoLike() || onlyAddsOwnPhotoOriginal(cohortId));
-        allow delete: if isAdmin(cohortId);
+        allow delete: if canModerate(cohortId);
       }
 
       // Import logs (admin only)

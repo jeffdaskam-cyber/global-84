@@ -16,7 +16,8 @@ function formatDate(ts) {
   return date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 
-export default function Chat({ isAdmin }) {
+// canModerate (admin or Program Leader) shows the per-message delete control.
+export default function Chat({ canModerate }) {
   const user = auth.currentUser;
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
@@ -83,7 +84,12 @@ export default function Chat({ isAdmin }) {
     try {
       await deleteCohortMessage(id);
     } catch (err) {
-      alert(`Delete failed: ${err.message}`);
+      console.error("Delete failed:", err);
+      alert(
+        err?.code === "permission-denied"
+          ? "You can't delete this message."
+          : "Couldn't delete the message. Check your connection and try again."
+      );
     } finally {
       setDeletingId(null);
     }
@@ -158,8 +164,8 @@ export default function Chat({ isAdmin }) {
                   )}
 
                   <div className="flex items-end gap-1.5">
-                    {/* Admin delete button — appears on hover */}
-                    {isAdmin && (
+                    {/* Moderator delete button — appears on hover */}
+                    {canModerate && (
                       <button
                         onClick={() => handleDelete(item.id)}
                         disabled={deletingId === item.id}

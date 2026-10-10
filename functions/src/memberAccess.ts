@@ -11,6 +11,10 @@
  * record active and "ready", and (for issue/reset/re-enable) a sign-in within
  * the last five minutes. Legacy access never qualifies.
  *
+ * Roles (setMemberRole) use the same admin check: an admin makes a rostered
+ * member a Member, Program Leader, or Admin. Nobody can change their own role,
+ * and the last enabled admin cannot be demoted.
+ *
  * Logging is limited to operation IDs, types, phases, and counts. Requests and
  * responses are never logged, since issue/reset responses carry a password.
  */
@@ -21,6 +25,7 @@ import * as logger from "firebase-functions/logger";
 import {
   ALLOWED_EMAIL_DOMAIN,
   isAllowedCohort,
+  isMemberRole,
   isRecentAuth,
   isValidOperationId,
   isValidUid,
@@ -35,8 +40,10 @@ import {
   completePasswordSetup,
   getCredentialOperationStatus as getStatusOp,
   markCredentialDelivered as markDeliveredOp,
+  rosterRef,
   runCredentialOperation,
   setMemberAccess as setMemberAccessOp,
+  setMemberRole as setMemberRoleOp,
   toAccessRecord,
 } from "./memberAccessOps.js";
 
@@ -248,5 +255,38 @@ export const setMemberAccess = onCall(async (request) => {
     return await setMemberAccessOp({ cohortId, actorUid: caller.uid, uid: data.uid, active: data.active, operationId });
   } catch (err) {
     throw toHttpsError(err, "setMemberAccess");
+  }
+});
+
+export const setMemberRole = onCall(async (request) => {
+  try {
+    const data = dataOf(request);
+    const cohortId = requireCohort(data);
+    const role = data.role;
+    if (!isMemberRole(role)) {
+      throw new HttpsError("invalid-argument", "role must be member, programLeader, or admin.");
+    }
+    const email = normalizeDuEmail(data.email);
+    if (!email) throw new HttpsError("invalid-argument", "A DU email is required.");
+    const caller = await requireCredentialAdmin(request, cohortId, false);
+
+    // Roles attach to the uid the roster recorded for this email. No uid yet
+    // means the person hasn't been issued a password (or needs review).
+    const rosterSnap = await rosterRef(cohortId, email).get();
+    const uid = rosterSnap.data()?.uid;
+    if (!rosterSnap.exists || !isValidUid(uid)) {
+      throw new HttpsError("failed-precondition", "Provision this person on Member Access first.", {
+        reason: "not-provisioned",
+      });
+    }
+    if (uid === caller.uid) {
+      throw new HttpsError("failed-precondition", "You can't change your own role.", { reason: "self" });
+    }
+
+    await setMemberRoleOp({ cohortId, actorUid: caller.uid, uid, email, role });
+    logger.info("memberAccess: role changed", { callerUid: caller.uid, targetUid: uid, role });
+    return { ok: true, role };
+  } catch (err) {
+    throw toHttpsError(err, "setMemberRole");
   }
 });

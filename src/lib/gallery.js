@@ -218,12 +218,12 @@ export async function toggleLike(photoId, uid, liked) {
 
 // ─── Delete ────────────────────────────────────────────────────────────────────
 /**
- * Admin-only: delete a photo from both Storage and Firestore.
+ * Admin or Program Leader: delete a photo from both Storage and Firestore.
  *
- * Storage security rules restrict object deletes to the file's owner, so an
- * admin cannot delete another member's photo directly from the client. This
- * calls the `deletePhoto` Cloud Function, which verifies the caller is an
- * admin and removes both the Storage object and the Firestore metadata doc
+ * Storage security rules restrict object deletes to the file's owner, so a
+ * moderator cannot delete another member's photo directly from the client.
+ * This calls the `deletePhoto` Cloud Function, which verifies the caller is an
+ * admin or Program Leader and removes both the Storage object and the Firestore metadata doc
  * with Admin SDK privileges.
  *
  * @param {object} photo - Full photo doc including { id }
