@@ -29,7 +29,7 @@ Setup completion is decided on the server: when a temporary password is issued, 
    Decide which existing accounts are real cohort members and staff. Save that list as a plain text file of emails, one per line, outside the repo.
 2. **Authentication > Sign-in method:** enable **Email/Password**. Leave **Email link** enabled until section D.
 3. **Authentication > Settings:**
-   - Password policy: minimum length **8** (matches `MIN_PASSWORD_LENGTH` in `src/lib/auth.js`). If you also require character classes, generated passwords already include upper, lower, digit, and hyphens.
+   - Password policy: minimum length **8** (matches `MIN_PASSWORD_LENGTH` in `src/lib/auth.js`), with **no** uppercase, number, or symbol requirements. Temporary passwords are a single 8-letter lowercase nonsense word (for example `bazomiru`), so a character-class requirement would make them fail at sign-in.
    - **Email enumeration protection: on.**
    - **User actions: turn off "Enable create (sign-up)".** Then confirm in a browser console that `createUserWithEmailAndPassword` fails with `auth/admin-restricted-operation`, and that `issue` (below) still creates accounts through the Admin SDK.
    - Authorized domains: `global-84.vercel.app` is present.
@@ -127,7 +127,7 @@ Rollback: redeploy the previous frontend and functions if needed, but keep the n
 Local checks run for this change:
 
 - `npm.cmd run build` (frontend) and `npm.cmd --prefix functions run build`: pass.
-- `npm.cmd --prefix functions test`: 19 unit tests for password generation, eligibility, replay, completion, and account review: pass.
+- `npm.cmd --prefix functions test`: 18 unit tests for password generation, eligibility, replay, completion, and account review: pass.
 - `npm.cmd run test:rules` (Firestore + Storage emulators, needs Java): 18 rules tests: pass.
 
 Not verified (requires deployment or devices):

@@ -121,37 +121,36 @@ export function parseRosterEmails(raw: unknown): { valid: string[]; invalid: str
 
 // ── Temporary passwords ────────────────────────────────────────────────────────
 
-// Letters and digits that survive being read aloud or retyped from a text
-// message: no 0/O/o, 1/I/l, or 5/S. Hyphens separate groups for readability
-// and also satisfy a "special character" password policy if one is enabled.
-export const PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRTUVWXYZabcdefghijkmnpqrstuvwxyz2346789";
-export const PASSWORD_GROUPS = 3;
-export const PASSWORD_GROUP_LENGTH = 4;
+// Temporary passwords are one pronounceable nonsense word, consonant then
+// vowel, all lowercase, so they are easy to read in a text and type on a
+// phone. Consonants that are ambiguous to spell or read aloud (c, k, l, q, x,
+// y) are left out. Eight letters matches the 8-character minimum in the
+// Firebase password policy; don't add character-class requirements to that
+// policy, or these passwords stop meeting it.
+export const PASSWORD_CONSONANTS = "bdfghjmnprstvwz";
+export const PASSWORD_VOWELS = "aeiou";
+export const TEMP_PASSWORD_LENGTH = 8;
 
-const UPPER_RE = /[A-Z]/;
-const LOWER_RE = /[a-z]/;
-const DIGIT_RE = /[0-9]/;
+// Draws containing these are discarded, so nobody is sent a slur or a crude
+// word as their password.
+export const BLOCKED_FRAGMENTS = [
+  "nig", "fag", "tit", "pis", "jap", "homo", "nazi", "puta", "bum", "wop", "gip", "rap", "dum",
+];
 
 /**
  * Generate a temporary password from crypto.randomInt, which samples without
- * modulo bias. A draw missing an upper, lower, or digit is discarded whole and
- * redrawn, so it meets a character-class policy without skewing any position.
- * 12 random characters from a 53-symbol alphabet is about 68 bits.
+ * modulo bias. 15^4 * 5^4 is about 31.6 million possible words; a temporary
+ * password only lives until the member chooses their own, and Firebase rate
+ * limits sign-in attempts.
  */
 export function generateTemporaryPassword(rand: (max: number) => number = randomInt): string {
   for (;;) {
-    const groups: string[] = [];
-    for (let g = 0; g < PASSWORD_GROUPS; g++) {
-      let group = "";
-      for (let i = 0; i < PASSWORD_GROUP_LENGTH; i++) {
-        group += PASSWORD_ALPHABET[rand(PASSWORD_ALPHABET.length)];
-      }
-      groups.push(group);
+    let word = "";
+    for (let i = 0; i < TEMP_PASSWORD_LENGTH; i++) {
+      const letters = i % 2 === 0 ? PASSWORD_CONSONANTS : PASSWORD_VOWELS;
+      word += letters[rand(letters.length)];
     }
-    const candidate = groups.join("-");
-    if (UPPER_RE.test(candidate) && LOWER_RE.test(candidate) && DIGIT_RE.test(candidate)) {
-      return candidate;
-    }
+    if (!BLOCKED_FRAGMENTS.some((f) => word.includes(f))) return word;
   }
 }
 

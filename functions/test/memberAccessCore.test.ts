@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   AccessRecord,
-  PASSWORD_ALPHABET,
+  BLOCKED_FRAGMENTS,
   accessAllowsTripData,
   checkIssueEligibility,
   checkResetEligibility,
@@ -36,36 +36,29 @@ function access(overrides: Partial<AccessRecord> = {}): AccessRecord {
 
 // ── Passwords ──────────────────────────────────────────────────────────────────
 
-test("temporary passwords use the reviewed alphabet and format", () => {
-  for (let i = 0; i < 500; i++) {
+test("temporary passwords are one 8-letter consonant-vowel word", () => {
+  for (let i = 0; i < 2000; i++) {
     const pw = generateTemporaryPassword();
-    assert.match(pw, /^[^-]{4}-[^-]{4}-[^-]{4}$/);
-    for (const ch of pw.replace(/-/g, "")) assert.ok(PASSWORD_ALPHABET.includes(ch), ch);
-    assert.match(pw, /[A-Z]/);
-    assert.match(pw, /[a-z]/);
-    assert.match(pw, /[0-9]/);
-    assert.ok(pw.length >= 8);
+    assert.match(pw, /^([bdfghjmnprstvwz][aeiou]){4}$/);
+    for (const f of BLOCKED_FRAGMENTS) assert.ok(!pw.includes(f), `${pw} contains ${f}`);
   }
 });
 
-test("temporary passwords exclude look-alike characters", () => {
-  for (const ch of "0O1Il5So") assert.ok(!PASSWORD_ALPHABET.includes(ch), ch);
-});
-
-test("separate issuances do not repeat values", () => {
+test("separate issuances almost never repeat", () => {
+  // 31.6 million possible words; a handful of collisions in 2000 is chance.
   const seen = new Set<string>();
   for (let i = 0; i < 2000; i++) seen.add(generateTemporaryPassword());
-  assert.equal(seen.size, 2000);
+  assert.ok(seen.size >= 1990, `only ${seen.size} unique`);
 });
 
-test("a draw missing a character class is redrawn whole", () => {
-  // First 12 draws are all index 0 ("A", upper only); the rest cycle.
+test("a draw containing a blocked fragment is redrawn whole", () => {
+  // First draw spells "nigabada" (n=7, i=2, g=3, a=0, b=0, ...); the rest cycle.
+  const first = [7, 2, 3, 0, 0, 0, 0, 0];
   let n = 0;
-  const rand = (max: number) => (n++ < 12 ? 0 : n % max);
+  const rand = (max: number) => (n < first.length ? first[n++] : (n++ % max));
   const pw = generateTemporaryPassword(rand);
-  assert.match(pw, /[a-z]/);
-  assert.match(pw, /[0-9]/);
-  assert.ok(n > 24);
+  assert.ok(!pw.startsWith("nig"));
+  assert.ok(n > 8);
 });
 
 // ── Input validation ───────────────────────────────────────────────────────────
