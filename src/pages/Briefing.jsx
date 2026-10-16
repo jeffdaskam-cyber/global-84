@@ -26,7 +26,7 @@ const DESKS = [
     name: "Marketing Practices",
     description: "Consumer behavior, media landscape, and go-to-market strategies in Southeast Asia.",
     path: "/marketing/briefing/introduction",
-    status: "in-progress",
+    status: "complete",
   },
   {
     key: "supply-chain",
@@ -42,7 +42,7 @@ const DESKS = [
     name: "Finance & Economics",
     description: "Economic indicators, financial regulations, and investment climate overview.",
     path: "/finance-economics/briefing/introduction",
-    status: "in-progress",
+    status: "complete",
     team: { name: "Team Money", members: ["Garett Brownlee", "Mel Swayne", "Brian Friedman", "Justin Alexander", "Jeff Daskam"] },
   },
 ];
