@@ -237,7 +237,13 @@ function formatDuration(ms) {
  * airport of the next, or when the times overlap/are missing. Because both
  * sides are absolute instants, the math is correct across the international
  * date line and stays correct when a segment time is edited.
+ *
+ * A gap longer than MAX_LAYOVER_MS is a stay, not a connection (e.g. a few
+ * days in Krabi between two legs), so it returns null and the next segment
+ * starts a new trip — both on the Me page and in Home's Up Next chaining.
  */
+export const MAX_LAYOVER_MS = 24 * 60 * 60 * 1000;
+
 export function computeLayover(prevSegment, nextSegment) {
   if (!prevSegment || !nextSegment) return null;
 
@@ -251,9 +257,20 @@ export function computeLayover(prevSegment, nextSegment) {
   if (!arrAirport || !depAirport || arrAirport !== depAirport) return null;
 
   const diff = departure.getTime() - arrival.getTime();
-  if (diff <= 0) return null;
+  if (diff <= 0 || diff > MAX_LAYOVER_MS) return null;
 
   return formatDuration(diff);
+}
+
+/**
+ * Member-facing wording for a provider flight status. AeroDataBox reports a
+ * not-yet-departed flight as "Expected", which reads like a warning; show it
+ * as "Scheduled". The stored value is left untouched.
+ */
+export function displayFlightStatus(status) {
+  const text = (status || "").trim();
+  if (/^expected$/i.test(text)) return "Scheduled";
+  return text;
 }
 
 function normalizeAirport(value) {
