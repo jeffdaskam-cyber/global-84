@@ -57,22 +57,23 @@ function AvatarInitial({ name, size = 32 }) {
 function SectionHeader({ title, action }) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <h3 style={{
-        fontFamily: "Georgia, serif", fontSize: "15px", fontWeight: 700,
-        color: "#ffffff", letterSpacing: "0.02em",
-      }}>{title}</h3>
+      <h3
+        className="text-[15px] font-bold tracking-[0.02em] text-ink-main dark:text-ink-onDark"
+        style={{ fontFamily: "Georgia, serif" }}
+      >
+        {title}
+      </h3>
       {action}
     </div>
   );
 }
 
-function Card({ children, style }) {
+function Card({ children, className = "", style }) {
   return (
-    <div style={{
-      background: "rgba(255,255,255,0.04)", borderRadius: 12,
-      border: "1px solid rgba(196,150,42,0.15)", padding: "14px 16px",
-      ...style,
-    }}>
+    <div
+      className={`rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-card px-4 py-3.5 ${className}`}
+      style={style}
+    >
       {children}
     </div>
   );
@@ -83,20 +84,13 @@ function GoldButton({ onClick, children, small, danger, disabled }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      style={{
-        background: danger
-          ? "rgba(186,12,47,0.18)"
-          : "linear-gradient(135deg,#e8b84b,#c4862a)",
-        color: danger ? "#ff6b6b" : "#1a0a00",
-        border: danger ? "1px solid rgba(186,12,47,0.4)" : "none",
-        borderRadius: 8,
-        padding: small ? "5px 12px" : "9px 20px",
-        fontSize: small ? 12 : 14,
-        fontWeight: 700,
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
-        whiteSpace: "nowrap",
-      }}
+      className={`rounded-lg font-bold whitespace-nowrap transition ${
+        small ? "px-3 py-1.5 text-xs" : "px-5 py-2.5 text-sm"
+      } ${
+        danger
+          ? "bg-du-crimsonSoft text-du-crimson border border-du-crimson/30 hover:bg-du-crimson/15"
+          : "bg-du-crimson text-white hover:bg-du-crimsonDark"
+      } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
     >
       {children}
     </button>
@@ -107,37 +101,37 @@ function GhostButton({ onClick, children, small }) {
   return (
     <button
       onClick={onClick}
-      style={{
-        background: "transparent",
-        color: "rgba(196,150,42,0.8)",
-        border: "1px solid rgba(196,150,42,0.3)",
-        borderRadius: 8,
-        padding: small ? "5px 12px" : "9px 18px",
-        fontSize: small ? 12 : 14,
-        fontWeight: 600,
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-      }}
+      className={`rounded-lg font-semibold whitespace-nowrap transition bg-transparent border border-surface-border dark:border-surface-darkBorder text-ink-sub dark:text-ink-subOnDark hover:bg-surface-light dark:hover:bg-surface-dark ${
+        small ? "px-3 py-1.5 text-xs" : "px-4 py-2.5 text-sm"
+      }`}
     >
       {children}
     </button>
   );
 }
 
-function Input({ value, onChange, placeholder, type = "text", style }) {
+const fieldClass =
+  "w-full rounded-lg px-3 py-2.5 text-sm outline-none bg-surface-light dark:bg-surface-dark border border-surface-border dark:border-surface-darkBorder text-ink-main dark:text-ink-onDark placeholder:text-ink-muted focus:border-du-gold";
+
+const fieldLabelClass = "block mb-1 text-xs font-semibold text-ink-sub dark:text-ink-subOnDark";
+
+// Pill toggle shared by the admin tabs, city picker and team list.
+function pillClass(active) {
+  return `rounded-full px-4 py-1.5 text-[13px] font-semibold cursor-pointer transition ${
+    active
+      ? "bg-du-crimson text-white"
+      : "bg-surface-border/60 text-ink-sub hover:bg-surface-border dark:bg-surface-darkBorder dark:text-ink-subOnDark"
+  }`;
+}
+
+function Input({ value, onChange, placeholder, type = "text" }) {
   return (
     <input
       type={type}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      style={{
-        background: "rgba(255,255,255,0.07)",
-        border: "1px solid rgba(196,150,42,0.25)",
-        borderRadius: 8, color: "#fff",
-        padding: "9px 12px", fontSize: 14, width: "100%",
-        outline: "none", ...style,
-      }}
+      className={fieldClass}
     />
   );
 }
@@ -149,13 +143,7 @@ function Textarea({ value, onChange, placeholder, rows = 3 }) {
       onChange={onChange}
       placeholder={placeholder}
       rows={rows}
-      style={{
-        background: "rgba(255,255,255,0.07)",
-        border: "1px solid rgba(196,150,42,0.25)",
-        borderRadius: 8, color: "#fff",
-        padding: "9px 12px", fontSize: 14, width: "100%",
-        outline: "none", resize: "vertical",
-      }}
+      className={`${fieldClass} resize-y`}
     />
   );
 }
@@ -165,20 +153,16 @@ function Textarea({ value, onChange, placeholder, rows = 3 }) {
 function Modal({ open, onClose, title, children }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(13,1,3,0.75)", padding: "16px" }}>
-      <div style={{
-        background: "linear-gradient(160deg,#0d0103 0%,#1c0408 60%,#2a0a10 100%)",
-        border: "1px solid rgba(196,150,42,0.25)",
-        borderRadius: 16, width: "100%", maxWidth: 440,
-        maxHeight: "90vh", overflowY: "auto", padding: "24px",
-      }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="w-full max-w-[440px] max-h-[90vh] overflow-y-auto p-6 rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-card">
         <div className="flex items-center justify-between mb-5">
-          <h2 style={{ fontFamily: "Georgia,serif", fontSize: 18, fontWeight: 700, color: "#fff" }}>
+          <h2
+            className="text-lg font-bold text-ink-main dark:text-ink-onDark"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
             {title}
           </h2>
-          <button onClick={onClose}
-            style={{ color: "rgba(255,255,255,0.5)", fontSize: 20, background: "none", border: "none", cursor: "pointer" }}>
+          <button onClick={onClose} className="text-xl text-ink-muted hover:text-ink-main dark:hover:text-ink-onDark">
             ✕
           </button>
         </div>
@@ -239,18 +223,13 @@ function TeamChat({ teamId, isAdmin }) {
   return (
     <div>
       <SectionHeader title="💬 Team Chat" />
-      <div style={{
-        background: "rgba(0,0,0,0.25)", borderRadius: 12,
-        border: "1px solid rgba(196,150,42,0.12)",
-        height: 320, overflowY: "auto", padding: "12px",
-        display: "flex", flexDirection: "column", gap: 8,
-      }}>
+      <div className="flex flex-col gap-2 h-80 overflow-y-auto p-3 rounded-xl bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-card">
         {loadError ? (
-          <p style={{ color: "rgba(232,184,75,0.8)", fontSize: 13, textAlign: "center", marginTop: 40 }}>
+          <p className="mt-10 text-[13px] text-center text-amber-800 dark:text-amber-300">
             {loadError}
           </p>
         ) : messages.length === 0 && (
-          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", marginTop: 40 }}>
+          <p className="mt-10 text-[13px] text-center text-ink-muted">
             No messages yet. Say hello!
           </p>
         )}
@@ -263,24 +242,24 @@ function TeamChat({ teamId, isAdmin }) {
               {!isOwn && <AvatarInitial name={msg.createdByName} size={28} />}
               <div style={{ maxWidth: "75%" }}>
                 {!isOwn && (
-                  <p style={{ fontSize: 10, color: "rgba(196,150,42,0.7)", marginBottom: 2, paddingLeft: 4 }}>
+                  <p className="mb-0.5 pl-1 text-[10px] font-semibold text-ink-sub dark:text-ink-subOnDark">
                     {msg.createdByName}
                   </p>
                 )}
-                <div style={{
-                  background: isOwn
-                    ? "linear-gradient(135deg,#BA0C2F,#8a0922)"
-                    : "rgba(255,255,255,0.08)",
-                  borderRadius: isOwn ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
-                  padding: "8px 12px", fontSize: 14, color: "#fff",
-                  wordBreak: "break-word",
-                }}>
+                <div
+                  className={`px-3 py-2 text-sm break-words ${
+                    isOwn
+                      ? "bg-du-crimson text-white"
+                      : "bg-surface-light dark:bg-surface-dark border border-surface-border dark:border-surface-darkBorder text-ink-main dark:text-ink-onDark"
+                  }`}
+                  style={{ borderRadius: isOwn ? "14px 14px 4px 14px" : "14px 14px 14px 4px" }}
+                >
                   {msg.text}
                 </div>
               </div>
               {isAdmin && (
                 <button onClick={() => handleDelete(msg.id)}
-                  style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
+                  className="flex-shrink-0 text-[11px] opacity-40 hover:opacity-80">
                   🗑
                 </button>
               )}
@@ -299,22 +278,14 @@ function TeamChat({ teamId, isAdmin }) {
           placeholder="Message your team…"
           maxLength={1000}
           rows={2}
-          style={{
-            flex: 1, background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(196,150,42,0.25)",
-            borderRadius: 10, color: "#fff", padding: "9px 12px",
-            fontSize: 14, resize: "none", outline: "none",
-          }}
+          className={`${fieldClass} flex-1 resize-none bg-surface-card dark:bg-surface-darkCard`}
         />
         <button
           onClick={handleSend}
           disabled={!text.trim() || sending}
-          style={{
-            background: "linear-gradient(135deg,#e8b84b,#c4862a)",
-            color: "#1a0a00", border: "none", borderRadius: 10,
-            width: 44, fontSize: 18, cursor: "pointer",
-            opacity: !text.trim() || sending ? 0.4 : 1,
-          }}
+          className={`w-11 rounded-lg text-lg font-bold bg-du-crimson text-white hover:bg-du-crimsonDark transition ${
+            !text.trim() || sending ? "opacity-40" : ""
+          }`}
         >
           ↑
         </button>
@@ -406,11 +377,11 @@ function MeetingsList({ teamId, isAdmin }) {
       />
 
       {loadError ? (
-        <p style={{ color: "rgba(232,184,75,0.8)", fontSize: 13, textAlign: "center", padding: "20px 0" }}>
+        <p className="py-5 text-[13px] text-center text-amber-800 dark:text-amber-300">
           {loadError}
         </p>
       ) : meetings.length === 0 && (
-        <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", padding: "20px 0" }}>
+        <p className="py-5 text-[13px] text-center text-ink-muted">
           No meetings scheduled yet.
         </p>
       )}
@@ -425,7 +396,7 @@ function MeetingsList({ teamId, isAdmin }) {
 
       {past.length > 0 && (
         <div>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">
             Past
           </p>
           <div className="space-y-2 opacity-50">
@@ -444,23 +415,17 @@ function MeetingsList({ teamId, isAdmin }) {
       >
         <div className="space-y-3">
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>Title *</label>
+            <label className={fieldLabelClass}>Title *</label>
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Meeting title" />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>City *</label>
+            <label className={fieldLabelClass}>City *</label>
             <div className="flex gap-2">
               {CITIES.map((c) => (
                 <button
                   key={c}
                   onClick={() => setForm({ ...form, city: c })}
-                  style={{
-                    padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-                    cursor: "pointer", border: "1px solid",
-                    background: form.city === c ? "rgba(196,150,42,0.18)" : "transparent",
-                    borderColor: form.city === c ? "rgba(196,150,42,0.6)" : "rgba(196,150,42,0.25)",
-                    color: form.city === c ? "#e8b84b" : "rgba(255,255,255,0.5)",
-                  }}
+                  className={pillClass(form.city === c)}
                 >
                   {c === "Ho Chi Minh City" ? "HCMC" : c}
                 </button>
@@ -468,17 +433,17 @@ function MeetingsList({ teamId, isAdmin }) {
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>
+            <label className={fieldLabelClass}>
               Date & Time * — local time in {form.city} ({zoneForCity(form.city).label})
             </label>
             <Input type="datetime-local" value={form.dateTime} onChange={(e) => setForm({ ...form, dateTime: e.target.value })} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>Location</label>
+            <label className={fieldLabelClass}>Location</label>
             <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Where?" />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>Notes</label>
+            <label className={fieldLabelClass}>Notes</label>
             <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" rows={2} />
           </div>
           <div className="flex gap-2 pt-2">
@@ -498,29 +463,27 @@ function MeetingCard({ meeting, isAdmin, onEdit, onDelete }) {
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div style={{ flex: 1 }}>
-          <p style={{ fontWeight: 700, color: "#fff", fontSize: 14 }}>{meeting.title}</p>
-          <p style={{ fontSize: 12, color: "rgba(196,150,42,0.85)", marginTop: 2 }}>
+          <p className="text-sm font-bold text-ink-main dark:text-ink-onDark">{meeting.title}</p>
+          <p className="mt-0.5 text-xs font-semibold text-du-crimson">
             🕐 {fmtDateTime(meeting.dateTime, meeting.city)}
           </p>
           {meeting.location && (
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+            <p className="mt-0.5 text-xs text-ink-sub dark:text-ink-subOnDark">
               📍 {meeting.location}
             </p>
           )}
           {meeting.notes && (
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4, fontStyle: "italic" }}>
+            <p className="mt-1 text-xs italic text-ink-muted">
               {meeting.notes}
             </p>
           )}
         </div>
         {isAdmin && (
           <div className="flex gap-1 flex-shrink-0">
-            <button onClick={() => onEdit(meeting)}
-              style={{ fontSize: 14, background: "none", border: "none", cursor: "pointer", color: "rgba(196,150,42,0.6)", padding: "2px 4px" }}>
+            <button onClick={() => onEdit(meeting)} className="px-1 py-0.5 text-sm">
               ✏️
             </button>
-            <button onClick={() => onDelete(meeting.id)}
-              style={{ fontSize: 14, background: "none", border: "none", cursor: "pointer", color: "rgba(255,100,100,0.5)", padding: "2px 4px" }}>
+            <button onClick={() => onDelete(meeting.id)} className="px-1 py-0.5 text-sm">
               🗑
             </button>
           </div>
@@ -634,7 +597,7 @@ function AdminPanel({ user }) {
           action={<GoldButton small onClick={() => setShowCreate(true)}>+ New Team</GoldButton>}
         />
         {teams.length === 0 ? (
-          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>
+          <p className="py-4 text-[13px] text-center text-ink-muted">
             No teams yet. Create one above.
           </p>
         ) : (
@@ -643,13 +606,7 @@ function AdminPanel({ user }) {
               <button
                 key={t.id}
                 onClick={() => setSelectedTeamId(t.id)}
-                style={{
-                  padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", border: "1px solid",
-                  background: selectedTeam?.id === t.id ? "rgba(196,150,42,0.18)" : "transparent",
-                  borderColor: selectedTeam?.id === t.id ? "rgba(196,150,42,0.6)" : "rgba(196,150,42,0.25)",
-                  color: selectedTeam?.id === t.id ? "#e8b84b" : "rgba(255,255,255,0.6)",
-                }}
+                className={pillClass(selectedTeam?.id === t.id)}
               >
                 {t.name}
               </button>
@@ -664,7 +621,7 @@ function AdminPanel({ user }) {
           {/* Team header */}
           <Card>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: "#fff" }}>
+              <h3 className="text-base font-bold text-ink-main dark:text-ink-onDark" style={{ fontFamily: "Georgia, serif" }}>
                 {selectedTeam.name}
               </h3>
               <div className="flex gap-2">
@@ -689,18 +646,18 @@ function AdminPanel({ user }) {
               }
             />
             {teamMembers.length === 0 ? (
-              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>No members assigned yet.</p>
+              <p className="text-[13px] text-ink-muted">No members assigned yet.</p>
             ) : (
               <div className="space-y-2">
                 {teamMembers.map((m) => (
-                  <Card key={m.uid} style={{ padding: "10px 14px" }}>
+                  <Card key={m.uid} className="!py-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <AvatarInitial name={m.displayName} size={30} />
-                        <span style={{ fontSize: 14, color: "#fff" }}>{m.displayName}</span>
+                        <span className="text-sm text-ink-main dark:text-ink-onDark">{m.displayName}</span>
                       </div>
                       <button onClick={() => handleRemoveMember(m.uid)}
-                        style={{ fontSize: 12, color: "rgba(255,100,100,0.6)", background: "none", border: "none", cursor: "pointer" }}>
+                        className="text-xs font-semibold text-du-crimson hover:text-du-crimsonDark">
                         Remove
                       </button>
                     </div>
@@ -714,8 +671,8 @@ function AdminPanel({ user }) {
           <MeetingsList teamId={selectedTeam.id} isAdmin={true} />
 
           {/* Chat preview not shown in admin panel — admins can only chat from their own team view */}
-          <Card style={{ background: "rgba(186,12,47,0.08)", border: "1px solid rgba(186,12,47,0.2)" }}>
-            <p style={{ fontSize: 12, color: "rgba(255,180,180,0.7)", textAlign: "center" }}>
+          <Card className="!bg-du-crimsonSoft !border-du-crimson/20 !shadow-none dark:!bg-du-crimson/10">
+            <p className="text-xs text-center text-du-crimsonDark dark:text-ink-subOnDark">
               🔒 Team chat is private to assigned members only.<br />
               To view a team's chat, you must be assigned to that team.
             </p>
@@ -727,7 +684,7 @@ function AdminPanel({ user }) {
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Create Team">
         <div className="space-y-4">
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>
+            <label className={fieldLabelClass}>
               Team Name *
             </label>
             <Input value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="e.g. Team A" />
@@ -756,22 +713,17 @@ function AdminPanel({ user }) {
       <Modal open={showAssign} onClose={() => setShowAssign(false)} title="Add Member">
         <div className="space-y-4">
           <div>
-            <label style={{ fontSize: 12, color: "rgba(196,150,42,0.8)", display: "block", marginBottom: 4 }}>
+            <label className={fieldLabelClass}>
               Select Member
             </label>
             <select
               value={assignUid}
               onChange={(e) => setAssignUid(e.target.value)}
-              style={{
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(196,150,42,0.25)",
-                borderRadius: 8, color: "#fff",
-                padding: "9px 12px", fontSize: 14, width: "100%",
-              }}
+              className={fieldClass}
             >
-              <option value="" style={{ background: "#1c0408" }}>— Choose a member —</option>
+              <option value="">— Choose a member —</option>
               {assignableMembers.map((m) => (
-                <option key={m.uid} value={m.uid} style={{ background: "#1c0408" }}>
+                <option key={m.uid} value={m.uid}>
                   {m.displayName || m.email}
                 </option>
               ))}
@@ -820,19 +772,19 @@ function MemberView({ user, isAdmin }) {
   if (myTeam === undefined) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(196,150,42,0.3)", borderTopColor: "#e8b84b", animation: "spin 0.8s linear infinite" }} />
+        <div className="w-7 h-7 rounded-full border-[3px] border-du-goldSoft border-t-du-crimson animate-spin" />
       </div>
     );
   }
 
   if (!myTeam) {
     return (
-      <Card style={{ textAlign: "center", padding: "40px 24px" }}>
-        <p style={{ fontSize: 32, marginBottom: 12 }}>👥</p>
-        <p style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
+      <Card className="text-center !px-6 !py-10">
+        <p className="mb-3 text-[32px]">👥</p>
+        <p className="mb-2 text-base font-bold text-ink-main dark:text-ink-onDark" style={{ fontFamily: "Georgia, serif" }}>
           Not assigned to a team yet
         </p>
-        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
+        <p className="text-[13px] leading-normal text-ink-sub dark:text-ink-subOnDark">
           Your program coordinator will assign you to a team before the trip.
         </p>
       </Card>
@@ -843,10 +795,10 @@ function MemberView({ user, isAdmin }) {
     <div className="space-y-5">
       {/* Team identity */}
       <Card>
-        <p style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(196,150,42,0.6)", marginBottom: 4 }}>
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-du-gold">
           Your Team
         </p>
-        <h2 style={{ fontFamily: "Georgia,serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>
+        <h2 className="text-[22px] font-bold text-ink-main dark:text-ink-onDark" style={{ fontFamily: "Georgia, serif" }}>
           {myTeam.name}
         </h2>
       </Card>
@@ -856,13 +808,13 @@ function MemberView({ user, isAdmin }) {
         <SectionHeader title="👥 Members" />
         <div className="space-y-2">
           {teamMembers.map((m) => (
-            <Card key={m.uid} style={{ padding: "10px 14px" }}>
+            <Card key={m.uid} className="!py-2.5">
               <div className="flex items-center gap-3">
                 <AvatarInitial name={m.displayName} size={32} />
-                <span style={{ fontSize: 14, color: "#fff" }}>
+                <span className="text-sm text-ink-main dark:text-ink-onDark">
                   {m.displayName}
                   {m.uid === user.uid && (
-                    <span style={{ fontSize: 11, color: "rgba(196,150,42,0.6)", marginLeft: 6 }}>you</span>
+                    <span className="ml-1.5 text-[11px] font-semibold text-du-gold">you</span>
                   )}
                 </span>
               </div>
@@ -890,29 +842,20 @@ export default function Team({ isAdmin }) {
   // If regular user, show only their team view (no tabs)
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(180deg,#0d0103 0%,#150305 100%)" }}>
+    <div className="p-5 space-y-5">
       {/* Header */}
-      <div style={{
-        background: "linear-gradient(135deg,#0d0103 0%,#1c0408 60%,#2a0a10 100%)",
-        padding: "52px 20px 20px",
-        borderBottom: "1px solid rgba(196,150,42,0.15)",
-      }}>
-        <h1 style={{
-          fontFamily: "Georgia, serif", fontSize: "26px", fontWeight: 700,
-          color: "#ffffff", letterSpacing: "-0.3px",
-        }}>
-          <span style={{
-            background: "linear-gradient(135deg,#e8b84b 0%,#f5d47a 45%,#c4862a 100%)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-          }}>Teams</span>
-        </h1>
-        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
+      <div>
+        <div className="text-xl font-semibold text-ink-main dark:text-ink-onDark" style={{ fontFamily: "Georgia, serif" }}>
+          Teams <span className="text-du-gold">•</span>
+        </div>
+        <div className="h-1 w-10 rounded-full bg-du-gold mt-2" />
+        <p className="mt-3 text-sm text-ink-sub dark:text-ink-subOnDark">
           Small-group hub for meetings and chat
         </p>
 
         {/* Tabs (admin only) */}
         {isAdmin && (
-          <div className="flex gap-1 mt-4">
+          <div className="flex gap-2 mt-4">
             {[
               { key: "my-team", label: "My Team" },
               { key: "manage", label: "Manage Teams" },
@@ -920,13 +863,7 @@ export default function Team({ isAdmin }) {
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                style={{
-                  padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", border: "1px solid",
-                  background: activeTab === key ? "rgba(196,150,42,0.18)" : "transparent",
-                  borderColor: activeTab === key ? "rgba(196,150,42,0.6)" : "rgba(196,150,42,0.25)",
-                  color: activeTab === key ? "#e8b84b" : "rgba(255,255,255,0.5)",
-                }}
+                className={pillClass(activeTab === key)}
               >
                 {label}
               </button>
@@ -936,15 +873,13 @@ export default function Team({ isAdmin }) {
       </div>
 
       {/* Content */}
-      <div style={{ padding: "20px 16px", maxWidth: 600, margin: "0 auto" }}>
+      <div className="max-w-[600px] mx-auto">
         {isAdmin && activeTab === "manage" ? (
           <AdminPanel user={user} />
         ) : (
           <MemberView user={user} isAdmin={isAdmin} />
         )}
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

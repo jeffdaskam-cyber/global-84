@@ -13,70 +13,34 @@
 import { useState, useRef } from "react";
 import { translateImage, validateImageType } from "../lib/translate.js";
 
-// ── Styles (matching the crimson/gold design system) ──────────────────────────
+// ── Sub-components (light cream/crimson/gold design system) ──────────────────
 
-const gold = "#c4862a";
-const goldFaint = "rgba(196,150,42,0.2)";
-const goldSubtle = "rgba(196,150,42,0.75)";
-const crimson = "#BA0C2F";
-const white = "#ffffff";
-const darkBg = "#0d0103";
-const cardBg = "linear-gradient(160deg, #1c0408 0%, #2a0a10 100%)";
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-/** Gold-gradient text span, matching the page header style used across the app. */
-function GoldText({ children }) {
+/** A white card container matching the cards used across the app. */
+function Card({ children }) {
   return (
-    <span
-      style={{
-        background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
-      }}
-    >
+    <div className="rounded-xl overflow-hidden bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-card">
       {children}
-    </span>
+    </div>
   );
 }
 
-/** A dark card container matching the Currency page style. */
-function Card({ children, style }) {
+/** Small uppercase section label used in the result cards. */
+function CardLabel({ children }) {
   return (
-    <div
-      style={{
-        borderRadius: "16px",
-        overflow: "hidden",
-        background: cardBg,
-        border: `1px solid ${goldFaint}`,
-        boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-        ...style,
-      }}
-    >
+    <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-du-gold">
       {children}
-    </div>
+    </p>
   );
 }
 
 /** Spinner shown while translation is in progress. */
 function Spinner() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "24px 0" }}>
-      <div
-        style={{
-          width: "40px",
-          height: "40px",
-          borderRadius: "50%",
-          border: `3px solid ${goldFaint}`,
-          borderTopColor: gold,
-          animation: "spin 0.8s linear infinite",
-        }}
-      />
-      <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.5)", textAlign: "center", margin: 0 }}>
+    <div className="flex flex-col items-center gap-3 py-6">
+      <div className="w-10 h-10 rounded-full border-[3px] border-du-goldSoft border-t-du-crimson animate-spin" />
+      <p className="m-0 text-sm text-center text-ink-sub dark:text-ink-subOnDark">
         Translating… this may take a moment on first use
       </p>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
@@ -170,35 +134,24 @@ export default function Translate() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  const canTranslate = selectedFile && !loading;
+
   return (
-    <div className="min-h-screen" style={{ background: darkBg }}>
+    <div className="p-5 space-y-5">
 
       {/* ── Page header ── */}
-      <div
-        className="px-5 pt-10 pb-6"
-        style={{
-          background: cardBg,
-          borderBottom: `1px solid ${goldFaint}`,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "Georgia, serif",
-            fontSize: "26px",
-            fontWeight: 700,
-            color: white,
-            letterSpacing: "-0.3px",
-          }}
-        >
-          Photo <GoldText>Translator</GoldText>
+      <div>
+        <div className="text-xl font-semibold text-ink-main dark:text-ink-onDark" style={{ fontFamily: "Georgia, serif" }}>
+          Photo <span className="text-du-crimson">Translator</span>
         </div>
-        <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", marginTop: "4px" }}>
+        <div className="h-1 w-10 rounded-full bg-du-gold mt-2" />
+        <p className="mt-3 text-sm text-ink-sub dark:text-ink-subOnDark">
           Photograph signage, menus &amp; documents · English translation in seconds
         </p>
       </div>
 
       {/* ── Main content ── */}
-      <div className="px-4 py-6 space-y-5 max-w-lg mx-auto">
+      <div className="space-y-5 max-w-lg mx-auto">
 
         {/* ── Upload card ── */}
         <Card>
@@ -218,58 +171,38 @@ export default function Translate() {
             {/* Upload button */}
             <label
               htmlFor="translate-file-input"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                width: "100%",
-                padding: "14px",
-                borderRadius: "12px",
-                background: selectedFile
-                  ? "rgba(196,150,42,0.12)"
-                  : `rgba(${parseInt(crimson.slice(1, 3), 16)},${parseInt(crimson.slice(3, 5), 16)},${parseInt(crimson.slice(5, 7), 16)},0.2)`,
-                border: `1px solid ${selectedFile ? goldFaint : "rgba(186,12,47,0.35)"}`,
-                color: selectedFile ? goldSubtle : "rgba(255,255,255,0.7)",
-                fontSize: "15px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s",
-                boxSizing: "border-box",
-              }}
+              className={`flex items-center justify-center gap-2.5 w-full p-3.5 rounded-lg text-[15px] font-semibold cursor-pointer transition border ${
+                selectedFile
+                  ? "bg-du-goldSoft border-du-goldDeep/70 text-ink-main dark:bg-du-gold/10 dark:text-ink-onDark"
+                  : "bg-du-crimsonSoft border-du-crimson/30 text-du-crimsonDark dark:bg-du-crimson/15 dark:text-ink-onDark"
+              }`}
             >
-              <span style={{ fontSize: "22px" }}>📷</span>
-              {selectedFile ? selectedFile.name : "Choose Image or Take Photo"}
+              <span className="text-[22px]">📷</span>
+              <span className="truncate">{selectedFile ? selectedFile.name : "Choose Image or Take Photo"}</span>
             </label>
 
-            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", textAlign: "center", margin: 0 }}>
+            <p className="m-0 text-[11px] text-center text-ink-muted">
               JPG · PNG · WEBP · up to 5 MB
             </p>
 
             {/* Image preview */}
             {previewUrl && (
-              <div style={{ borderRadius: "10px", overflow: "hidden", border: `1px solid ${goldFaint}` }}>
+              <div className="rounded-lg overflow-hidden border border-surface-border dark:border-surface-darkBorder">
                 <img
                   src={previewUrl}
                   alt="Selected image preview"
-                  style={{ width: "100%", maxHeight: "280px", objectFit: "contain", display: "block", background: "#000" }}
+                  className="block w-full object-contain bg-ink-main"
+                  style={{ maxHeight: "280px" }}
                 />
               </div>
             )}
 
             {/* Error message */}
             {error && (
-              <div style={{
-                background: "rgba(180,30,30,0.15)",
-                border: "1px solid rgba(180,30,30,0.35)",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                color: "rgba(255,180,180,0.9)",
-                fontSize: "13px",
-              }}>
+              <div className="rounded-lg px-3.5 py-3 text-[13px] bg-du-crimsonSoft border border-du-crimson/30 text-du-crimsonDark dark:bg-du-crimson/15 dark:text-ink-onDark">
                 {error}
                 {error.toLowerCase().includes("fail") && (
-                  <span style={{ color: "rgba(255,180,180,0.6)" }}> Try selecting the image again.</span>
+                  <span className="opacity-75"> Try selecting the image again.</span>
                 )}
               </div>
             )}
@@ -277,23 +210,13 @@ export default function Translate() {
             {/* Translate button */}
             <button
               onClick={handleTranslate}
-              disabled={!selectedFile || loading}
-              style={{
-                width: "100%",
-                padding: "14px",
-                borderRadius: "12px",
-                background: (!selectedFile || loading)
-                  ? "rgba(186,12,47,0.15)"
-                  : `linear-gradient(135deg, ${crimson} 0%, #9a0a27 100%)`,
-                border: `1px solid ${(!selectedFile || loading) ? "rgba(186,12,47,0.2)" : "transparent"}`,
-                color: (!selectedFile || loading) ? "rgba(255,255,255,0.3)" : white,
-                fontSize: "16px",
-                fontWeight: 700,
-                cursor: (!selectedFile || loading) ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-                fontFamily: "Georgia, serif",
-                letterSpacing: "0.02em",
-              }}
+              disabled={!canTranslate}
+              className={`w-full p-3.5 rounded-lg text-base font-bold tracking-[0.02em] transition ${
+                canTranslate
+                  ? "bg-du-crimson text-white hover:bg-du-crimsonDark"
+                  : "bg-du-crimson/15 text-du-crimson/50 cursor-not-allowed"
+              }`}
+              style={{ fontFamily: "Georgia, serif" }}
             >
               {loading ? "Translating…" : "Translate"}
             </button>
@@ -315,29 +238,11 @@ export default function Translate() {
           <>
             {/* Detected text card */}
             <Card>
-              <div
-                className="px-5 py-3"
-                style={{ borderBottom: `1px solid ${goldFaint}` }}
-              >
-                <p style={{
-                  fontSize: "11px",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: goldSubtle,
-                  margin: 0,
-                  fontWeight: 600,
-                }}>
-                  Detected Text
-                </p>
+              <div className="px-5 py-3 border-b border-surface-border dark:border-surface-darkBorder">
+                <CardLabel>Detected Text</CardLabel>
               </div>
               <div className="px-5 py-4">
-                <p style={{
-                  fontSize: "15px",
-                  color: "rgba(255,255,255,0.75)",
-                  margin: 0,
-                  lineHeight: "1.65",
-                  whiteSpace: "pre-wrap",
-                }}>
+                <p className="m-0 text-[15px] leading-relaxed whitespace-pre-wrap text-ink-sub dark:text-ink-subOnDark">
                   {result.original || "No text detected."}
                 </p>
               </div>
@@ -345,46 +250,23 @@ export default function Translate() {
 
             {/* English translation card */}
             <Card>
-              <div
-                className="px-5 py-3 flex items-center justify-between"
-                style={{ borderBottom: `1px solid ${goldFaint}` }}
-              >
-                <p style={{
-                  fontSize: "11px",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: goldSubtle,
-                  margin: 0,
-                  fontWeight: 600,
-                }}>
-                  English Translation
-                </p>
+              <div className="px-5 py-3 flex items-center justify-between border-b border-surface-border dark:border-surface-darkBorder">
+                <CardLabel>English Translation</CardLabel>
                 {result.translated && (
                   <button
                     onClick={handleCopy}
-                    style={{
-                      fontSize: "12px",
-                      color: copied ? "rgba(100,220,100,0.85)" : goldSubtle,
-                      background: "rgba(196,150,42,0.1)",
-                      border: `1px solid ${copied ? "rgba(100,220,100,0.3)" : goldFaint}`,
-                      borderRadius: "20px",
-                      padding: "4px 12px",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
+                    className={`text-xs font-semibold rounded-full px-3 py-1 border transition ${
+                      copied
+                        ? "bg-green-50 border-green-300 text-green-700"
+                        : "bg-du-goldSoft border-du-goldDeep/70 text-du-gold dark:bg-du-gold/10"
+                    }`}
                   >
                     {copied ? "✓ Copied!" : "Copy"}
                   </button>
                 )}
               </div>
               <div className="px-5 py-4">
-                <p style={{
-                  fontSize: "15px",
-                  color: white,
-                  margin: 0,
-                  lineHeight: "1.65",
-                  whiteSpace: "pre-wrap",
-                }}>
+                <p className="m-0 text-[15px] leading-relaxed whitespace-pre-wrap text-ink-main dark:text-ink-onDark">
                   {result.translated || "No translation available."}
                 </p>
               </div>
@@ -396,16 +278,7 @@ export default function Translate() {
         {(selectedFile || result) && !loading && (
           <button
             onClick={handleReset}
-            style={{
-              width: "100%",
-              padding: "12px",
-              borderRadius: "12px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "rgba(255,255,255,0.45)",
-              fontSize: "13px",
-              cursor: "pointer",
-            }}
+            className="w-full py-3 rounded-lg text-[13px] font-semibold border border-surface-border dark:border-surface-darkBorder bg-surface-card dark:bg-surface-darkCard text-ink-sub dark:text-ink-subOnDark hover:bg-surface-light dark:hover:bg-surface-dark transition"
           >
             Reset — translate another image
           </button>

@@ -72,175 +72,86 @@ function ConverterCard({ currency, rate, rateLoading }) {
     setLastEdited("usd");
   }
 
+  const inputClass =
+    "w-full pl-8 pr-3 py-3 rounded-lg bg-surface-light dark:bg-surface-dark border border-surface-border dark:border-surface-darkBorder text-ink-main dark:text-ink-onDark text-xl font-semibold outline-none focus:border-du-gold placeholder:text-ink-muted";
+  const labelClass =
+    "block mb-1.5 text-[11px] uppercase tracking-[0.12em] font-semibold text-ink-sub dark:text-ink-subOnDark";
+  const symbolClass =
+    "absolute left-3.5 top-1/2 -translate-y-1/2 text-base font-semibold text-ink-muted pointer-events-none";
+
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background: "linear-gradient(160deg, #1c0408 0%, #2a0a10 100%)",
-        border: "1px solid rgba(196,150,42,0.2)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-      }}
-    >
-      <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid rgba(196,150,42,0.15)" }}>
-        <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: "17px", fontWeight: 700, color: "#fff" }}>
-            {currency.name}
-          </div>
-          <div style={{ fontSize: "12px", color: "rgba(196,150,42,0.75)", letterSpacing: "0.08em" }}>
-            {currency.code} and US Dollar
-          </div>
+    <div className="rounded-xl overflow-hidden bg-surface-card dark:bg-surface-darkCard border border-surface-border dark:border-surface-darkBorder shadow-card">
+      <div className="px-5 py-4 border-b border-surface-border dark:border-surface-darkBorder">
+        <div className="text-[17px] font-bold text-ink-main dark:text-ink-onDark" style={{ fontFamily: "Georgia, serif" }}>
+          {currency.name}
+        </div>
+        <div className="text-xs tracking-[0.08em] text-du-gold">
+          {currency.code} and US Dollar
         </div>
       </div>
 
       <div className="px-5 py-5 space-y-4">
         <div>
-          <label style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "6px" }}>
-            US Dollar (USD)
-          </label>
+          <label className={labelClass}>US Dollar (USD)</label>
           <div className="relative">
-            <span
-              style={{
-                position: "absolute",
-                left: "14px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "rgba(255,255,255,0.5)",
-                fontSize: "16px",
-                fontWeight: 600,
-                pointerEvents: "none",
-              }}
-            >
-              $
-            </span>
+            <span className={symbolClass}>$</span>
             <input
               type="text"
               inputMode="decimal"
               value={usdInput}
               onChange={handleUsdChange}
               placeholder="0.00"
-              style={{
-                width: "100%",
-                paddingLeft: "32px",
-                paddingRight: "12px",
-                paddingTop: "12px",
-                paddingBottom: "12px",
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(196,150,42,0.25)",
-                borderRadius: "10px",
-                color: "#fff",
-                fontSize: "20px",
-                fontWeight: 600,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
+              className={inputClass}
             />
           </div>
         </div>
 
         <div className="flex items-center justify-center">
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              background: "rgba(196,150,42,0.12)",
-              border: "1px solid rgba(196,150,42,0.25)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "16px",
-              color: "rgba(196,150,42,0.8)",
-            }}
-          >
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-base bg-du-goldSoft dark:bg-du-gold/10 border border-du-goldDeep/60 text-du-gold">
             ⇄
           </div>
         </div>
 
         <div>
-          <label style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "6px" }}>
+          <label className={labelClass}>
             {currency.name} ({currency.code})
           </label>
           <div className="relative">
-            <span
-              style={{
-                position: "absolute",
-                left: "14px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "rgba(255,255,255,0.5)",
-                fontSize: "16px",
-                fontWeight: 600,
-                pointerEvents: "none",
-              }}
-            >
-              {currency.symbol}
-            </span>
+            <span className={symbolClass}>{currency.symbol}</span>
             <input
               type="text"
               inputMode="decimal"
               value={foreignInput}
               onChange={handleForeignChange}
               placeholder={currency.decimals === 0 ? "0" : "0.00"}
-              style={{
-                width: "100%",
-                paddingLeft: "32px",
-                paddingRight: "12px",
-                paddingTop: "12px",
-                paddingBottom: "12px",
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(196,150,42,0.25)",
-                borderRadius: "10px",
-                color: "#fff",
-                fontSize: "20px",
-                fontWeight: 600,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
+              className={inputClass}
             />
           </div>
         </div>
 
-        <div
-          style={{
-            background: "rgba(196,150,42,0.08)",
-            borderRadius: "8px",
-            padding: "10px 14px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <div className="flex items-center justify-between rounded-lg px-3.5 py-2.5 bg-du-goldSoft dark:bg-du-gold/10">
           {rateLoading ? (
-            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)" }}>Fetching rate...</span>
+            <span className="text-[13px] text-ink-muted">Fetching rate...</span>
           ) : rate ? (
             <>
-              <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)" }}>
+              <span className="text-[13px] text-ink-sub dark:text-ink-subOnDark">
                 $1 USD = {formatCurrency(rate, currency)} {currency.code}
               </span>
-              <span style={{ fontSize: "11px", color: "rgba(196,150,42,0.6)" }}>Live</span>
+              <span className="text-[11px] font-semibold text-du-gold">Live</span>
             </>
           ) : (
-            <span style={{ fontSize: "13px", color: "rgba(255,100,100,0.7)" }}>Rate unavailable</span>
+            <span className="text-[13px] text-du-crimson">Rate unavailable</span>
           )}
         </div>
 
-        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.35)", fontStyle: "italic", margin: 0 }}>
+        <p className="m-0 text-xs italic text-ink-sub dark:text-ink-subOnDark">
           {currency.hint}
         </p>
 
         {(usdInput || foreignInput) && (
           <button
             onClick={handleClear}
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "10px",
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: "13px",
-              cursor: "pointer",
-            }}
+            className="w-full py-2.5 rounded-lg text-[13px] font-semibold border border-surface-border dark:border-surface-darkBorder text-ink-sub dark:text-ink-subOnDark hover:bg-surface-light dark:hover:bg-surface-dark transition"
           >
             Clear
           </button>
@@ -292,66 +203,33 @@ export default function Currency() {
   }, [fetchRates]);
 
   return (
-    <div className="min-h-screen" style={{ background: "#0d0103" }}>
-      <div
-        className="px-5 pt-10 pb-6"
-        style={{
-          background: "linear-gradient(160deg, #1c0408 0%, #2a0a10 100%)",
-          borderBottom: "1px solid rgba(196,150,42,0.2)",
-        }}
-      >
-        <div style={{ fontFamily: "Georgia, serif", fontSize: "26px", fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>
-          Currency{" "}
-          <span
-            style={{
-              background: "linear-gradient(135deg, #e8b84b 0%, #f5d47a 45%, #c4862a 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            Converter
-          </span>
+    <div className="p-5 space-y-5">
+      <div>
+        <div className="text-xl font-semibold text-ink-main dark:text-ink-onDark" style={{ fontFamily: "Georgia, serif" }}>
+          Currency <span className="text-du-crimson">Converter</span>
         </div>
-        <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", marginTop: "4px" }}>
+        <div className="h-1 w-10 rounded-full bg-du-gold mt-2" />
+        <p className="mt-3 text-sm text-ink-sub dark:text-ink-subOnDark">
           Live rates for USD to SGD and VND
         </p>
 
-        <div className="flex items-center justify-between mt-4">
-          <span style={{ fontSize: "12px", color: "rgba(196,150,42,0.6)" }}>
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-xs text-ink-muted">
             {rateDate ? `Rates as of ${rateDate}` : loading ? "Loading rates..." : error ? "Could not load rates" : ""}
           </span>
           <button
             onClick={fetchRates}
             disabled={loading}
-            style={{
-              fontSize: "12px",
-              color: loading ? "rgba(196,150,42,0.35)" : "rgba(196,150,42,0.75)",
-              background: "rgba(196,150,42,0.1)",
-              border: "1px solid rgba(196,150,42,0.2)",
-              borderRadius: "20px",
-              padding: "4px 12px",
-              cursor: loading ? "default" : "pointer",
-            }}
+            className="text-xs font-semibold rounded-full px-3 py-1 border border-du-goldDeep/70 bg-du-goldSoft dark:bg-du-gold/10 text-du-gold disabled:opacity-50 disabled:cursor-default transition"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-5 max-w-lg mx-auto">
+      <div className="space-y-5 max-w-lg mx-auto">
         {error && (
-          <div
-            style={{
-              background: "rgba(180,30,30,0.15)",
-              border: "1px solid rgba(180,30,30,0.3)",
-              borderRadius: "12px",
-              padding: "14px 16px",
-              color: "rgba(255,180,180,0.85)",
-              fontSize: "13px",
-              textAlign: "center",
-            }}
-          >
+          <div className="rounded-xl px-4 py-3.5 text-[13px] text-center bg-du-crimsonSoft border border-du-crimson/30 text-du-crimsonDark dark:bg-du-crimson/15 dark:text-ink-onDark">
             Could not fetch live rates. Check your connection and try Refresh.
           </div>
         )}
@@ -365,13 +243,13 @@ export default function Currency() {
           />
         ))}
 
-        <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)", textAlign: "center", paddingBottom: "8px" }}>
+        <p className="text-[11px] text-center pb-2 text-ink-muted">
           Exchange data via{" "}
           <a
             href="https://github.com/fawazahmed0/exchange-api"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: "rgba(196,150,42,0.45)", textDecoration: "underline" }}
+            className="underline text-du-gold"
           >
             fawazahmed0/exchange-api
           </a>
