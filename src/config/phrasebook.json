@@ -145,6 +145,27 @@
           "note": "Wikivoyage form: Tôi là người ăn chay."
         },
         {
+          "vi": "Tôi ăn thuần chay",
+          "say": "toy ahn twun chai",
+          "en": "I'm vegan",
+          "verified": false,
+          "note": "Thuần chay means no meat, fish, eggs, or dairy. Fish sauce (nước mắm) is in many dishes, so ask: Không nước mắm."
+        },
+        {
+          "vi": "Tôi bị dị ứng hành, tỏi, hẹ. Một chút cũng không được.",
+          "say": "toy bee yee uhng hahn, toy, heh. moht choot gohm khohng duhk.",
+          "en": "I'm allergic to onions, garlic, and chives. Not even a little.",
+          "verified": false,
+          "note": "Hành covers the onion family, shallots included. Watch for fried shallots (hành phi) and scallion oil (mỡ hành)."
+        },
+        {
+          "vi": "Nước dùng có hành không?",
+          "say": "noo-uk yoong gaw hahn khohng?",
+          "en": "Does the broth have onion?",
+          "verified": false,
+          "note": "Phở and many soups are simmered with onion and shallot."
+        },
+        {
           "vi": "Tôi không ăn thịt bò",
           "say": "toy khohng ahn tit baw",
           "en": "I don't eat beef",
