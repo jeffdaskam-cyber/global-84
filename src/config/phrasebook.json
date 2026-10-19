@@ -152,11 +152,18 @@
           "note": "Thuần chay means no meat, fish, eggs, or dairy. Fish sauce (nước mắm) is in many dishes, so ask: Không nước mắm."
         },
         {
-          "vi": "Tôi không ăn được hành, hành tây, tỏi hay hành tím",
-          "say": "toy khohng ahn duhk hahn, hahn tay, toy hai hahn tim",
-          "en": "I can't eat onions, garlic, or shallots",
+          "vi": "Tôi bị dị ứng hành, tỏi, hẹ. Một chút cũng không được.",
+          "say": "toy bee yee uhng hahn, toy, heh. moht choot gohm khohng duhk.",
+          "en": "I'm allergic to onions, garlic, and chives. Not even a little.",
           "verified": false,
-          "note": "Hành is green onion, hành tây is onion, hành tím is shallot. Watch for fried shallots (hành phi) as a topping."
+          "note": "Hành covers the onion family, shallots included. Watch for fried shallots (hành phi) and scallion oil (mỡ hành)."
+        },
+        {
+          "vi": "Nước dùng có hành không?",
+          "say": "noo-uk yoong gaw hahn khohng?",
+          "en": "Does the broth have onion?",
+          "verified": false,
+          "note": "Phở and many soups are simmered with onion and shallot."
         },
         {
           "vi": "Tôi không ăn thịt bò",
