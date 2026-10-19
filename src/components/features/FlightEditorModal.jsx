@@ -11,6 +11,7 @@ import {
   DEFAULT_DEPARTURE_ZONE,
   DEFAULT_ARRIVAL_ZONE,
   CABIN_CLASSES,
+  displayFlightStatus,
 } from "../../lib/userFlights";
 import { findAirlineByName } from "../../lib/airlines";
 import { lookupFlight, validateLookupInput } from "../../lib/flightLookup";
@@ -559,7 +560,7 @@ export default function FlightEditorModal({ open, onClose, uid, flight }) {
 
           {(flightStatus || aircraftType) ? (
             <div className="text-xs text-ink-sub dark:text-ink-subOnDark">
-              {flightStatus ? <span>Status: {flightStatus}</span> : null}
+              {flightStatus ? <span>Status: {displayFlightStatus(flightStatus)}</span> : null}
               {flightStatus && aircraftType ? <span> · </span> : null}
               {aircraftType ? <span>Aircraft: {aircraftType}</span> : null}
             </div>

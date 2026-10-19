@@ -19,6 +19,7 @@ import {
   deleteFlight,
   reorderFlights,
   computeLayover,
+  displayFlightStatus,
   tripConfirmationNumber,
   formatFlightDate,
   formatFlightTime,
@@ -581,7 +582,7 @@ export default function Me() {
  * entered legs look exactly as they did before.
  */
 function FlightStatusBadge({ status }) {
-  const text = (status || "").trim();
+  const text = displayFlightStatus(status);
   if (!text) return null;
 
   const lower = text.toLowerCase();
