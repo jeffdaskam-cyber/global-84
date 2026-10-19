@@ -127,10 +127,10 @@ export default function Explore({ isAdmin, onCreateEvent }) {
   );
 }
 
-// "On the ground" entry cards. Currency + Translate are the tools a member
-// reaches for in the same real-world moment as the map, so they live at the
-// foot of Explore rather than buried in the drawer. Each pushes into that
-// tool's existing full-screen route — only the entry point moved.
+// "On the ground" entry cards. Currency, Translate and the Phrasebook are the
+// tools a member reaches for in the same real-world moment as the map, so they
+// live at the foot of Explore rather than buried in the drawer. Each pushes
+// into that tool's own full-screen route.
 const ON_THE_GROUND = [
   {
     to: "/currency",
@@ -143,6 +143,12 @@ const ON_THE_GROUND = [
     icon: "📷",
     title: "Photo Translator",
     subtitle: "Signage, menus & documents to English",
+  },
+  {
+    to: "/phrases",
+    icon: "🗣️",
+    title: "Vietnamese Phrasebook",
+    subtitle: "Survival phrases to say or show",
   },
 ];
 
@@ -191,7 +197,7 @@ function CityPicker({ onSelect }) {
           </button>
         ))}
 
-        {/* ── On the ground: currency + translate entry points ── */}
+        {/* ── On the ground: currency, translate + phrasebook entry points ── */}
         <div className="pt-2">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-sub">
@@ -413,7 +419,7 @@ function DesktopExplore({ onOpenCategory, onOpenAccommodation }) {
           <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-sub">On the ground</span>
           <div className="flex-1 h-px bg-surface-border" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {ON_THE_GROUND.map((tool) => (
             <button
               key={tool.to}

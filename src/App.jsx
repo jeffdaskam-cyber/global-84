@@ -24,6 +24,7 @@ const Media = lazy(() => import("./pages/Media.jsx"));
 const Currency = lazy(() => import("./pages/Currency.jsx"));
 const Team = lazy(() => import("./pages/Team.jsx"));
 const Translate = lazy(() => import("./pages/Translate.jsx"));
+const Phrasebook = lazy(() => import("./pages/Phrasebook.jsx"));
 const Briefing = lazy(() => import("./pages/Briefing.jsx"));
 const MemberAccess = lazy(() => import("./pages/MemberAccess.jsx"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword.jsx"));
@@ -58,6 +59,7 @@ const DRAWER_SECTIONS = [
     items: [
       { to: "/currency", label: "Currency Exchange", icon: "💱" },
       { to: "/translate", label: "Translator", icon: "🌐" },
+      { to: "/phrases", label: "Phrasebook", icon: "🗣️" },
     ],
   },
 ];
@@ -512,6 +514,7 @@ function AppShell() {
               <Route path="/briefing" element={<Briefing />} />
               <Route path="/currency" element={<Currency />} />
               <Route path="/translate" element={<Translate />} />
+              <Route path="/phrases/:situationId?" element={<Phrasebook />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
