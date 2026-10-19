@@ -35,6 +35,12 @@ export const AIRLINES = [
   { name: "Emirates", iata: "EK" },
   { name: "Scoot", iata: "TR" },
   { name: "Jetstar Asia", iata: "3K" },
+  { name: "AirAsia", iata: "AK" },
+  { name: "AirAsia X", iata: "D7" },
+  { name: "Thai AirAsia", iata: "FD" },
+  { name: "Thai AirAsia X", iata: "XJ" },
+  { name: "Indonesia AirAsia", iata: "QZ" },
+  { name: "Philippines AirAsia", iata: "Z2" },
 
   // Common US and European carriers for the outbound/return legs.
   { name: "Southwest Airlines", iata: "WN" },
@@ -96,6 +102,8 @@ export function findAirlineByName(name) {
 export function searchAirlines(query, limit = 8) {
   const q = (query || "").trim().toLowerCase();
   if (!q) return AIRLINES.slice(0, limit);
+  // Spaces are ignored when matching names, so "air asia" finds "AirAsia".
+  const qCompact = q.replace(/\s+/g, "");
 
   const exactCode = [];
   const namePrefix = [];
@@ -103,13 +111,14 @@ export function searchAirlines(query, limit = 8) {
 
   for (const airline of AIRLINES) {
     const name = airline.name.toLowerCase();
+    const nameCompact = name.replace(/\s+/g, "");
     const code = airline.iata.toLowerCase();
 
     if (code === q) {
       exactCode.push(airline);
-    } else if (name.startsWith(q)) {
+    } else if (name.startsWith(q) || nameCompact.startsWith(qCompact)) {
       namePrefix.push(airline);
-    } else if (name.includes(q) || code.includes(q)) {
+    } else if (name.includes(q) || nameCompact.includes(qCompact) || code.includes(q)) {
       contains.push(airline);
     }
   }
