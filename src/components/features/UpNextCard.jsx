@@ -4,9 +4,10 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { subscribeItinerary } from "../../lib/itinerary";
 import { subscribeEventsByCity, subscribeMyRsvps } from "../../lib/events";
+import { subscribeMyTeam, subscribeTeamMeetings } from "../../lib/teams";
 import { subscribeFlights, toDate, formatFlightTime, computeLayover } from "../../lib/userFlights";
 import { formatRelative } from "../../lib/trip";
-import { CITY_TIME_ZONES } from "../../config/timezones";
+import { CITY_TIME_ZONES, zoneForCity } from "../../config/timezones";
 
 const EVENT_CITIES = Object.keys(CITY_TIME_ZONES);
 
@@ -14,6 +15,7 @@ const TYPE_META = {
   Itinerary: { label: "Itinerary", bg: "#F4F1E6", fg: "#8A1538" },
   Going: { label: "Going", bg: "#F8E6EA", fg: "#8E0A24" },
   Interested: { label: "Interested", bg: "#F4F1E6", fg: "#8A6D1E" },
+  Team: { label: "Team", bg: "#EDEDED", fg: "#000000" },
   Flight: { label: "Flight", bg: "#F4F1E6", fg: "#BA0C2F" },
 };
 
@@ -57,6 +59,10 @@ export default function UpNextCard() {
   const [eventsByCity, setEventsByCity] = useState({});
   const [rsvps, setRsvps] = useState([]);
   const [flights, setFlights] = useState([]);
+  const [teamId, setTeamId] = useState(null);
+  // Tagged with the team they came from so a stale list is ignored after the
+  // member leaves or changes team.
+  const [teamMeetings, setTeamMeetings] = useState({ teamId: null, list: [] });
 
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
@@ -84,6 +90,22 @@ export default function UpNextCard() {
     if (!uid) return;
     return subscribeFlights(uid, setFlights, () => setFlights([]));
   }, [uid]);
+
+  // Team meetings live under the member's own team, so follow their teamId
+  // first and then subscribe to that team's meetings.
+  useEffect(() => {
+    if (!uid) return;
+    return subscribeMyTeam(uid, (team) => setTeamId(team?.id || null), () => setTeamId(null));
+  }, [uid]);
+
+  useEffect(() => {
+    if (!teamId) return;
+    return subscribeTeamMeetings(
+      teamId,
+      (list) => setTeamMeetings({ teamId, list }),
+      () => setTeamMeetings({ teamId, list: [] })
+    );
+  }, [teamId]);
 
   const rows = useMemo(() => {
     const out = [];
@@ -123,6 +145,24 @@ export default function UpNextCard() {
       });
     }
 
+    const meetings = teamId && teamMeetings.teamId === teamId ? teamMeetings.list : [];
+    for (const m of meetings) {
+      const ms = toDate(m.dateTime)?.getTime();
+      if (!ms) continue;
+      out.push({
+        key: `mtg-${m.id}`,
+        type: "Team",
+        title: m.title,
+        whenMs: ms,
+        // Pre-existing meetings carry no city; zoneForCity falls back to the
+        // default trip city, matching the Team page.
+        tz: zoneForCity(m.city).zone,
+        subtitle: m.location || "",
+        to: "/team",
+        cat: "teamEvent",
+      });
+    }
+
     const upcomingFlights = flights
       .map((f) => ({ f, ms: toDate(f.departureDateTime)?.getTime() }))
       .filter((x) => x.ms && x.ms > nowMs)
@@ -153,7 +193,7 @@ export default function UpNextCard() {
     return out
       .filter((r) => r.whenMs > nowMs)
       .sort((a, b) => a.whenMs - b.whenMs);
-  }, [itinerary, eventsByCity, rsvps, flights, nowMs]);
+  }, [itinerary, eventsByCity, rsvps, teamId, teamMeetings, flights, nowMs]);
 
   if (rows.length === 0) return null;
 
