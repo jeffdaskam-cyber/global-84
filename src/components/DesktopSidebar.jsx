@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { to: "/team", label: "Teams", icon: "👥" },
   { to: "/currency", label: "Currency", icon: "💱" },
   { to: "/translate", label: "Translator", icon: "🌐" },
+  { to: "/phrases", label: "Phrasebook", icon: "🗣️" },
 ];
 
 // Admin destinations lost when the drawer is hidden on desktop. "Post

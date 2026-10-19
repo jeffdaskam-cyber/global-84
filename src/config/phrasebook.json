@@ -1,0 +1,748 @@
+{
+  "meta": {
+    "accent": "Southern (Saigon)",
+    "emergency": [
+      {
+        "label": "Police",
+        "vi": "Công an",
+        "number": "113",
+        "tel": "113"
+      },
+      {
+        "label": "Fire",
+        "vi": "Cứu hỏa",
+        "number": "114",
+        "tel": "114"
+      },
+      {
+        "label": "Ambulance",
+        "vi": "Cấp cứu",
+        "number": "115",
+        "tel": "115"
+      }
+    ],
+    "verification_note": "verified:true = spelling matches Wikivoyage phrasebook (or US Embassy/GOV.UK for numbers). verified:false = standard usage not matched to a source; have a native speaker spot-check.",
+    "consulate": {
+      "label": "US Consulate General, HCMC (24/7)",
+      "numbers": [
+        {
+          "display": "028 3520 4200",
+          "tel": "+842835204200"
+        },
+        {
+          "display": "028 3520 4600",
+          "tel": "+842835204600",
+          "label": "backup"
+        }
+      ]
+    }
+  },
+  "situations": [
+    {
+      "id": "greetings",
+      "title": "Greetings & Basics",
+      "icon": "👋",
+      "when": "Any first contact: saying hi, thanks, sorry, yes/no.",
+      "phrases": [
+        {
+          "vi": "Xin chào",
+          "say": "sin chow",
+          "en": "Hello (polite)",
+          "verified": true
+        },
+        {
+          "vi": "Cảm ơn",
+          "say": "gahm uhn",
+          "en": "Thank you",
+          "verified": true
+        },
+        {
+          "vi": "Không sao đâu",
+          "say": "khohng sow dow",
+          "en": "No problem / You're welcome",
+          "verified": true
+        },
+        {
+          "vi": "Xin lỗi",
+          "say": "sin loy",
+          "en": "Sorry / Excuse me",
+          "verified": true
+        },
+        {
+          "vi": "Dạ",
+          "say": "yah",
+          "en": "Yes (polite, southern)",
+          "verified": true
+        },
+        {
+          "vi": "Không",
+          "say": "khohng",
+          "en": "No",
+          "verified": true
+        },
+        {
+          "vi": "Tôi không hiểu",
+          "say": "toy khohng hyew",
+          "en": "I don't understand",
+          "verified": true
+        },
+        {
+          "vi": "Biết nói tiếng Anh không?",
+          "say": "bee-ut noy tee-ung ahn khohng?",
+          "en": "Do you speak English?",
+          "verified": true
+        },
+        {
+          "vi": "Nhà vệ sinh ở đâu?",
+          "say": "nyah veh shing uh dow?",
+          "en": "Where is the restroom?",
+          "verified": true
+        },
+        {
+          "vi": "Tạm biệt",
+          "say": "tahm bee-ut",
+          "en": "Goodbye",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "food",
+      "title": "Restaurant & Street Food",
+      "icon": "🍜",
+      "when": "Ordering at a restaurant or street stall and paying.",
+      "phrases": [
+        {
+          "vi": "Em ơi!",
+          "say": "em uh-ee!",
+          "en": "Excuse me! (to a younger server)",
+          "verified": true,
+          "note": "Use anh/chị ơi for an older server."
+        },
+        {
+          "vi": "Cho tôi xem menu",
+          "say": "jaw toy sem menu",
+          "en": "Can I see the menu?",
+          "verified": true
+        },
+        {
+          "vi": "Cho tôi cái này",
+          "say": "jaw toy kai nai",
+          "en": "I'll have this one (point)",
+          "verified": false
+        },
+        {
+          "vi": "Không cay",
+          "say": "khohng kai",
+          "en": "Not spicy",
+          "verified": false
+        },
+        {
+          "vi": "Tôi ăn chay",
+          "say": "toy ahn chai",
+          "en": "I'm vegetarian",
+          "verified": false,
+          "note": "Wikivoyage form: Tôi là người ăn chay."
+        },
+        {
+          "vi": "Tôi không ăn thịt bò",
+          "say": "toy khohng ahn tit baw",
+          "en": "I don't eat beef",
+          "verified": true
+        },
+        {
+          "vi": "Không bỏ ngò",
+          "say": "khohng baw ngaw",
+          "en": "No cilantro",
+          "verified": false,
+          "note": "Southern word for cilantro is ngò."
+        },
+        {
+          "vi": "Ngon quá!",
+          "say": "ngawng wah!",
+          "en": "Delicious!",
+          "verified": false
+        },
+        {
+          "vi": "Xong rồi",
+          "say": "sawng roy",
+          "en": "I'm finished",
+          "verified": true
+        },
+        {
+          "vi": "Tính tiền",
+          "say": "ting tee-ung",
+          "en": "The check, please",
+          "verified": false,
+          "note": "Wikivoyage longer form: Thanh toán tiền giúp tôi."
+        }
+      ]
+    },
+    {
+      "id": "drinks",
+      "title": "Coffee & Drinks/Bar",
+      "icon": "☕",
+      "when": "Coffee shops, juice stands, beer and bars.",
+      "phrases": [
+        {
+          "vi": "Cà phê sữa đá",
+          "say": "gah feh shuh-uh dah",
+          "en": "Iced coffee with condensed milk",
+          "verified": false
+        },
+        {
+          "vi": "Cà phê đen",
+          "say": "gah feh den",
+          "en": "Black coffee",
+          "verified": false
+        },
+        {
+          "vi": "Không đá",
+          "say": "khohng dah",
+          "en": "No ice",
+          "verified": false
+        },
+        {
+          "vi": "Ít đường",
+          "say": "it doo-ung",
+          "en": "Less sugar",
+          "verified": false
+        },
+        {
+          "vi": "Nước suối",
+          "say": "noo-uk shoo-oy",
+          "en": "Bottled water",
+          "verified": false,
+          "note": "Southern term."
+        },
+        {
+          "vi": "Cho tôi một chai bia",
+          "say": "jaw toy moht chai bee-uh",
+          "en": "A bottle of beer, please",
+          "verified": true
+        },
+        {
+          "vi": "Cho tôi một ly nữa",
+          "say": "jaw toy moht lee nuh-uh",
+          "en": "One more, please",
+          "verified": true
+        },
+        {
+          "vi": "Một, hai, ba, dô!",
+          "say": "moht, hai, bah, yo!",
+          "en": "1, 2, 3, cheers!",
+          "verified": true
+        },
+        {
+          "vi": "Bao giờ đóng cửa?",
+          "say": "bow yuh dawng guh-uh?",
+          "en": "When do you close?",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "shopping",
+      "title": "Shopping & Bargaining",
+      "icon": "🛍️",
+      "when": "Markets like Bến Thành: prices, haggling, money.",
+      "phrases": [
+        {
+          "vi": "Bao nhiêu tiền?",
+          "say": "bow nyew tee-ung?",
+          "en": "How much?",
+          "verified": true
+        },
+        {
+          "vi": "Mắc quá!",
+          "say": "mahk wah!",
+          "en": "Too expensive! (southern)",
+          "verified": false,
+          "note": "Northern/standard: Đắt quá (verified)."
+        },
+        {
+          "vi": "Bớt đi",
+          "say": "buht dee",
+          "en": "Lower the price, please",
+          "verified": false
+        },
+        {
+          "vi": "Bán ___ được không?",
+          "say": "bahn ___ duhk khohng?",
+          "en": "Would you sell it for ___?",
+          "verified": false,
+          "note": "Fill in your price, e.g. năm mươi ngàn (50,000)."
+        },
+        {
+          "vi": "Tôi không muốn",
+          "say": "toy khohng moo-ung",
+          "en": "I don't want it",
+          "verified": true
+        },
+        {
+          "vi": "Thôi, cảm ơn",
+          "say": "toy, gahm uhn",
+          "en": "No thanks",
+          "verified": false,
+          "note": "The polite way to wave off a vendor."
+        },
+        {
+          "vi": "OK, lấy cái này",
+          "say": "OK, lay kai nai",
+          "en": "OK, I'll take it",
+          "verified": false
+        },
+        {
+          "vi": "Có chấp nhận thẻ tín dụng không?",
+          "say": "gaw chup nyung teh tin yoong khohng?",
+          "en": "Do you take credit cards?",
+          "verified": true
+        },
+        {
+          "vi": "một, hai, ba, bốn, năm",
+          "say": "moht, hai, bah, bohn, nahm",
+          "en": "1, 2, 3, 4, 5",
+          "verified": true
+        },
+        {
+          "vi": "sáu, bảy, tám, chín, mười",
+          "say": "sow, bai, tahm, chin, muh-ee",
+          "en": "6, 7, 8, 9, 10",
+          "verified": true
+        },
+        {
+          "vi": "Một trăm ngàn",
+          "say": "moht chahm ngahng",
+          "en": "100,000 dong",
+          "verified": true,
+          "note": "Ngàn is southern; nghìn northern."
+        },
+        {
+          "vi": "Năm mươi ngàn",
+          "say": "nahm muh-ee ngahng",
+          "en": "50,000 dong",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "getting-around",
+      "title": "Getting Around",
+      "icon": "🛵",
+      "when": "Grab/taxi rides, directions, showing an address.",
+      "phrases": [
+        {
+          "vi": "Cho tôi đến địa chỉ này",
+          "say": "jaw toy den dee-ah chee nai",
+          "en": "Take me to this address (show screen)",
+          "verified": false
+        },
+        {
+          "vi": "Vui lòng đưa tôi đến khách sạn ___",
+          "say": "voo-ee long doo-uh toy den khak shahng ___",
+          "en": "Please take me to ___ hotel",
+          "verified": true
+        },
+        {
+          "vi": "Cho tôi về khách sạn Rex, 141 Nguyễn Huệ, Quận 1",
+          "say": "jaw toy yeh khak shahng Rex",
+          "en": "Take me back to the Rex Hotel",
+          "verified": false,
+          "note": "Our Saigon hotel. Tap to show the driver."
+        },
+        {
+          "vi": "Đến ___ giá bao nhiêu?",
+          "say": "den ___ yah bow nyew?",
+          "en": "How much to ___?",
+          "verified": true
+        },
+        {
+          "vi": "Quẹo trái",
+          "say": "weh-oh chai",
+          "en": "Turn left",
+          "verified": false,
+          "note": "Southern form. Northern Rẽ trái is understood too."
+        },
+        {
+          "vi": "Quẹo phải",
+          "say": "weh-oh fai",
+          "en": "Turn right",
+          "verified": false,
+          "note": "Southern form. Northern Rẽ phải is understood too."
+        },
+        {
+          "vi": "Đi thẳng",
+          "say": "dee tahng",
+          "en": "Go straight",
+          "verified": true
+        },
+        {
+          "vi": "Dừng ở đây",
+          "say": "yung uh day",
+          "en": "Stop here",
+          "verified": false
+        },
+        {
+          "vi": "Cho tôi xuống đây",
+          "say": "jaw toy soo-ung day",
+          "en": "Let me off here",
+          "verified": false,
+          "note": "What you'd say to a Grab or taxi driver."
+        },
+        {
+          "vi": "Chậm lại",
+          "say": "chum lai",
+          "en": "Slow down",
+          "verified": false
+        },
+        {
+          "vi": "Sân bay",
+          "say": "shung bai",
+          "en": "Airport",
+          "verified": true
+        },
+        {
+          "vi": "Chỉ trên bản đồ cho tôi được không?",
+          "say": "chee chen bahng doh jaw toy duhk khohng?",
+          "en": "Can you show me on the map?",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "hotel",
+      "title": "Hotel",
+      "icon": "🏨",
+      "when": "Check-in, room requests, wake-up, checkout.",
+      "phrases": [
+        {
+          "vi": "Tôi có đặt phòng",
+          "say": "toy gaw daht fawng",
+          "en": "I have a reservation",
+          "verified": false
+        },
+        {
+          "vi": "Bạn còn phòng không?",
+          "say": "bahng gawng fawng khohng?",
+          "en": "Any rooms available?",
+          "verified": true
+        },
+        {
+          "vi": "Có kèm theo bữa sáng không?",
+          "say": "gaw kem teh-oh buh-uh shahng khohng?",
+          "en": "Is breakfast included?",
+          "verified": true
+        },
+        {
+          "vi": "Ăn sáng lúc mấy giờ?",
+          "say": "ahn shahng look may yuh?",
+          "en": "What time is breakfast?",
+          "verified": true
+        },
+        {
+          "vi": "Làm ơn dọn phòng giúp tôi",
+          "say": "lahm uhn yawng fawng yoop toy",
+          "en": "Please clean my room",
+          "verified": true
+        },
+        {
+          "vi": "Xin đánh thức tôi dậy lúc ___",
+          "say": "sin dahn took toy yay look ___",
+          "en": "Please wake me at ___",
+          "verified": true
+        },
+        {
+          "vi": "Có két an toàn không?",
+          "say": "gaw ket ahng twahng khohng?",
+          "en": "Is there a safe?",
+          "verified": true
+        },
+        {
+          "vi": "Mật khẩu wifi là gì?",
+          "say": "mut khow wai-fai lah yee?",
+          "en": "What's the Wi-Fi password?",
+          "verified": false
+        },
+        {
+          "vi": "Tôi muốn check out",
+          "say": "toy moo-ung check out",
+          "en": "I want to check out",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "title": "Business Meetings & Company Visits",
+      "icon": "💼",
+      "when": "Company visits: introductions, cards, thanking hosts, toasts.",
+      "phrases": [
+        {
+          "vi": "Xin chào anh / chị",
+          "say": "sin chow ahn / chee",
+          "en": "Hello (to a man / woman about your age or a bit older)",
+          "verified": true,
+          "note": "Titles: anh (man), chị (woman), ông (senior man), bà (senior woman). Wikivoyage grammar section."
+        },
+        {
+          "vi": "Chào ông / Chào bà",
+          "say": "chow ohng / chow bah",
+          "en": "Hello sir / madam (senior person)",
+          "verified": true
+        },
+        {
+          "vi": "Tôi tên là ___",
+          "say": "toy ten lah ___",
+          "en": "My name is ___",
+          "verified": true
+        },
+        {
+          "vi": "Rất vui được gặp anh / chị",
+          "say": "rut voo-ee duhk gahp ahn / chee",
+          "en": "Nice to meet you",
+          "verified": false
+        },
+        {
+          "vi": "Tôi đến từ Đại học Denver",
+          "say": "toy den tuh dai hawk Denver",
+          "en": "I'm from the University of Denver",
+          "verified": false
+        },
+        {
+          "vi": "Đây là danh thiếp của tôi",
+          "say": "day lah yahn tee-up gwah toy",
+          "en": "Here is my business card",
+          "verified": false,
+          "note": "Offer and receive cards with both hands."
+        },
+        {
+          "vi": "Cảm ơn anh / chị đã tiếp đón chúng tôi",
+          "say": "gahm uhn ahn / chee dah tee-up dawng choong toy",
+          "en": "Thank you for hosting us",
+          "verified": false
+        },
+        {
+          "vi": "Công ty của anh / chị rất ấn tượng",
+          "say": "gohng tee gwah ahn / chee rut un too-ung",
+          "en": "Your company is very impressive",
+          "verified": false
+        },
+        {
+          "vi": "Chúc sức khỏe!",
+          "say": "chook shook kweh!",
+          "en": "To your health! (polite toast)",
+          "verified": false,
+          "note": "Raise glass with both hands; clink lower than seniors."
+        },
+        {
+          "vi": "Hẹn gặp lại",
+          "say": "hen gahp lai",
+          "en": "See you again",
+          "verified": false
+        }
+      ]
+    },
+    {
+      "id": "small-talk",
+      "title": "Making Friends/Small Talk",
+      "icon": "😊",
+      "when": "Chatting with locals, classmates' hosts, drivers.",
+      "phrases": [
+        {
+          "vi": "Bạn khỏe không?",
+          "say": "bahng kweh khohng?",
+          "en": "How are you?",
+          "verified": true
+        },
+        {
+          "vi": "Tôi khỏe, cảm ơn",
+          "say": "toy kweh, gahm uhn",
+          "en": "I'm fine, thanks",
+          "verified": true
+        },
+        {
+          "vi": "Bạn tên là gì?",
+          "say": "bahng ten lah yee?",
+          "en": "What's your name?",
+          "verified": true,
+          "note": "Swap Bạn for anh/chị/ông/bà by age."
+        },
+        {
+          "vi": "Tôi là người Mỹ",
+          "say": "toy lah ngoo-ee mee",
+          "en": "I'm American",
+          "verified": false
+        },
+        {
+          "vi": "Tôi đến từ Colorado",
+          "say": "toy den tuh Colorado",
+          "en": "I'm from Colorado",
+          "verified": false
+        },
+        {
+          "vi": "Tôi không biết nói tiếng Việt cho lắm",
+          "say": "toy khohng bee-ut noy tee-ung vee-ut jaw lahm",
+          "en": "I don't speak Vietnamese well",
+          "verified": true
+        },
+        {
+          "vi": "Sài Gòn đẹp quá!",
+          "say": "shai gawng dep wah!",
+          "en": "Saigon is beautiful!",
+          "verified": false
+        },
+        {
+          "vi": "Tôi rất thích đồ ăn Việt Nam",
+          "say": "toy rut tik doh ahn vee-ut nahm",
+          "en": "I love Vietnamese food",
+          "verified": false
+        },
+        {
+          "vi": "Chụp hình được không?",
+          "say": "choop hing duhk khohng?",
+          "en": "May I take a photo?",
+          "verified": false,
+          "note": "Hình is southern; ảnh northern."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "title": "Health & Pharmacy",
+      "icon": "💊",
+      "when": "Pharmacy (nhà thuốc) or feeling unwell.",
+      "phrases": [
+        {
+          "vi": "Nhà thuốc ở đâu?",
+          "say": "nyah too-uk uh dow?",
+          "en": "Where is a pharmacy?",
+          "verified": false
+        },
+        {
+          "vi": "Tôi bị bệnh",
+          "say": "toy bee behng",
+          "en": "I'm sick",
+          "verified": true
+        },
+        {
+          "vi": "Tôi cần bác sĩ",
+          "say": "toy kung bahk shee",
+          "en": "I need a doctor",
+          "verified": true
+        },
+        {
+          "vi": "Tôi cần thuốc giảm đau",
+          "say": "toy kung too-uk yahm dow",
+          "en": "I need pain reliever",
+          "verified": true
+        },
+        {
+          "vi": "Thuốc đau bụng",
+          "say": "too-uk dow boong",
+          "en": "Stomach medicine",
+          "verified": true
+        },
+        {
+          "vi": "Thuốc cảm",
+          "say": "too-uk gahm",
+          "en": "Cold medicine",
+          "verified": true
+        },
+        {
+          "vi": "Kem chống nắng",
+          "say": "kem chohng nahng",
+          "en": "Sunscreen",
+          "verified": true
+        },
+        {
+          "vi": "Tôi bị dị ứng ___",
+          "say": "toy bee yee uhng ___",
+          "en": "I'm allergic to ___",
+          "verified": false
+        },
+        {
+          "vi": "Tôi bị tiêu chảy",
+          "say": "toy bee tew chai",
+          "en": "I have diarrhea",
+          "verified": false
+        }
+      ]
+    },
+    {
+      "id": "emergency",
+      "title": "Emergencies",
+      "icon": "🚨",
+      "when": "Danger, crime, accident, or lost.",
+      "phrases": [
+        {
+          "vi": "Cứu tôi với!",
+          "say": "guh-oo toy vuh-ee!",
+          "en": "Help!",
+          "verified": true
+        },
+        {
+          "vi": "Khẩn cấp!",
+          "say": "khun gup!",
+          "en": "It's an emergency",
+          "verified": false
+        },
+        {
+          "vi": "Gọi công an!",
+          "say": "goy gohng ahng!",
+          "en": "Call the police! (113)",
+          "verified": true,
+          "note": "Operators speak Vietnamese."
+        },
+        {
+          "vi": "Gọi xe cấp cứu!",
+          "say": "goy seh gup goo!",
+          "en": "Call an ambulance! (115)",
+          "verified": false
+        },
+        {
+          "vi": "Cháy!",
+          "say": "chai!",
+          "en": "Fire! (call 114)",
+          "verified": false
+        },
+        {
+          "vi": "Bệnh viện ở đâu?",
+          "say": "behng vee-ung uh dow?",
+          "en": "Where is the hospital?",
+          "verified": false
+        },
+        {
+          "vi": "Tôi bị lạc",
+          "say": "toy bee lahk",
+          "en": "I'm lost",
+          "verified": true
+        },
+        {
+          "vi": "Tôi bị mất cái ví",
+          "say": "toy bee mut kai vee",
+          "en": "I lost my wallet",
+          "verified": true
+        },
+        {
+          "vi": "Tôi bị thương",
+          "say": "toy bee too-ung",
+          "en": "I've been injured",
+          "verified": true
+        },
+        {
+          "vi": "Tôi là công dân Mỹ",
+          "say": "toy lah gohng yung mee",
+          "en": "I'm a US citizen",
+          "verified": true
+        },
+        {
+          "vi": "Tôi cần nói chuyện với Lãnh sự quán Mỹ",
+          "say": "toy kung noy choo-yen vuh-ee lahn shuh wahn mee",
+          "en": "I need to talk to the US consulate",
+          "verified": false,
+          "note": "Consulate numbers are in the call buttons above."
+        }
+      ]
+    }
+  ]
+}
