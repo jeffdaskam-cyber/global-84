@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
@@ -43,6 +43,14 @@ function formatWhen(ms, timeZone) {
   const opts = { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
   if (timeZone) opts.timeZone = timeZone;
   return new Intl.DateTimeFormat("en-US", opts).format(new Date(ms));
+}
+
+// Calendar day as shown by formatWhen, so dividers line up with the dates the
+// member actually reads on each row.
+function dayKey(ms, timeZone) {
+  const opts = { year: "numeric", month: "2-digit", day: "2-digit" };
+  if (timeZone) opts.timeZone = timeZone;
+  return new Intl.DateTimeFormat("en-CA", opts).format(new Date(ms));
 }
 
 const LEGEND_ITEMS = Object.values(CATEGORIES).map((c) => ({
@@ -233,51 +241,60 @@ export default function UpNextCard() {
         </div>
 
         <div className="px-4 py-2.5 max-h-80 overflow-y-auto flex flex-col" style={{ gap: "6px" }}>
-          {rows.map((row) => {
+          {rows.map((row, i) => {
+            const newDay = i > 0 && dayKey(row.whenMs, row.tz) !== dayKey(rows[i - 1].whenMs, rows[i - 1].tz);
             const meta = TYPE_META[row.type];
             const catDef = row.cat ? CATEGORIES[row.cat] : null;
             const tintBg = catDef ? hexToRgba(catDef.color, TINT_ALPHA) : "transparent";
             const tappable = Boolean(row.to);
             const Tag = tappable ? "button" : "div";
             return (
-              <Tag
-                key={row.key}
-                onClick={tappable ? () => navigate(row.to) : undefined}
-                className={`w-full flex items-center text-left ${
-                  tappable ? "active:scale-[0.99] transition-transform" : ""
-                }`}
-                style={{
-                  gap: "10px",
-                  padding: "9px 10px 9px 8px",
-                  borderRadius: "10px",
-                  background: tintBg,
-                  borderLeft: `3px solid ${catDef ? catDef.color : "transparent"}`,
-                }}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-ink-main dark:text-ink-onDark truncate">
-                      {row.title}
-                    </span>
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                      style={{ background: meta.bg, color: meta.fg }}
-                    >
-                      {meta.label}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-ink-sub dark:text-ink-subOnDark flex-wrap">
-                    <span>{formatWhen(row.whenMs, row.tz)}</span>
-                    {row.subtitle ? <span className="opacity-70">· {row.subtitle}</span> : null}
-                    <span className="font-semibold text-du-crimson">{formatRelative(row.whenMs, nowMs)}</span>
-                  </div>
-                </div>
-                {tappable && (
-                  <svg className="w-4 h-4 flex-shrink-0 text-ink-sub dark:text-ink-subOnDark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+              <Fragment key={row.key}>
+                {newDay && (
+                  <div
+                    aria-hidden="true"
+                    className="h-px shrink-0 bg-surface-border dark:bg-surface-darkBorder opacity-70"
+                    style={{ margin: "3px 6px" }}
+                  />
                 )}
-              </Tag>
+                <Tag
+                  onClick={tappable ? () => navigate(row.to) : undefined}
+                  className={`w-full flex items-center text-left ${
+                    tappable ? "active:scale-[0.99] transition-transform" : ""
+                  }`}
+                  style={{
+                    gap: "10px",
+                    padding: "9px 10px 9px 8px",
+                    borderRadius: "10px",
+                    background: tintBg,
+                    borderLeft: `3px solid ${catDef ? catDef.color : "transparent"}`,
+                  }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-ink-main dark:text-ink-onDark truncate">
+                        {row.title}
+                      </span>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: meta.bg, color: meta.fg }}
+                      >
+                        {meta.label}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-ink-sub dark:text-ink-subOnDark flex-wrap">
+                      <span>{formatWhen(row.whenMs, row.tz)}</span>
+                      {row.subtitle ? <span className="opacity-70">· {row.subtitle}</span> : null}
+                      <span className="font-semibold text-du-crimson">{formatRelative(row.whenMs, nowMs)}</span>
+                    </div>
+                  </div>
+                  {tappable && (
+                    <svg className="w-4 h-4 flex-shrink-0 text-ink-sub dark:text-ink-subOnDark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </Tag>
+              </Fragment>
             );
           })}
         </div>
