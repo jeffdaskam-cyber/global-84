@@ -253,8 +253,8 @@ export default function UpNextCard() {
                 {newDay && (
                   <div
                     aria-hidden="true"
-                    className="h-px shrink-0 bg-surface-border dark:bg-surface-darkBorder opacity-70"
-                    style={{ margin: "3px 6px" }}
+                    className="h-0.5 shrink-0 rounded-full bg-du-crimson"
+                    style={{ margin: "4px 2px" }}
                   />
                 )}
                 <Tag
