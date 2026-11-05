@@ -28,6 +28,7 @@ export default function Gallery({ user, canModerate }) {
   const [lightboxId, setLightboxId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadCount, setUploadCount] = useState(null); // { current, total } while a batch uploads
   const [uploadCity, setUploadCity] = useState("singapore");
   const [error, setError] = useState(null);
   const [loadError, setLoadError] = useState("");
@@ -62,12 +63,15 @@ export default function Gallery({ user, canModerate }) {
 
   const handleFileChange = useCallback(
     async (event) => {
-      const file = event.target.files?.[0];
-      if (!file || !user?.uid) return;
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0 || !user?.uid) return;
 
       setError(null);
       setUploading(true);
       setUploadProgress(0);
+      setUploadCount({ current: 1, total: files.length });
+
+      const failures = [];
 
       try {
         const memberSnap = await getDoc(memberDoc(user.uid));
@@ -75,24 +79,46 @@ export default function Gallery({ user, canModerate }) {
         // otherwise be written into a world-readable photo doc.
         const uploaderName = memberSnap.data()?.displayName || "Member";
 
-        await uploadPhoto(
-          file,
-          {
-            city: uploadCity,
-            uploaderUid: user.uid,
-            uploaderName,
-          },
-          setUploadProgress,
-          {
-            onOriginalSaving: (saving) =>
-              setOriginalsSaving((count) => Math.max(0, count + (saving ? 1 : -1))),
+        // One at a time: keeps a phone on trip data from opening a dozen
+        // parallel uploads, and each photo appears in the grid as it lands.
+        // A failed file is noted and skipped so the rest still go up.
+        for (let index = 0; index < files.length; index += 1) {
+          const file = files[index];
+          setUploadCount({ current: index + 1, total: files.length });
+          try {
+            await uploadPhoto(
+              file,
+              {
+                city: uploadCity,
+                uploaderUid: user.uid,
+                uploaderName,
+              },
+              (pct) =>
+                setUploadProgress(Math.round(((index + pct / 100) / files.length) * 100)),
+              {
+                onOriginalSaving: (saving) =>
+                  setOriginalsSaving((count) => Math.max(0, count + (saving ? 1 : -1))),
+              }
+            );
+          } catch (err) {
+            failures.push({ name: file.name, message: err.message || "Upload failed." });
           }
-        );
+        }
+
+        if (failures.length === 1 && files.length === 1) {
+          setError(failures[0].message || "Upload failed. Please try again.");
+        } else if (failures.length > 0) {
+          const details = failures.map((f) => `${f.name}: ${f.message}`).join(" ");
+          setError(
+            `${failures.length} of ${files.length} photos couldn't be uploaded. ${details}`
+          );
+        }
       } catch (err) {
         setError(err.message || "Upload failed. Please try again.");
       } finally {
         setUploading(false);
         setUploadProgress(0);
+        setUploadCount(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -328,6 +354,7 @@ export default function Gallery({ user, canModerate }) {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
           onChange={handleFileChange}
         />
@@ -337,7 +364,11 @@ export default function Gallery({ user, canModerate }) {
           disabled={uploading}
           className="flex items-center gap-2 bg-[#BA0C2F] hover:bg-[#9a0a27] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
-          {uploading ? `Uploading ${uploadProgress}%` : "Add Photo"}
+          {uploading
+            ? uploadCount?.total > 1
+              ? `Uploading ${uploadCount.current} of ${uploadCount.total} · ${uploadProgress}%`
+              : `Uploading ${uploadProgress}%`
+            : "Add Photos"}
         </button>
 
         {!uploading && originalsSaving > 0 && (
